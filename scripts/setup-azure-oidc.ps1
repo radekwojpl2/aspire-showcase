@@ -7,14 +7,19 @@
       1. Resource group the app is deployed into
       2. Entra ID app registration + service principal
       3. Contributor and User Access Administrator role assignments, scoped to the resource group
-         (User Access Administrator is needed because the deployment assigns AcrPull to the app's managed identity)
+         (User Access Administrator is needed because the deployment grants the app's managed identity
+          AcrPull on the registry and Key Vault Secrets User on the vault)
       4. Federated credential trusting the GitHub environment
       5. GitHub environment with the AZURE_* variables
+         (and the DB_CONNECTION_STRING secret when -DbConnectionString is given)
 
     Safe to re-run: existing resources are reused.
 
 .EXAMPLE
     ./scripts/setup-azure-oidc.ps1 -GitHubRepo radekwojpl2/aspire-showcase
+
+.EXAMPLE
+    ./scripts/setup-azure-oidc.ps1 -GitHubRepo radekwojpl2/aspire-showcase -DbConnectionString (Read-Host -AsSecureString 'Connection string')
 
 .EXAMPLE
     ./scripts/setup-azure-oidc.ps1 -GitHubRepo radekwojpl2/aspire-showcase -Location northeurope -SkipGitHub
@@ -31,6 +36,10 @@ param(
     [string]$ResourceGroup = 'rg-aspire-showcase',
     [string]$AppName = 'aspire-showcase-github',
     [string]$GitHubEnvironment = 'production',
+
+    # Production connection string, stored as the DB_CONNECTION_STRING environment secret.
+    # `aspire deploy` writes it into Key Vault. Omit to leave the existing secret unchanged.
+    [securestring]$DbConnectionString,
 
     # Only do the Azure part and print the variables instead of setting them in GitHub.
     [switch]$SkipGitHub
@@ -162,6 +171,7 @@ $variables = [ordered]@{
 if ($SkipGitHub) {
     Write-Step "Set these variables on the '$GitHubEnvironment' environment in GitHub:"
     $variables.GetEnumerator() | ForEach-Object { Write-Host ("    {0,-22} {1}" -f $_.Key, $_.Value) }
+    Write-Host "  and the DB_CONNECTION_STRING secret (the production connection string)."
 } else {
     Write-Step "GitHub environment '$GitHubEnvironment'"
     Invoke-Cli gh api --method PUT "repos/$GitHubRepo/environments/$GitHubEnvironment" --silent | Out-Null
@@ -169,6 +179,24 @@ if ($SkipGitHub) {
     foreach ($variable in $variables.GetEnumerator()) {
         Invoke-Cli gh variable set $variable.Key --env $GitHubEnvironment --repo $GitHubRepo --body $variable.Value | Out-Null
         Write-Host "    $($variable.Key) set"
+    }
+
+    if ($DbConnectionString) {
+        # Piped via stdin so the value never shows up in a process command line.
+        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($DbConnectionString)
+        try {
+            [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) |
+                gh secret set DB_CONNECTION_STRING --env $GitHubEnvironment --repo $GitHubRepo
+            if ($LASTEXITCODE -ne 0) { throw "Failed to set the DB_CONNECTION_STRING secret." }
+        } finally {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+        }
+        Write-Host "    DB_CONNECTION_STRING secret set"
+    } else {
+        $secretNames = Invoke-Cli gh secret list --env $GitHubEnvironment --repo $GitHubRepo --json name --jq '.[].name'
+        if (-not $secretNames -or ($secretNames -split "`r?`n") -notcontains 'DB_CONNECTION_STRING') {
+            Write-Warning "DB_CONNECTION_STRING secret is not set; deploys will fail until you add it (re-run with -DbConnectionString)."
+        }
     }
 }
 
