@@ -42,6 +42,14 @@ api.MapGet("/weatherforecast", (ILogger<Program> logger) =>
 })
 .WithName("GetWeatherForecast");
 
+// Locally the connection string comes from user secrets (via the AppHost),
+// in Azure from Key Vault. Only report whether it is set, never the value.
+api.MapGet("/config-status", (IConfiguration configuration, IHostEnvironment environment) =>
+    new ConfigStatus(
+        !string.IsNullOrEmpty(configuration.GetConnectionString("db")),
+        environment.EnvironmentName))
+.WithName("GetConfigStatus");
+
 // Maps /health and /alive endpoints (development only by default).
 app.MapDefaultEndpoints();
 
@@ -54,3 +62,5 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
+
+record ConfigStatus(bool ConnectionStringConfigured, string Environment);
