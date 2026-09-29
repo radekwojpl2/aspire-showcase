@@ -127,19 +127,32 @@ foreach ($role in 'Contributor', 'User Access Administrator') {
 
 # --- 4. Federated credential -------------------------------------------------
 
-$subject = "repo:${GitHubRepo}:environment:$GitHubEnvironment"
-Write-Step "Federated credential for '$subject'"
+# GitHub issues the OIDC subject either by name (repo:owner/repo:...) or, for newer repositories,
+# with immutable ids (repo:owner@ownerId/repo@repoId:...). Trust both so either format works.
+$credentialBaseName = "github-$($GitHubRepo -replace '[^A-Za-z0-9-]', '-')-$GitHubEnvironment"
+$subjects = [ordered]@{ $credentialBaseName = "repo:${GitHubRepo}:environment:$GitHubEnvironment" }
+if (-not $SkipGitHub) {
+    $owner, $repoName = $GitHubRepo -split '/'
+    # One id per line; avoids double quotes, which Windows PowerShell 5.1 mangles for native commands.
+    $ids = Invoke-Cli gh api "repos/$GitHubRepo" --jq '.owner.id, .id'
+    $ownerId, $repoId = $ids -split "`r?`n"
+    $subjects["$credentialBaseName-ids"] = "repo:$owner@$ownerId/$repoName@${repoId}:environment:$GitHubEnvironment"
+}
+
 $existingSubjects = Invoke-Cli az ad app federated-credential list --id $appId --query '[].subject' --output tsv
-if ($existingSubjects -and ($existingSubjects -split "`r?`n") -contains $subject) {
-    Write-Host "    already exists"
-} else {
+foreach ($credential in $subjects.GetEnumerator()) {
+    Write-Step "Federated credential for '$($credential.Value)'"
+    if ($existingSubjects -and ($existingSubjects -split "`r?`n") -contains $credential.Value) {
+        Write-Host "    already exists"
+        continue
+    }
     # Pass JSON via a file: inline JSON quoting is unreliable with az on Windows.
     $credentialFile = New-TemporaryFile
     try {
         @{
-            name      = "github-$($GitHubRepo -replace '[^A-Za-z0-9-]', '-')-$GitHubEnvironment"
+            name      = $credential.Key
             issuer    = 'https://token.actions.githubusercontent.com'
-            subject   = $subject
+            subject   = $credential.Value
             audiences = @('api://AzureADTokenExchange')
         } | ConvertTo-Json | Set-Content -Path $credentialFile -Encoding ascii
         Invoke-Cli az ad app federated-credential create --id $appId --parameters "@$credentialFile" --output none | Out-Null
