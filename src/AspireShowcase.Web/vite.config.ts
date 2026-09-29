@@ -6,9 +6,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // Proxy API calls to the app service
+      // Proxy API calls to the "web" resource (the ASP.NET Core project)
       '/api': {
-        target: process.env.API_HTTPS || process.env.API_HTTP,
+        target: process.env.WEB_HTTPS || process.env.WEB_HTTP,
         changeOrigin: true
       }
     }

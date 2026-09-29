@@ -4,16 +4,19 @@ var builder = DistributedApplication.CreateBuilder(args);
 // (with its own container registry and Log Analytics workspace).
 builder.AddAzureContainerAppEnvironment("aca-env");
 
-var api = builder.AddProject<Projects.AspireShowcase_Api>("api")
+// The ASP.NET Core project serves both /api and, once published, the React UI,
+// so it is deployed as the "web" Container App.
+var web = builder.AddProject<Projects.AspireShowcase_Api>("web")
     .WithHttpHealthCheck("/health")
     .WithExternalHttpEndpoints();
 
-var web = builder.AddViteApp("web", "../AspireShowcase.Web")
-    .WithReference(api)
-    .WaitFor(api);
+// Vite dev server with hot reload, used for local development only.
+var frontend = builder.AddViteApp("frontend", "../AspireShowcase.Web")
+    .WithReference(web)
+    .WaitFor(web);
 
-// On publish, the built React app is copied into the API container's wwwroot,
+// On publish, the built React app is copied into the web container's wwwroot,
 // so a single Container App serves both the UI and /api.
-api.PublishWithContainerFiles(web, "wwwroot");
+web.PublishWithContainerFiles(frontend, "wwwroot");
 
 builder.Build().Run();
