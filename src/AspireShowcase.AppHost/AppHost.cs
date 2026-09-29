@@ -4,8 +4,12 @@ var builder = DistributedApplication.CreateBuilder(args);
 // (with its own container registry and Log Analytics workspace).
 builder.AddAzureContainerAppEnvironment("aca-env");
 
-builder.AddProject<Projects.AspireShowcase_Api>("api")
+var api = builder.AddProject<Projects.AspireShowcase_Api>("api")
     .WithHttpHealthCheck("/health")
     .WithExternalHttpEndpoints();
+
+var web = builder.AddViteApp("web", "../AspireShowcase.Web")
+    .WithReference(api)
+    .WaitFor(api);
 
 builder.Build().Run();
