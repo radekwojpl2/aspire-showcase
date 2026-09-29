@@ -12,4 +12,8 @@ var web = builder.AddViteApp("web", "../AspireShowcase.Web")
     .WithReference(api)
     .WaitFor(api);
 
+// On publish, the built React app is copied into the API container's wwwroot,
+// so a single Container App serves both the UI and /api.
+api.PublishWithContainerFiles(web, "wwwroot");
+
 builder.Build().Run();
