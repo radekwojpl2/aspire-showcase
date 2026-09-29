@@ -7,8 +7,10 @@
     "ask": [
       "Bash(git commit:*)",
       "Bash(git push:*)",
+      "Bash(aspire:*)",
       "PowerShell(git commit:*)",
-      "PowerShell(git push:*)"
+      "PowerShell(git push:*)",
+      "PowerShell(aspire:*)"
     ]
   }
 }
