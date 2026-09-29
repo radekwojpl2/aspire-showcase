@@ -792,33 +792,3 @@
   outline-offset: 2px;
 }
 
-
-/* Connection string status badge */
-.config-status {
-  display: inline-block;
-  margin: 0.75rem 0 0;
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  border: 1px solid var(--weather-card-border);
-  background: var(--weather-card-bg);
-  color: var(--text-secondary);
-}
-
-.config-status::before {
-  content: '';
-  display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-right: 0.5rem;
-  border-radius: 50%;
-  vertical-align: middle;
-}
-
-.config-status.ok::before {
-  background: #22c55e;
-}
-
-.config-status.missing::before {
-  background: var(--error-border);
-}

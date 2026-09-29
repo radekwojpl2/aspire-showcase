@@ -2,11 +2,6 @@ import { useState, useEffect } from 'react';
 import aspireLogo from '/Aspire.png';
 import './App.css';
 
-interface ConfigStatus {
-  connectionStringConfigured: boolean;
-  environment: string;
-}
-
 interface WeatherForecast {
   date: string;
   temperatureC: number;
@@ -19,7 +14,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [useCelsius, setUseCelsius] = useState(false);
-  const [configStatus, setConfigStatus] = useState<ConfigStatus | null>(null);
 
   const fetchWeatherForecast = async () => {
     setLoading(true);
@@ -44,11 +38,6 @@ function App() {
 
   useEffect(() => {
     fetchWeatherForecast();
-
-    fetch('/api/config-status')
-      .then(response => (response.ok ? response.json() : null))
-      .then(setConfigStatus)
-      .catch(err => console.error('Error fetching config status:', err));
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -73,12 +62,6 @@ function App() {
         </a>
         <h1 className="app-title">Aspire Showcase</h1>
         <p className="app-subtitle">React + ASP.NET Core API, orchestrated by Aspire</p>
-        {configStatus && (
-          <p className={`config-status ${configStatus.connectionStringConfigured ? 'ok' : 'missing'}`} role="status">
-            Connection string: {configStatus.connectionStringConfigured ? 'configured' : 'missing'}
-            {' · '}{configStatus.environment}
-          </p>
-        )}
       </header>
 
       <main className="main-content">
