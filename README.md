@@ -20,7 +20,7 @@ Prerequisites: .NET 10 SDK, Node.js 22.12+ (or 20.19+), Docker (only needed for 
    ```
    dotnet run --project src/AspireShowcase.AppHost
    ```
-2. Open the dashboard link printed in the console, then open the `web` resource. Aspire runs `npm install` for you.
+2. Open the dashboard link printed in the console, then open the `frontend` resource. Aspire runs `npm install` for you.
 
 ## Aspire dashboard
 
