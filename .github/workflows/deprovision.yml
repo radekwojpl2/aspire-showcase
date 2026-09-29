@@ -1,0 +1,66 @@
+name: Deprovision
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type the resource group name to confirm deleting everything in it
+        required: true
+        type: string
+
+permissions:
+  id-token: write # OIDC login to Azure
+  contents: read
+
+# Shared with the Deploy workflow so the two never run at the same time.
+concurrency:
+  group: azure-production
+  cancel-in-progress: false
+
+jobs:
+  deprovision:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+    steps:
+      - name: Check confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "$RESOURCE_GROUP" ]; then
+            echo "::error::Confirmation '$CONFIRM' does not match the resource group '$RESOURCE_GROUP'."
+            exit 1
+          fi
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: List resources to delete
+        run: az resource list --resource-group "$RESOURCE_GROUP" --query "[].{name:name, type:type}" --output table
+
+      # A Complete-mode deployment of an empty template deletes every resource in the group,
+      # in dependency order. The resource group itself and its role assignments are kept,
+      # so the Deploy workflow can recreate everything without re-running the setup script.
+      - name: Delete all resources in the resource group
+        run: |
+          echo '{"$schema":"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#","contentVersion":"1.0.0.0","resources":[]}' > empty.json
+          az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "deprovision-${{ github.run_id }}" \
+            --mode Complete \
+            --template-file empty.json \
+            --output none
+
+      - name: Verify
+        run: |
+          remaining=$(az resource list --resource-group "$RESOURCE_GROUP" --query "length(@)" --output tsv)
+          echo "Resources left in $RESOURCE_GROUP: $remaining"
+          if [ "$remaining" != "0" ]; then
+            az resource list --resource-group "$RESOURCE_GROUP" --query "[].{name:name, type:type}" --output table
+            echo "::warning::Some resources were not deleted."
+          fi
