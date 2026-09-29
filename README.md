@@ -36,7 +36,16 @@ Aspire prompts for the subscription, location and resource group.
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `ci.yml` | PRs and pushes to `main` | .NET restore/build/test; frontend lint + build |
-| `deploy.yml` | pushes to `main`, manual | `aspire deploy` to Azure Container Apps |
+| `deploy.yml` | CI succeeds on a push to `main`, manual | `aspire deploy` of the commit CI built, to Azure Container Apps |
+| `deprovision.yml` | manual only | deletes every resource in the resource group (asks you to type its name to confirm) |
+
+Deprovisioning keeps the resource group and the pipeline's role assignments, so running Deploy again recreates everything without re-running the setup script. Deploy and Deprovision share a concurrency group and never run at the same time.
+
+To deprovision: **Actions → Deprovision → Run workflow**, enter the resource group name (default `rg-aspire-showcase`), or from the CLI:
+
+```
+gh workflow run deprovision.yml -f confirm=rg-aspire-showcase
+```
 
 ### One-time Azure setup (OIDC, no secrets)
 
