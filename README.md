@@ -22,6 +22,40 @@ Prerequisites: .NET 10 SDK, Node.js 22.12+ (or 20.19+), Docker (only needed for 
    ```
 2. Open the dashboard link printed in the console, then open the `web` resource. Aspire runs `npm install` for you.
 
+## Aspire dashboard
+
+The dashboard shows every resource with its logs, traces and metrics.
+
+### Locally
+
+`dotnet run --project src/AspireShowcase.AppHost` prints a login link that includes a one-time token. Open that exact link:
+
+```
+Dashboard:  https://localhost:17019/login?t=c5c2626a4a673a4a00e4c1844c5e3b30
+```
+
+Opening `https://localhost:17019` without the `?t=...` part asks for the token. Copy it from the console.
+
+### In Azure
+
+The deployed dashboard runs inside the Container Apps environment at `https://aspire-dashboard.ext.<environment default domain>`, for example:
+
+```
+https://aspire-dashboard.ext.wonderfulplant-84971e34.westeurope.azurecontainerapps.io
+```
+
+Three ways to find it:
+
+1. **Deploy log:** every Deploy run prints it at the end (`📊 Dashboard: https://aspire-dashboard.ext...`). Open **Actions → Deploy → latest run → Deploy with Aspire**.
+2. **Azure CLI:**
+   ```powershell
+   $domain = az containerapp env list -g rg-aspire-showcase --query "[0].properties.defaultDomain" -o tsv
+   "https://aspire-dashboard.ext.$domain"
+   ```
+3. **Azure portal:** **Resource groups → `rg-aspire-showcase` →** the **Container Apps Environment** (`acaenv...`) → **Overview**, which shows the default domain. Put `https://aspire-dashboard.ext.` in front of it.
+
+Sign in with the Microsoft account you use for Azure (`az login`). The dashboard requires a Microsoft Entra ID sign-in and is not publicly readable.
+
 ## Deploy manually
 
 ```
