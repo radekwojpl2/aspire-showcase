@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: Type the resource group name to confirm deleting it
+        description: Type the resource group name to confirm deleting everything in it
         required: true
         type: string
 
@@ -22,30 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
-      ASPIRE_CLI_VERSION: 13.5.4
-      # Read by the AppHost's Azure provisioning, same as in the Deploy workflow.
-      Azure__SubscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      Azure__Location: ${{ vars.AZURE_LOCATION }}
-      Azure__ResourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
-      Azure__CredentialSource: AzureCli
+      RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
     steps:
       - name: Check confirmation
         env:
           CONFIRM: ${{ inputs.confirm }}
         run: |
-          if [ "$CONFIRM" != "$Azure__ResourceGroup" ]; then
-            echo "::error::Confirmation '$CONFIRM' does not match the resource group '$Azure__ResourceGroup'."
+          if [ "$CONFIRM" != "$RESOURCE_GROUP" ]; then
+            echo "::error::Confirmation '$CONFIRM' does not match the resource group '$RESOURCE_GROUP'."
             exit 1
           fi
-
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: global.json
-
-      - name: Install Aspire CLI
-        run: dotnet tool install --global Aspire.Cli --version "$ASPIRE_CLI_VERSION"
 
       - name: Azure login
         uses: azure/login@v3
@@ -54,12 +40,27 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      # Deletes the whole resource group, including the pipeline's role assignments.
-      # Re-run scripts/setup-azure-oidc.ps1 before the next deploy.
-      - name: Destroy with Aspire
-        run: >
-          aspire destroy
-          --apphost src/AspireShowcase.AppHost/AspireShowcase.AppHost.csproj
-          --non-interactive
-          --yes
-          --nologo
+      - name: List resources to delete
+        run: az resource list --resource-group "$RESOURCE_GROUP" --query "[].{name:name, type:type}" --output table
+
+      # A Complete-mode deployment of an empty template deletes every resource in the group,
+      # in dependency order. The resource group itself and its role assignments are kept,
+      # so the Deploy workflow can recreate everything without re-running the setup script.
+      - name: Delete all resources in the resource group
+        run: |
+          echo '{"$schema":"https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#","contentVersion":"1.0.0.0","resources":[]}' > empty.json
+          az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "deprovision-${{ github.run_id }}" \
+            --mode Complete \
+            --template-file empty.json \
+            --output none
+
+      - name: Verify
+        run: |
+          remaining=$(az resource list --resource-group "$RESOURCE_GROUP" --query "length(@)" --output tsv)
+          echo "Resources left in $RESOURCE_GROUP: $remaining"
+          if [ "$remaining" != "0" ]; then
+            az resource list --resource-group "$RESOURCE_GROUP" --query "[].{name:name, type:type}" --output table
+            echo "::warning::Some resources were not deleted."
+          fi
