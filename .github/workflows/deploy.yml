@@ -1,7 +1,10 @@
 name: Deploy
 
 on:
-  push:
+  # Deploy only after CI (backend + frontend) succeeds on main.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -9,12 +12,17 @@ permissions:
   id-token: write # OIDC login to Azure
   contents: read
 
+# Shared with the Deprovision workflow so the two never run at the same time.
 concurrency:
-  group: deploy-production
+  group: azure-production
   cancel-in-progress: false
 
 jobs:
   deploy:
+    # Skip failed CI runs and CI runs triggered by pull requests.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -26,6 +34,9 @@ jobs:
       Azure__CredentialSource: AzureCli
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Deploy exactly the commit CI built, not whatever main points to now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - uses: actions/setup-dotnet@v6
         with:
