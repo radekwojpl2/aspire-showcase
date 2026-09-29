@@ -10,22 +10,8 @@ var dbConnectionString = builder.AddParameter("db-connection-string", secret: tr
 
 var api = builder.AddProject<Projects.AspireShowcase_Api>("api")
     .WithHttpHealthCheck("/health")
-    .WithExternalHttpEndpoints();
-
-if (builder.ExecutionContext.IsPublishMode)
-{
-    // Production: store the value in Key Vault. The Container App references the secret
-    // through its managed identity, so the value never appears in the app's configuration.
-    var keyVault = builder.AddAzureKeyVault("kv");
-    var dbConnectionStringSecret = keyVault.AddSecret("kv-db-connection-string", "db-connection-string", dbConnectionString);
-
-    api.WithEnvironment("ConnectionStrings__db", dbConnectionStringSecret.Resource);
-}
-else
-{
-    // Local development: pass the user secret straight through, no Azure needed.
-    api.WithEnvironment("ConnectionStrings__db", dbConnectionString);
-}
+    .WithExternalHttpEndpoints()
+    .WithEnvironment("ConnectionStrings__db", dbConnectionString);
 
 var web = builder.AddViteApp("web", "../AspireShowcase.Web")
     .WithReference(api)
