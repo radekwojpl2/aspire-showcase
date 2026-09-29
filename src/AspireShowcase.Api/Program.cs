@@ -45,6 +45,9 @@ api.MapGet("/weatherforecast", (ILogger<Program> logger) =>
 // Maps /health and /alive endpoints (development only by default).
 app.MapDefaultEndpoints();
 
+// Serves the React app, which is copied into wwwroot when the container is published.
+app.UseFileServer();
+
 app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
