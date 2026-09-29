@@ -3,10 +3,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Adds OpenTelemetry, health checks, service discovery and resilience defaults.
 builder.AddServiceDefaults();
 
+builder.Services.AddProblemDetails();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
@@ -20,7 +24,9 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
-app.MapGet("/weatherforecast", (ILogger<Program> logger) =>
+var api = app.MapGroup("/api");
+
+api.MapGet("/weatherforecast", (ILogger<Program> logger) =>
 {
     var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
