@@ -39,11 +39,13 @@ Then push to `main`: CI runs, and if it passes, Deploy runs.
 | Deploy | CI passing on `main`, manual |
 | Deprovision | manual |
 
-Tear down:
+Tear down (runs `aspire destroy`, deletes the whole resource group):
 
 ```
 gh workflow run deprovision.yml -f confirm=rg-aspire-showcase
 ```
+
+Re-run the setup script before deploying again.
 
 ## Aspire dashboard
 
