@@ -24,8 +24,6 @@ jobs:
       Azure__Location: ${{ vars.AZURE_LOCATION }}
       Azure__ResourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
       Azure__CredentialSource: AzureCli
-      # Aspire secret parameter; `aspire deploy` writes it into Key Vault.
-      Parameters__db-connection-string: ${{ secrets.DB_CONNECTION_STRING }}
     steps:
       - uses: actions/checkout@v7
 
