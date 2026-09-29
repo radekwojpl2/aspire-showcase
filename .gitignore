@@ -1,8 +1,52 @@
+# .NET build output
 bin/
 obj/
 /packages/
-riderModule.iml
-/_ReSharper.Caches/
+*.nupkg
+TestResults/
+*.trx
+coverage/
+
+# IDEs and editors
+.vs/
 .idea/
 *.user
-.vs/
+*.suo
+*.userprefs
+riderModule.iml
+/_ReSharper.Caches/
+*.DotSettings.user
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Node / frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Aspire publish/deploy artifacts (generated Bicep, manifests)
+aspire-output/
+aspire-manifest.json
+
+# Secrets and local environment (use `dotnet user-secrets` instead)
+.env
+.env.*
+!.env.example
+*.pfx
+*.pem
+appsettings.*.local.json
+
+# Logs and OS files
+*.log
+logs/
+.DS_Store
+Thumbs.db
