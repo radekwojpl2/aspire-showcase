@@ -1,3 +1,4 @@
+using Aspire.Hosting.Azure;
 using Azure.Provisioning;
 using Azure.Provisioning.AppContainers;
 using Azure.Provisioning.ApplicationInsights;
@@ -8,6 +9,15 @@ using Azure.Provisioning.OperationalInsights;
 using Azure.Provisioning.PostgreSql;
 using Azure.Provisioning.Primitives;
 using Azure.Provisioning.Roles;
+using Microsoft.Extensions.DependencyInjection;
+
+static class AzureResourceNamesExtensions
+{
+    /// <summary>Readable Azure resource names (showcase-kv-ige35) instead of Aspire's hashed ones.</summary>
+    public static void UseReadableAzureResourceNames(this IDistributedApplicationBuilder builder) =>
+        builder.Services.Configure<AzureProvisioningOptions>(options =>
+            options.ProvisioningBuildOptions.InfrastructureResolvers.Insert(0, new AzureResourceNames()));
+}
 
 /// <summary>
 /// Names the Azure resources "showcase-{kind}-{suffix}" (e.g. showcase-kv-ige35) instead of
