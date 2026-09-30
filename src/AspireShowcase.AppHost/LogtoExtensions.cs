@@ -1,5 +1,8 @@
 static class LogtoExtensions
 {
+    // Identifier of the API resource the API's access tokens are issued for (their audience).
+    const string ApiResource = "https://api.aspire-showcase";
+
     /// <summary>
     /// Logto serves sign-in on port 3001 and its admin console on port 3002. A Container App
     /// has a single HTTP ingress port, so each port gets its own container, both running the
@@ -38,7 +41,8 @@ static class LogtoExtensions
 
     /// <summary>
     /// Lets the React app sign in with Logto: /api/config passes it Logto's public URL and the
-    /// ID of the "Single page app" application created for it in the Logto console.
+    /// ID of the "Single page app" application created for it in the Logto console. The API
+    /// accepts access tokens issued for the API resource.
     /// </summary>
     /// <remarks>
     /// The ID only exists once that application has been created, so it's read from the
@@ -55,7 +59,8 @@ static class LogtoExtensions
 
         return web
             .WithEnvironment("Logto__Endpoint", builder.PublicEndpoint(logto))
-            .WithEnvironment("Logto__AppId", appId);
+            .WithEnvironment("Logto__AppId", appId)
+            .WithEnvironment("Logto__ApiResource", ApiResource);
     }
 
     static IResourceBuilder<ContainerResource> AddLogtoContainer(
