@@ -1,0 +1,536 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Aspire showcase\nRequests, OpenTelemetry metrics, browser telemetry and logs for the `web` Container App. Deployed from `src/AspireShowcase.AppHost/workbooks`; changes made in the portal are overwritten on the next deploy."
+      },
+      "name": "title"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b1a01",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Time range",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 86400000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 1800000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                }
+              ],
+              "allowCustom": true
+            }
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b1a02",
+            "version": "KqlParameterItem/1.0",
+            "name": "tab",
+            "type": 1,
+            "isHiddenWhenLocked": true,
+            "value": "requests"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b1b00",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Requests",
+            "subTarget": "requests",
+            "style": "link"
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b1b01",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Metrics",
+            "subTarget": "metrics",
+            "style": "link"
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b1b02",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Browser",
+            "subTarget": "browser",
+            "style": "link"
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b1b03",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Logs & exceptions",
+            "subTarget": "logs",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "tabs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| summarize requests = count(), failed = countif(success == false) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Requests and failures",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "request-rate"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| summarize p50 = percentile(duration, 50), p95 = percentile(duration, 95), p99 = percentile(duration, 99) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Latency (ms)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "request-latency"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| summarize requests = count(), failed = countif(success == false), avg_ms = round(avg(duration), 2), p95_ms = round(percentile(duration, 95), 2) by name\n| order by requests desc",
+              "size": 0,
+              "title": "Endpoints",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "endpoints"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| where success == false\n| project timestamp, name, resultCode, duration, operation_Id\n| order by timestamp desc",
+              "size": 0,
+              "title": "Failed requests",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "failed-requests"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| summarize calls = count(), failed = countif(success == false), avg_ms = round(avg(duration), 2) by type, target, name, client_Type\n| order by calls desc",
+              "size": 0,
+              "title": "Outgoing calls (server and browser)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "name": "dependencies"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "requests"
+      },
+      "name": "requests-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "All OpenTelemetry metrics sent by the API. Pick any metric below, or use the charts for the common ones."
+            },
+            "name": "metrics-help"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b1a03",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "Metric",
+                  "type": 2,
+                  "isRequired": true,
+                  "query": "customMetrics\n| distinct name\n| order by name asc",
+                  "typeSettings": {
+                    "showDefault": false
+                  },
+                  "timeContextFromParameter": "TimeRange",
+                  "queryType": 0,
+                  "resourceType": "microsoft.insights/components",
+                  "value": "http.server.request.duration"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components"
+            },
+            "name": "metric-picker"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == '{Metric}'\n| summarize value = sum(valueSum) / sum(valueCount), samples = sum(valueCount) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "{Metric}",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "name": "picked-metric"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name in (\"http.server.request.duration\", \"http.server.active_requests\")\n| summarize value = sum(valueSum) / sum(valueCount) by name, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "HTTP server: request duration and active requests",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "http-server"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name in (\"http.client.request.duration\", \"http.client.open_connections\")\n| summarize value = sum(valueSum) / sum(valueCount) by name, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "HTTP client: request duration and open connections",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "http-client"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name in (\"dotnet.gc.last_collection.heap.size\", \"dotnet.process.memory.working_set\")\n| summarize value = sum(valueSum) / sum(valueCount) by name, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "GC heap size (bytes)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "gc-heap"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name in (\"dotnet.thread_pool.thread.count\", \"dotnet.thread_pool.queue.length\")\n| summarize value = sum(valueSum) / sum(valueCount) by name, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Thread pool",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "thread-pool"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| summarize samples = sum(valueCount), latest = max(timestamp) by name\n| order by name asc",
+              "size": 0,
+              "title": "All metrics",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "name": "all-metrics"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "metrics"
+      },
+      "name": "metrics-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "pageViews\n| summarize page_views = count(), unique_users = dcount(user_Id) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Page views",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "page-views"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "browserTimings\n| summarize avg_total = avg(totalDuration), avg_network = avg(networkDuration), avg_processing = avg(processingDuration) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Page load time (ms)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "page-load"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "pageViews\n| summarize page_views = count(), unique_users = dcount(user_Id), avg_ms = round(avg(duration), 0) by name, url\n| order by page_views desc",
+              "size": 0,
+              "title": "Pages",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "pages"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "exceptions\n| where client_Type == 'Browser'\n| summarize count = count(), latest = max(timestamp) by problemId, outerMessage\n| order by count desc",
+              "size": 0,
+              "title": "Browser exceptions",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "browser-exceptions"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "browser"
+      },
+      "name": "browser-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "traces\n| extend severity = case(severityLevel == 0, 'Verbose', severityLevel == 1, 'Information', severityLevel == 2, 'Warning', severityLevel == 3, 'Error', 'Critical')\n| summarize count() by severity, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Logs by severity",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "log-volume"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "exceptions\n| summarize count() by client_Type, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Exceptions",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "exception-volume"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "traces\n| where severityLevel >= 2\n| project timestamp, severityLevel, message, cloud_RoleName, operation_Id\n| order by timestamp desc",
+              "size": 0,
+              "title": "Warnings and errors",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "name": "warnings"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "exceptions\n| summarize count = count(), latest = max(timestamp) by type, outerMessage, client_Type\n| order by count desc",
+              "size": 0,
+              "title": "Exceptions by type",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "name": "exception-list"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "traces\n| project timestamp, severityLevel, message, operation_Id\n| order by timestamp desc\n| take 200",
+              "size": 0,
+              "title": "Recent logs",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "name": "recent-logs"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "logs"
+      },
+      "name": "logs-group"
+    }
+  ],
+  "fallbackResourceIds": [
+    "__APPINSIGHTS_ID__"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
