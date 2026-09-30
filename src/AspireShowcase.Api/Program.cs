@@ -15,6 +15,9 @@ app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // Swagger UI at /swagger, reading the document that MapOpenApi serves.
+    app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "AspireShowcase API"));
 }
 
 app.UseHttpsRedirection();

@@ -8,7 +8,9 @@ var acaEnv = builder.AddAzureContainerAppEnvironment("aca-env");
 // so it is deployed as the "web" Container App.
 var web = builder.AddProject<Projects.AspireShowcase_Api>("web")
     .WithHttpHealthCheck("/health")
-    .WithExternalHttpEndpoints();
+    .WithExternalHttpEndpoints()
+    // Link on the dashboard; Swagger UI is only mapped in Development.
+    .WithUrl("/swagger", "Swagger");
 
 // Azure only: keeps logs, traces and metrics in Application Insights.
 // Locally, telemetry goes to the Aspire dashboard as before, and nothing here
