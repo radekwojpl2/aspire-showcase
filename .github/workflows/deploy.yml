@@ -32,7 +32,19 @@ jobs:
       Azure__Location: ${{ vars.AZURE_LOCATION }}
       Azure__ResourceGroup: ${{ vars.AZURE_RESOURCE_GROUP }}
       Azure__CredentialSource: AzureCli
+      # Admin password of the PostgreSQL server that Logto uses. It has to stay the same
+      # across deploys, so it comes from a secret instead of being generated on each run.
+      Parameters__postgres-password: ${{ secrets.POSTGRES_PASSWORD }}
     steps:
+      - name: Check secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        run: |
+          if [ -z "$POSTGRES_PASSWORD" ]; then
+            echo "::error::POSTGRES_PASSWORD is not set on the production environment. Run scripts/setup-azure-oidc.ps1."
+            exit 1
+          fi
+
       - uses: actions/checkout@v7
         with:
           # Deploy exactly the commit CI built, not whatever main points to now.

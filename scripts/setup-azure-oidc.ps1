@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    One-time Azure + GitHub setup for the Deploy workflow (OIDC, no secrets).
+    One-time Azure + GitHub setup for the Deploy workflow (OIDC, no Azure secrets).
 
 .DESCRIPTION
     Creates (or reuses) everything `.github/workflows/deploy.yml` needs:
@@ -9,7 +9,7 @@
       3. Contributor and User Access Administrator role assignments, scoped to the resource group
          (User Access Administrator is needed because the deployment assigns AcrPull to the app's managed identity)
       4. Federated credential trusting the GitHub environment
-      5. GitHub environment with the AZURE_* variables
+      5. GitHub environment with the AZURE_* variables and a generated POSTGRES_PASSWORD secret
 
     Safe to re-run: existing resources are reused.
 
@@ -162,7 +162,7 @@ foreach ($credential in $subjects.GetEnumerator()) {
     }
 }
 
-# --- 5. GitHub environment + variables ---------------------------------------
+# --- 5. GitHub environment, variables and secret ------------------------------
 
 $variables = [ordered]@{
     AZURE_CLIENT_ID       = $appId
@@ -175,6 +175,7 @@ $variables = [ordered]@{
 if ($SkipGitHub) {
     Write-Step "Set these variables on the '$GitHubEnvironment' environment in GitHub:"
     $variables.GetEnumerator() | ForEach-Object { Write-Host ("    {0,-22} {1}" -f $_.Key, $_.Value) }
+    Write-Host "    and a POSTGRES_PASSWORD secret (letters and digits, 32 characters)"
 } else {
     Write-Step "GitHub environment '$GitHubEnvironment'"
     Invoke-Cli gh api --method PUT "repos/$GitHubRepo/environments/$GitHubEnvironment" --silent | Out-Null
@@ -182,6 +183,22 @@ if ($SkipGitHub) {
     foreach ($variable in $variables.GetEnumerator()) {
         Invoke-Cli gh variable set $variable.Key --env $GitHubEnvironment --repo $GitHubRepo --body $variable.Value | Out-Null
         Write-Host "    $($variable.Key) set"
+    }
+
+    # PostgreSQL admin password for Logto's database. Only set once: changing it later
+    # just rotates the password on the next deploy, but there's no reason to.
+    Write-Step "Secret POSTGRES_PASSWORD"
+    $secretNames = Invoke-Cli gh secret list --env $GitHubEnvironment --repo $GitHubRepo --json name --jq '.[].name'
+    if ($secretNames -and ($secretNames -split "`r?`n") -contains 'POSTGRES_PASSWORD') {
+        Write-Host "    already set"
+    } else {
+        # Letters and digits only, so it can go into a postgresql:// URL as is.
+        $chars = [char[]]'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+        $bytes = New-Object byte[] 32
+        [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+        $password = -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
+        Invoke-Cli gh secret set POSTGRES_PASSWORD --env $GitHubEnvironment --repo $GitHubRepo --body $password | Out-Null
+        Write-Host "    set"
     }
 }
 
