@@ -111,7 +111,12 @@ IResourceBuilder<ContainerResource> AddLogto(string name, int port)
         .WaitFor(logtoDb);
 
     return keyVault is not null
-        ? container.WithEnvironment("DB_URL", keyVault.GetSecret(logtoDbUrlSecretName))
+        ? container
+            .WithEnvironment("DB_URL", keyVault.GetSecret(logtoDbUrlSecretName))
+            // Logto doesn't read this. It uses an output of the server's deployment, so the
+            // Container App is deployed after it; that deployment is also what writes
+            // logto-db-url, which a reference to the vault alone doesn't wait for.
+            .WithEnvironment("POSTGRES_HOST", postgres.GetOutput("hostName"))
         : container.WithEnvironment("DB_URL", logtoDb.Resource.UriExpression);
 }
 
