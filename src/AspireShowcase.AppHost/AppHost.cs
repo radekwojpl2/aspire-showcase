@@ -1,9 +1,15 @@
+using Aspire.Hosting.Azure;
 using Azure.Provisioning;
 using Azure.Provisioning.Expressions;
 using Azure.Provisioning.KeyVault;
 using Azure.Provisioning.PostgreSql;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = DistributedApplication.CreateBuilder(args);
+
+// Readable Azure resource names (showcase-kv-ige35) instead of Aspire's hashed ones.
+builder.Services.Configure<AzureProvisioningOptions>(options =>
+    options.ProvisioningBuildOptions.InfrastructureResolvers.Insert(0, new AzureResourceNames()));
 
 // Deployment target for `aspire deploy`: an Azure Container Apps environment
 // (with its own container registry).
