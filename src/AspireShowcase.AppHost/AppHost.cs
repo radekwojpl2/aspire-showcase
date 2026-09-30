@@ -1,8 +1,13 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
+// One Log Analytics workspace shared by the Container Apps environment and
+// Application Insights; otherwise each creates its own.
+var logs = builder.AddAzureLogAnalyticsWorkspace("logs");
+
 // Deployment target for `aspire deploy`: an Azure Container Apps environment
-// (with its own container registry and Log Analytics workspace).
-builder.AddAzureContainerAppEnvironment("aca-env");
+// (with its own container registry).
+builder.AddAzureContainerAppEnvironment("aca-env")
+    .WithAzureLogAnalyticsWorkspace(logs);
 
 // The ASP.NET Core project serves both /api and, once published, the React UI,
 // so it is deployed as the "web" Container App.
@@ -14,7 +19,8 @@ var web = builder.AddProject<Projects.AspireShowcase_Api>("web")
 // Locally, telemetry goes to the Aspire dashboard as before.
 if (builder.ExecutionContext.IsPublishMode)
 {
-    var insights = builder.AddAzureApplicationInsights("insights");
+    var insights = builder.AddAzureApplicationInsights("insights")
+        .WithLogAnalyticsWorkspace(logs);
     web.WithReference(insights);
 }
 
