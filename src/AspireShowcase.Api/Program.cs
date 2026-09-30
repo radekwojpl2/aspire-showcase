@@ -42,6 +42,12 @@ api.MapGet("/weatherforecast", (ILogger<Program> logger) =>
 })
 .WithName("GetWeatherForecast");
 
+// Runtime settings for the React app. The Application Insights connection string is
+// meant to be public (the browser SDK needs it) and is only set in Azure.
+api.MapGet("/config", (IConfiguration config) => new ClientConfig(
+    config["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+.WithName("GetClientConfig");
+
 // Maps /health and /alive endpoints (development only by default).
 app.MapDefaultEndpoints();
 
@@ -54,3 +60,5 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
+
+record ClientConfig(string? ApplicationInsightsConnectionString);
