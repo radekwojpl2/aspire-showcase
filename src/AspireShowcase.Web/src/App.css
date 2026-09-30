@@ -131,6 +131,47 @@
   letter-spacing: -0.02em;
 }
 
+/* Sign-in / signed-in user, top right of the header */
+.account {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.account-name {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.account-button {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--accent-gradient-start);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-button:hover {
+  background: var(--accent-gradient-start);
+  color: white;
+}
+
+.account-button:focus-visible {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 3px;
+}
+
+.auth-status {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
 .app-subtitle {
   font-size: 1.05rem;
   color: var(--text-tertiary);

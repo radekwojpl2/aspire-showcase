@@ -1,21 +1,10 @@
-type ClientConfig = {
-  applicationInsightsConnectionString?: string | null;
-};
+import { loadClientConfig } from './config.ts';
 
 // Sends page views, browser exceptions and fetch calls to Application Insights.
 // The connection string comes from the API at runtime and is only set in Azure,
 // so locally this does nothing.
 export async function initTelemetry(): Promise<void> {
-  let config: ClientConfig;
-  try {
-    const response = await fetch('/api/config');
-    if (!response.ok) return;
-    config = await response.json();
-  } catch {
-    return;
-  }
-
-  const connectionString = config.applicationInsightsConnectionString;
+  const connectionString = (await loadClientConfig()).applicationInsightsConnectionString;
   if (!connectionString) return;
 
   // Loaded on demand so the SDK isn't in the main bundle when it isn't used.

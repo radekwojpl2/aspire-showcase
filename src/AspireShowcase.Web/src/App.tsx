@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import aspireLogo from '/Aspire.png';
 import './App.css';
+import { Account } from './auth.tsx';
 
 interface WeatherForecast {
   date: string;
@@ -9,7 +10,7 @@ interface WeatherForecast {
   summary: string;
 }
 
-function App() {
+function App({ signInEnabled }: { signInEnabled: boolean }) {
   const [weatherData, setWeatherData] = useState<WeatherForecast[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +52,7 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
+        {signInEnabled && <Account />}
         <a 
           href="https://aspire.dev" 
           target="_blank" 

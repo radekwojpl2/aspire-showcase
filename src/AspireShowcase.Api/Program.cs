@@ -45,10 +45,13 @@ api.MapGet("/weatherforecast", (ILogger<Program> logger) =>
 })
 .WithName("GetWeatherForecast");
 
-// Runtime settings for the React app. The Application Insights connection string is
-// meant to be public (the browser SDK needs it) and is only set in Azure.
+// Runtime settings for the React app. All of them are meant to be public: the browser SDKs
+// need them. The Application Insights connection string is only set in Azure, and the Logto
+// app ID only once an application has been created in the Logto console.
 api.MapGet("/config", (IConfiguration config) => new ClientConfig(
-    config["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+    config["APPLICATIONINSIGHTS_CONNECTION_STRING"],
+    config["Logto:Endpoint"],
+    config["Logto:AppId"]))
 .WithName("GetClientConfig");
 
 // Maps /health and /alive endpoints (development only by default).
@@ -57,6 +60,11 @@ app.MapDefaultEndpoints();
 // Serves the React app, which is copied into wwwroot when the container is published.
 app.UseFileServer();
 
+// Client-side routes such as /callback (where Logto returns after sign-in) get the app too,
+// but unknown /api paths stay 404s rather than returning the page.
+app.MapFallback("/api/{**path}", () => Results.NotFound());
+app.MapFallbackToFile("index.html");
+
 app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
@@ -64,4 +72,4 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
 
-record ClientConfig(string? ApplicationInsightsConnectionString);
+record ClientConfig(string? ApplicationInsightsConnectionString, string? LogtoEndpoint, string? LogtoAppId);
