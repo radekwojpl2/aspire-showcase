@@ -41,58 +41,31 @@ The first time, open the `Admin console` link on the `logto-admin` resource and 
 
 Locally the console is served on `http://127.0.0.1:<port>/console`, not `localhost`: Logto runs in production mode, which blocks the console's API calls from a `localhost` address. Use the link from the dashboard.
 
-### Sign-in in the React app
+### Set up Logto for the React app and API
 
-The React app shows a **Sign in** button once it knows which Logto application to use. It gets Logto's URL and the application's ID from `/api/config` at runtime; until the ID is set, sign-in is hidden and the app works without it.
+Do this once in the local admin console: start the AppHost and open the `Admin console` link on the `logto-admin` resource.
 
-Set it up locally once:
+**React app**
 
-1. Start the AppHost and open the `Admin console` link on the `logto-admin` resource.
-2. **Applications** → **Create application** → **Single page app** → React.
-3. On the application, add:
+1. **Applications** → **Create application** → **Single page app** → React.
+2. On the application, add:
    - **Redirect URIs**: `http://localhost:5173/callback`
    - **Post sign-out redirect URIs**: `http://localhost:5173`
-
-   The `frontend` resource always runs on port 5173, so these don't change between runs.
-4. **API resources** → **Create API resource**: any name, identifier `https://api.aspire-showcase` (it must match `Logto:ApiResource` in the API's `appsettings.json`). Access tokens for the API are issued for this resource.
-5. **User management** → create a user to sign in with. The admin account belongs to the console's own tenant and can't sign in to the app.
-6. Save the application's **App ID** in the AppHost's user secrets and restart the AppHost:
+3. Copy its **App ID** into the AppHost's user secrets and restart the AppHost:
 
    ```
    dotnet user-secrets set Parameters:logto-app-id <app-id> --project src/AspireShowcase.AppHost
    ```
 
-7. Open the `frontend` resource (`http://localhost:5173`) and click **Sign in**.
+**API**
 
-The application, users and settings live in the Postgres volume, so they survive restarts. To start over with an empty Logto (for example, a forgotten admin password), stop the AppHost, delete the volume and repeat the steps above; the App ID changes:
+1. **API resources** → **Create API resource**: any name, identifier `https://api.aspire-showcase`. It must match `ApiResource` in `LogtoExtensions.cs`, which the AppHost passes to the API.
 
-```
-docker volume rm aspireshowcase-postgres-data
-```
+**User**
 
-In Azure, the Logto instance is separate, so it needs its own application, API resource and users: do the same in its admin console with the `web` URL (`https://web.<environment domain>/callback` and `https://web.<environment domain>`), then set the ID as the `LOGTO_APP_ID` variable on the `production` environment and deploy again:
+1. **User management** → create a user to sign in with. The admin account can't sign in to the app.
 
-```
-gh variable set LOGTO_APP_ID --env production --body <app-id>
-```
-
-### Protected endpoint
-
-`GET /api/me` requires a Logto access token for the API resource and returns the caller's user ID, client ID and scopes; without a valid token it answers 401.
-
-To try it, sign in and click **Call /api/me** on the **Protected endpoint** card. The app gets an access token with `getAccessToken` and sends it as `Authorization: Bearer <token>`. It requests the API resource at sign-in, so if you were signed in before creating the resource (step 4), sign out and in again.
-
-You don't create tokens yourself: Logto issues a signed JWT for the API resource (its `aud`), and the API checks it with JWT bearer authentication. The issuer must be Logto's URL + `/oidc`, the audience `Logto:ApiResource`, and the signing keys come from Logto's discovery document.
-
-#### Troubleshooting
-
-| Error | Cause |
-|---|---|
-| `invalid_client` after clicking Sign in | The App ID was created in a different Logto instance: the Azure one, or a local database that has since been deleted. Create the application in the console you open from the dashboard and save its ID again. |
-| `redirect_uri` is not registered | The redirect URIs from step 3 are missing or differ (check the port and `/callback`). |
-| `invalid_target` at sign-in, or 401 from **Call /api/me** | The API resource from step 4 is missing or its identifier differs from `https://api.aspire-showcase`. After adding it, sign out and in again. |
-| No Sign in button | `logto-app-id` isn't set, or the AppHost wasn't restarted after setting it. |
-| The console can't create anything | It was opened on `localhost` instead of the dashboard's `127.0.0.1` link. |
+Then open `http://localhost:5173`, click **Sign in**, and **Call /api/me** on the **Protected endpoint** card.
 
 ## Deploy
 
