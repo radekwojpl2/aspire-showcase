@@ -12,13 +12,32 @@ src/
 
 ## Run locally
 
-Needs .NET 10 and Node.js 22.
+Needs .NET 10, Node.js 22 and Docker (for PostgreSQL and Logto).
 
 ```
 dotnet run --project src/AspireShowcase.AppHost
 ```
 
 Open the `Dashboard:` link, then `frontend`.
+
+## Logto
+
+[Logto](https://logto.io) handles authentication. It runs as two containers from the same image, sharing one database:
+
+| Resource | Port | Serves |
+|---|---|---|
+| `logto` | 3001 | Sign-in and OIDC endpoints (`ENDPOINT`). Seeds the database on first start. |
+| `logto-admin` | 3002 | Admin console at `/console` (`ADMIN_ENDPOINT`) |
+
+Two containers, because a Container App has only one HTTP ingress port.
+
+Its database, `logto`, lives on the `postgres` resource:
+
+- Local: a PostgreSQL container with its data in a Docker volume, so users and settings survive restarts. The password is generated on first run and saved in the AppHost's user secrets.
+- Azure: an Azure Database for PostgreSQL Flexible Server (Burstable B1ms, password auth, TLS). The admin password comes from the `POSTGRES_PASSWORD` secret on the `production` environment, which `setup-azure-oidc.ps1` generates.
+  The connection URL is stored in Key Vault (`kv`) as the `logto-db-url` secret. The Logto Container Apps read it from there with their managed identities (Key Vault Secrets User), so the password is not in their configuration.
+
+The first time, open the `Admin console` link on the `logto-admin` resource and create the admin account. In Azure, do it right after the first deploy: whoever opens the console first becomes the admin.
 
 ## Deploy
 
@@ -30,6 +49,8 @@ One-time setup (after `az login`, `gh auth login`):
 # other region / resource group
 ./scripts/setup-azure-oidc.ps1 -GitHubRepo radekwojpl2/aspire-showcase -Location northeurope -ResourceGroup rg-aspire-demo
 ```
+
+If you already ran it before Logto was added, run it again: it adds the `POSTGRES_PASSWORD` secret and leaves everything else as is.
 
 Then push to `main`: CI runs, and if it passes, Deploy runs.
 
