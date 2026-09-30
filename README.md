@@ -45,6 +45,11 @@ Tear down:
 gh workflow run deprovision.yml -f confirm=rg-aspire-showcase
 ```
 
+This keeps the resource group and its role assignments, so Deploy works again without extra steps.
+
+> [!IMPORTANT]
+> If you run `aspire destroy` instead, it deletes the resource group too, so run `./scripts/setup-azure-oidc.ps1` again before the next deploy.
+
 ## Aspire dashboard
 
 - Local: `Dashboard:` link from `dotnet run`, e.g. `https://localhost:17019/login?t=...`
