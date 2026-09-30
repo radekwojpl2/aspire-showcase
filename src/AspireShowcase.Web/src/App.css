@@ -188,6 +188,21 @@
   overflow-x: auto;
 }
 
+.protected-label {
+  margin: 1rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* A JWT has no spaces, so let it wrap anywhere instead of scrolling. */
+.protected-token {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 .auth-status {
   padding: 2rem;
   text-align: center;

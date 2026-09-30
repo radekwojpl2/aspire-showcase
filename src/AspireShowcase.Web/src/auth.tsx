@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useHandleSignInCallback, useLogto } from '@logto/react';
+import {
+  decodeAccessToken,
+  useHandleSignInCallback,
+  useLogto,
+  type AccessTokenClaims,
+} from '@logto/react';
 
 // Where Logto sends the browser back after sign-in. It has to be listed under
 // "Redirect URIs" on the Logto application, and the site root under "Post sign-out redirect URIs".
@@ -22,16 +27,21 @@ type CurrentUser = {
   scopes: string | null;
 };
 
-// Calls the protected /api/me endpoint with an access token for the API resource.
+// Calls the protected /api/me endpoint with an access token for the API resource,
+// and shows the token it sent: the raw JWT and its decoded claims.
 export function ProtectedData({ apiResource }: { apiResource: string }) {
   const { isAuthenticated, getAccessToken } = useLogto();
   const [user, setUser] = useState<CurrentUser>();
+  const [token, setToken] = useState<string>();
+  const [claims, setClaims] = useState<AccessTokenClaims>();
   const [error, setError] = useState<string>();
 
   const callApi = async () => {
     setError(undefined);
     try {
       const token = await getAccessToken(apiResource);
+      setToken(token);
+      setClaims(token ? decodeAccessToken(token) : undefined);
       const response = await fetch('/api/me', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -57,7 +67,24 @@ export function ProtectedData({ apiResource }: { apiResource: string }) {
           <span>{error}</span>
         </div>
       )}
-      {user && <pre className="protected-result">{JSON.stringify(user, null, 2)}</pre>}
+      {user && (
+        <>
+          <h3 className="protected-label">Response</h3>
+          <pre className="protected-result">{JSON.stringify(user, null, 2)}</pre>
+        </>
+      )}
+      {claims && (
+        <>
+          <h3 className="protected-label">Access token claims</h3>
+          <pre className="protected-result">{JSON.stringify(claims, null, 2)}</pre>
+        </>
+      )}
+      {token && (
+        <>
+          <h3 className="protected-label">Access token (JWT)</h3>
+          <pre className="protected-result protected-token">{token}</pre>
+        </>
+      )}
     </section>
   );
 }
