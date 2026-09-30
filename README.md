@@ -39,6 +39,51 @@ Its database, `logto`, lives on the `postgres` resource:
 
 The first time, open the `Admin console` link on the `logto-admin` resource and create the admin account. In Azure, do it right after the first deploy: whoever opens the console first becomes the admin.
 
+Locally the console is served on `http://127.0.0.1:<port>/console`, not `localhost`: Logto runs in production mode, which blocks the console's API calls from a `localhost` address. Use the link from the dashboard.
+
+### Sign-in in the React app
+
+The React app shows a **Sign in** button once it knows which Logto application to use. It gets Logto's URL and the application's ID from `/api/config` at runtime; until the ID is set, sign-in is hidden and the app works without it.
+
+Set it up locally once:
+
+1. Start the AppHost and open the `Admin console` link on the `logto-admin` resource.
+2. **Applications** → **Create application** → **Single page app** → React.
+3. On the application, add:
+   - **Redirect URIs**: `http://localhost:5173/callback`
+   - **Post sign-out redirect URIs**: `http://localhost:5173`
+
+   The `frontend` resource always runs on port 5173, so these don't change between runs.
+4. **User management** → create a user to sign in with. The admin account belongs to the console's own tenant and can't sign in to the app.
+5. Save the application's **App ID** in the AppHost's user secrets and restart the AppHost:
+
+   ```
+   dotnet user-secrets set Parameters:logto-app-id <app-id> --project src/AspireShowcase.AppHost
+   ```
+
+6. Open the `frontend` resource (`http://localhost:5173`) and click **Sign in**.
+
+The application, users and settings live in the Postgres volume, so they survive restarts. To start over with an empty Logto (for example, a forgotten admin password), stop the AppHost, delete the volume and repeat the steps above; the App ID changes:
+
+```
+docker volume rm aspireshowcase-postgres-data
+```
+
+In Azure, the Logto instance is separate, so it needs its own application: do the same in its admin console with the `web` URL (`https://web.<environment domain>/callback` and `https://web.<environment domain>`), then set the ID as the `LOGTO_APP_ID` variable on the `production` environment and deploy again:
+
+```
+gh variable set LOGTO_APP_ID --env production --body <app-id>
+```
+
+#### Troubleshooting
+
+| Error | Cause |
+|---|---|
+| `invalid_client` after clicking Sign in | The App ID was created in a different Logto instance: the Azure one, or a local database that has since been deleted. Create the application in the console you open from the dashboard and save its ID again. |
+| `redirect_uri` is not registered | The redirect URIs from step 3 are missing or differ (check the port and `/callback`). |
+| No Sign in button | `logto-app-id` isn't set, or the AppHost wasn't restarted after setting it. |
+| The console can't create anything | It was opened on `localhost` instead of the dashboard's `127.0.0.1` link. |
+
 ## Deploy
 
 One-time setup (after `az login`, `gh auth login`):
