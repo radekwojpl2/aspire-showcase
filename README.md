@@ -50,6 +50,24 @@ This keeps the resource group and its role assignments, so Deploy works again wi
 > [!IMPORTANT]
 > If you run `aspire destroy` instead, it deletes the resource group too, so run `./scripts/setup-azure-oidc.ps1` again before the next deploy.
 
+## Application Insights workbook
+
+Deploy publishes **Aspire showcase overview** to `insights` → Workbooks, with a time range picker and four tabs:
+
+| Tab | Shows |
+|---|---|
+| Requests | Request rate and failures, latency, endpoints, failed requests, outgoing calls (server and browser) |
+| Metrics | A picker for any OpenTelemetry metric, HTTP server/client, GC heap, thread pool, all metrics |
+| Browser | Page views, page load time, pages, browser exceptions |
+| Logs & exceptions | Logs by severity, exceptions, warnings and errors, exceptions by type, recent logs |
+
+It is defined in `src/AspireShowcase.AppHost/workbooks`:
+
+- `overview.workbook.json` holds the layout and queries. `__APPINSIGHTS_ID__` is replaced with the Application Insights resource ID at deploy time.
+- `overview.bicep` creates the workbook. The AppHost adds it with `AddBicepTemplate`, in publish mode only.
+
+To change it, edit `overview.workbook.json` and push. Deploys overwrite changes made in the portal. To design a change in the portal instead, edit the workbook there, copy the JSON from Edit → Advanced Editor → Gallery Template into `overview.workbook.json`, set `fallbackResourceIds` back to `["__APPINSIGHTS_ID__"]`, and push.
+
 ## Aspire dashboard
 
 - Local: `Dashboard:` link from `dotnet run`, e.g. `https://localhost:17019/login?t=...`
