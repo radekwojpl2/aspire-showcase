@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import aspireLogo from '/Aspire.png';
 import './App.css';
-import { Account } from './auth.tsx';
+import { Account, ProtectedData } from './auth.tsx';
 
 interface WeatherForecast {
   date: string;
@@ -10,7 +10,7 @@ interface WeatherForecast {
   summary: string;
 }
 
-function App({ signInEnabled }: { signInEnabled: boolean }) {
+function App({ signInEnabled, apiResource }: { signInEnabled: boolean; apiResource?: string }) {
   const [weatherData, setWeatherData] = useState<WeatherForecast[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +159,7 @@ function App({ signInEnabled }: { signInEnabled: boolean }) {
               </div>
             )}
           </div>
+          {signInEnabled && apiResource && <ProtectedData apiResource={apiResource} />}
         </section>
       </main>
 

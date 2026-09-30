@@ -16,6 +16,52 @@ export function SignInCallback() {
   );
 }
 
+type CurrentUser = {
+  id: string | null;
+  clientId: string | null;
+  scopes: string | null;
+};
+
+// Calls the protected /api/me endpoint with an access token for the API resource.
+export function ProtectedData({ apiResource }: { apiResource: string }) {
+  const { isAuthenticated, getAccessToken } = useLogto();
+  const [user, setUser] = useState<CurrentUser>();
+  const [error, setError] = useState<string>();
+
+  const callApi = async () => {
+    setError(undefined);
+    try {
+      const token = await getAccessToken(apiResource);
+      const response = await fetch('/api/me', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      setUser(await response.json());
+    } catch (err) {
+      setUser(undefined);
+      setError(err instanceof Error ? err.message : 'Failed to call the API');
+    }
+  };
+
+  return (
+    <section className="card protected-card" aria-labelledby="protected-heading">
+      <div className="section-header">
+        <h2 id="protected-heading" className="section-title">Protected endpoint</h2>
+        <button className="account-button" onClick={() => void callApi()} type="button">
+          Call /api/me
+        </button>
+      </div>
+      {!isAuthenticated && <p className="protected-hint">Sign in first, or the API answers 401.</p>}
+      {error && (
+        <div className="error-message" role="alert">
+          <span>{error}</span>
+        </div>
+      )}
+      {user && <pre className="protected-result">{JSON.stringify(user, null, 2)}</pre>}
+    </section>
+  );
+}
+
 // Sign-in button, or the signed-in user's name with a sign-out button.
 export function Account() {
   const { isAuthenticated, signIn, signOut, getIdTokenClaims } = useLogto();

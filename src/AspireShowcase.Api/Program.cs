@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Adds OpenTelemetry, health checks, service discovery and resilience defaults.
@@ -7,6 +10,24 @@ builder.Services.AddProblemDetails();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Accepts Logto access tokens issued for this API's resource. Logto's issuer is its public
+// URL + /oidc, and the signing keys come from its discovery document there.
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var logtoEndpoint = builder.Configuration["Logto:Endpoint"];
+        if (!string.IsNullOrEmpty(logtoEndpoint))
+        {
+            options.Authority = $"{logtoEndpoint}/oidc";
+        }
+        options.Audience = builder.Configuration["Logto:ApiResource"];
+        // Locally Logto is served over plain HTTP.
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        // Keep claim names as Logto sends them (sub, scope, client_id).
+        options.MapInboundClaims = false;
+    });
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -45,13 +66,22 @@ api.MapGet("/weatherforecast", (ILogger<Program> logger) =>
 })
 .WithName("GetWeatherForecast");
 
+// Only for signed-in users: needs a Logto access token for this API (401 without one).
+api.MapGet("/me", (ClaimsPrincipal user) => new CurrentUser(
+    user.FindFirstValue("sub"),
+    user.FindFirstValue("client_id"),
+    user.FindFirstValue("scope")))
+.RequireAuthorization()
+.WithName("GetCurrentUser");
+
 // Runtime settings for the React app. All of them are meant to be public: the browser SDKs
 // need them. The Application Insights connection string is only set in Azure, and the Logto
 // app ID only once an application has been created in the Logto console.
 api.MapGet("/config", (IConfiguration config) => new ClientConfig(
     config["APPLICATIONINSIGHTS_CONNECTION_STRING"],
     config["Logto:Endpoint"],
-    config["Logto:AppId"]))
+    config["Logto:AppId"],
+    config["Logto:ApiResource"]))
 .WithName("GetClientConfig");
 
 // Maps /health and /alive endpoints (development only by default).
@@ -72,4 +102,10 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
 
-record ClientConfig(string? ApplicationInsightsConnectionString, string? LogtoEndpoint, string? LogtoAppId);
+record ClientConfig(
+    string? ApplicationInsightsConnectionString,
+    string? LogtoEndpoint,
+    string? LogtoAppId,
+    string? LogtoApiResource);
+
+record CurrentUser(string? Id, string? ClientId, string? Scopes);

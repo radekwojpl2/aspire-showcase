@@ -2,6 +2,7 @@ export type ClientConfig = {
   applicationInsightsConnectionString?: string | null;
   logtoEndpoint?: string | null;
   logtoAppId?: string | null;
+  logtoApiResource?: string | null;
 };
 
 let config: Promise<ClientConfig> | undefined;

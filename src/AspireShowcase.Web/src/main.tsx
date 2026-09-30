@@ -10,14 +10,20 @@ import { initTelemetry } from './telemetry.ts';
 void initTelemetry();
 
 // Sign-in is only shown once a Logto application is configured (the logto-app-id parameter).
-const { logtoEndpoint, logtoAppId } = await loadClientConfig();
+const { logtoEndpoint, logtoAppId, logtoApiResource } = await loadClientConfig();
 const root = createRoot(document.getElementById('root')!);
 
 if (logtoEndpoint && logtoAppId) {
+  // Listing the API resource at sign-in lets the app get access tokens for the API later.
+  const resources = logtoApiResource ? [logtoApiResource] : [];
   root.render(
     <StrictMode>
-      <LogtoProvider config={{ endpoint: logtoEndpoint, appId: logtoAppId }}>
-        {window.location.pathname === callbackPath ? <SignInCallback /> : <App signInEnabled />}
+      <LogtoProvider config={{ endpoint: logtoEndpoint, appId: logtoAppId, resources }}>
+        {window.location.pathname === callbackPath ? (
+          <SignInCallback />
+        ) : (
+          <App signInEnabled apiResource={logtoApiResource ?? undefined} />
+        )}
       </LogtoProvider>
     </StrictMode>,
   );

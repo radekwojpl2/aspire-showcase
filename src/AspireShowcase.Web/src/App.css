@@ -166,6 +166,28 @@
   outline-offset: 3px;
 }
 
+/* Card that calls the protected /api/me endpoint */
+.protected-card {
+  margin-top: 1.5rem;
+}
+
+.protected-hint {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  margin: 0.5rem 0 0;
+}
+
+.protected-result {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--weather-card-bg);
+  border: 1px solid var(--weather-card-border);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  overflow-x: auto;
+}
+
 .auth-status {
   padding: 2rem;
   text-align: center;
