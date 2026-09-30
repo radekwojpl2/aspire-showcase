@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
-      ASPIRE_CLI_VERSION: 13.5.4
+      ASPIRE_CLI_VERSION: 13.6.0
       # Read by the AppHost's Azure provisioning during `aspire deploy`.
       Azure__SubscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       Azure__Location: ${{ vars.AZURE_LOCATION }}

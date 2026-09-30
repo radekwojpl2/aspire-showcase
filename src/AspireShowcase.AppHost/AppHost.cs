@@ -10,6 +10,14 @@ var web = builder.AddProject<Projects.AspireShowcase_Api>("web")
     .WithHttpHealthCheck("/health")
     .WithExternalHttpEndpoints();
 
+// Azure only: keeps logs, traces and metrics in Application Insights.
+// Locally, telemetry goes to the Aspire dashboard as before.
+if (builder.ExecutionContext.IsPublishMode)
+{
+    var insights = builder.AddAzureApplicationInsights("insights");
+    web.WithReference(insights);
+}
+
 // Vite dev server with hot reload, used for local development only.
 var frontend = builder.AddViteApp("frontend", "../AspireShowcase.Web")
     .WithReference(web)
