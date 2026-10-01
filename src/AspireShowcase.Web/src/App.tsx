@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import aspireLogo from '/Aspire.png';
 import './App.css';
 import { Account, ProtectedData } from './auth.tsx';
+import { Todos } from './todos.tsx';
 
 interface WeatherForecast {
   date: string;
@@ -159,6 +160,7 @@ function App({ signInEnabled, apiResource }: { signInEnabled: boolean; apiResour
               </div>
             )}
           </div>
+          <Todos />
           {signInEnabled && apiResource && <ProtectedData apiResource={apiResource} />}
         </section>
       </main>

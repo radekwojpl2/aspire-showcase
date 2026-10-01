@@ -166,6 +166,67 @@
   outline-offset: 3px;
 }
 
+/* To-do list card, backed by /api/todos */
+.todos-card {
+  margin-top: 1.5rem;
+}
+
+.todo-form {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.todo-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--weather-card-border);
+  background: var(--weather-card-bg);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--weather-card-bg);
+  border: 1px solid var(--weather-card-border);
+}
+
+.todo-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.todo-label.done span {
+  text-decoration: line-through;
+  color: var(--text-tertiary);
+}
+
+.account-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Card that calls the protected /api/me endpoint */
 .protected-card {
   margin-top: 1.5rem;
