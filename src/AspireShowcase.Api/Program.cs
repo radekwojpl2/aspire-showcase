@@ -15,6 +15,9 @@ builder.AddNpgsqlDbContext<AppDbContext>("app-db");
 // with a health check and traces for the Redis commands.
 builder.AddRedisDistributedCache("cache");
 
+// Custom spans, span events and metrics for the to-do list.
+builder.Services.AddSingleton<TodoTelemetry>();
+
 builder.Services.AddProblemDetails();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
