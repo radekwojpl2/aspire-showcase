@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 
 record Notification(Guid Id, DateTimeOffset CreatedAt, string Kind, string Message);
 
@@ -11,7 +12,7 @@ record Notification(Guid Id, DateTimeOffset CreatedAt, string Kind, string Messa
 /// Notifications are an extra, so the service being down must not hold up the to-do list:
 /// a call gets a few seconds, and after a failure the service is left alone for a while.
 /// </remarks>
-sealed class NotificationsClient(HttpClient http, ILogger<NotificationsClient> logger)
+sealed class NotificationsClient(HttpClient http, NotificationsMetrics metrics, ILogger<NotificationsClient> logger)
 {
     // The resilience defaults would keep retrying for up to 30 seconds.
     static readonly TimeSpan Budget = TimeSpan.FromSeconds(3);
@@ -22,7 +23,7 @@ sealed class NotificationsClient(HttpClient http, ILogger<NotificationsClient> l
 
     /// <summary>
     /// Tells the notifications service about a change. A failure to notify never fails
-    /// the change itself: it is logged and marked on the current span.
+    /// the change itself: it is logged, counted and marked on the current span.
     /// </summary>
     public async Task NotifyAsync(string kind, string message, CancellationToken cancellation)
     {
@@ -34,11 +35,15 @@ sealed class NotificationsClient(HttpClient http, ILogger<NotificationsClient> l
                 response.EnsureSuccessStatusCode();
                 return true;
             }, cancellation);
+            metrics.Sent(kind, "sent");
             Activity.Current?.AddEvent(new ActivityEvent("notification.sent"));
         }
         catch (Exception exception) when (!cancellation.IsCancellationRequested)
         {
-            Activity.Current?.AddEvent(new ActivityEvent("notification.failed"));
+            // Skipped: not tried, because the service failed moments ago.
+            var result = exception is ServiceSkippedException ? "skipped" : "failed";
+            metrics.Sent(kind, result);
+            Activity.Current?.AddEvent(new ActivityEvent($"notification.{result}"));
             logger.LogWarning(exception, "Could not send the {Kind} notification", kind);
         }
     }
@@ -52,7 +57,7 @@ sealed class NotificationsClient(HttpClient http, ILogger<NotificationsClient> l
     {
         if (Stopwatch.GetTimestamp() < Volatile.Read(ref _skipUntil))
         {
-            throw new InvalidOperationException(
+            throw new ServiceSkippedException(
                 $"The notifications service failed moments ago; not calling it for {RetryAfter.TotalSeconds} seconds.");
         }
 
@@ -68,6 +73,24 @@ sealed class NotificationsClient(HttpClient http, ILogger<NotificationsClient> l
             throw;
         }
     }
+
+    sealed class ServiceSkippedException(string message) : Exception(message);
+}
+
+/// <summary>
+/// The API's side of the notifications: how many it tried to send and how that went.
+/// A singleton, because the client above is created per request.
+/// </summary>
+sealed class NotificationsMetrics(IMeterFactory meterFactory)
+{
+    // The same meter as the to-do metrics; ServiceDefaults subscribes to it by this name.
+    readonly Counter<long> _sent = meterFactory.Create("AspireShowcase.Api").CreateCounter<long>(
+        "todos.notifications", "{notification}", "Notifications the API tried to send, by kind and result.");
+
+    /// <param name="result">sent, failed or skipped.</param>
+    public void Sent(string kind, string result) => _sent.Add(1,
+        new KeyValuePair<string, object?>("kind", kind),
+        new KeyValuePair<string, object?>("result", result));
 }
 
 static class NotificationEndpoints

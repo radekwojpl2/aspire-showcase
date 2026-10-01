@@ -21,6 +21,7 @@ builder.Services.AddSingleton<TodoListCache>();
 
 // The notifications service, told about to-do items being added and removed. "notifications"
 // is its resource name in the AppHost, resolved by service discovery.
+builder.Services.AddSingleton<NotificationsMetrics>();
 builder.Services.AddHttpClient<NotificationsClient>(client =>
     client.BaseAddress = new Uri("https+http://notifications"));
 

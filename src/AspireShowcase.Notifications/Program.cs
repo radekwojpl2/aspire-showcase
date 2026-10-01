@@ -8,32 +8,54 @@ builder.AddServiceDefaults();
 builder.Services.AddProblemDetails();
 builder.Services.AddSingleton<NotificationStore>();
 
+// Custom spans, span events and metrics for the notifications.
+builder.Services.AddSingleton<NotificationTelemetry>();
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
 
 // Called by the API after a to-do item is added or removed.
-app.MapPost("/notifications", (CreateNotification request, NotificationStore store, ILogger<Program> logger) =>
+app.MapPost("/notifications", (
+    CreateNotification request, NotificationStore store, NotificationTelemetry telemetry, ILogger<Program> logger) =>
 {
-    if (string.IsNullOrWhiteSpace(request.Kind) || string.IsNullOrWhiteSpace(request.Message)
-        || request.Message.Length > NotificationStore.MaxMessageLength)
+    using var activity = telemetry.StartActivity("notifications.record");
+
+    if (string.IsNullOrWhiteSpace(request.Kind) || string.IsNullOrWhiteSpace(request.Message))
     {
-        return Results.ValidationProblem(new Dictionary<string, string[]>
-        {
-            ["message"] = [$"Kind and message are required; the message can be at most {NotificationStore.MaxMessageLength} characters."],
-        });
+        telemetry.Rejected(activity, "missing kind or message");
+        return Invalid();
     }
 
-    var notification = store.Add(request.Kind, request.Message);
+    if (request.Message.Length > NotificationStore.MaxMessageLength)
+    {
+        telemetry.Rejected(activity, "message too long");
+        return Invalid();
+    }
+
+    var notification = store.Add(request.Kind, request.Message, out var evicted);
+    telemetry.Recorded(activity, notification, evicted);
     // The message holds what the user typed, so only the kind is logged.
     logger.LogInformation("Notification {Id} of kind {Kind} recorded", notification.Id, notification.Kind);
     return Results.Created($"/notifications/{notification.Id}", notification);
+
+    static IResult Invalid() => Results.ValidationProblem(new Dictionary<string, string[]>
+    {
+        ["message"] = [$"Kind and message are required; the message can be at most {NotificationStore.MaxMessageLength} characters."],
+    });
 })
 .WithName("CreateNotification");
 
 // The most recent notifications, newest first.
-app.MapGet("/notifications", (NotificationStore store) => store.Recent())
-    .WithName("GetNotifications");
+app.MapGet("/notifications", (NotificationStore store, NotificationTelemetry telemetry) =>
+{
+    using var activity = telemetry.StartActivity("notifications.list");
+
+    var recent = store.Recent();
+    telemetry.Listed(activity, recent.Count);
+    return recent;
+})
+.WithName("GetNotifications");
 
 // Maps /health and /alive endpoints (development only by default).
 app.MapDefaultEndpoints();
@@ -56,17 +78,22 @@ sealed class NotificationStore
 
     readonly ConcurrentQueue<Notification> _notifications = new();
 
-    public Notification Add(string kind, string message)
+    public int Count => _notifications.Count;
+
+    /// <param name="evicted">How many old notifications were dropped to stay within capacity.</param>
+    public Notification Add(string kind, string message, out int evicted)
     {
         var notification = new Notification(Guid.NewGuid(), DateTimeOffset.UtcNow, kind, message);
         _notifications.Enqueue(notification);
-        while (_notifications.Count > Capacity)
+
+        evicted = 0;
+        while (_notifications.Count > Capacity && _notifications.TryDequeue(out _))
         {
-            _notifications.TryDequeue(out _);
+            evicted++;
         }
 
         return notification;
     }
 
-    public IEnumerable<Notification> Recent() => _notifications.Reverse();
+    public List<Notification> Recent() => _notifications.Reverse().ToList();
 }
