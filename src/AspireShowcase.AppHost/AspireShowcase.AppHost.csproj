@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AspireShowcase.Api\AspireShowcase.Api.csproj" />
+    <ProjectReference Include="..\AspireShowcase.Notifications\AspireShowcase.Notifications.csproj" />
   </ItemGroup>
 
   <ItemGroup>

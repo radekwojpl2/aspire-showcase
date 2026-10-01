@@ -7,7 +7,10 @@ builder.UseReadableAzureResourceNames();
 var acaEnv = builder.AddAzureContainerAppEnvironment("aca-env");
 
 var web = builder.AddWeb().WithFailureCommands();
-builder.AddAzureMonitoring(acaEnv, web);
+var notifications = builder.AddNotifications();
+web.WithNotifications(notifications);
+
+builder.AddAzureMonitoring(acaEnv, web, notifications);
 
 var postgres = builder.AddPostgresServer();
 web.WithAppDatabase(postgres);

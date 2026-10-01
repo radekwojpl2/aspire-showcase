@@ -19,6 +19,11 @@ builder.AddRedisDistributedCache("cache");
 builder.Services.AddSingleton<TodoTelemetry>();
 builder.Services.AddSingleton<TodoListCache>();
 
+// The notifications service, told about to-do items being added and removed. "notifications"
+// is its resource name in the AppHost, resolved by service discovery.
+builder.Services.AddHttpClient<NotificationsClient>(client =>
+    client.BaseAddress = new Uri("https+http://notifications"));
+
 // Failures that the Aspire dashboard can switch on, to see how they show up in telemetry.
 builder.Services.AddSingleton<SimulatedFailures>();
 
@@ -98,6 +103,7 @@ api.MapGet("/me", (ClaimsPrincipal user) => new CurrentUser(
 .WithName("GetCurrentUser");
 
 api.MapTodos();
+api.MapNotifications();
 
 if (app.Environment.IsDevelopment())
 {

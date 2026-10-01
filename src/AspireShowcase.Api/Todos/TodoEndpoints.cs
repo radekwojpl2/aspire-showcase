@@ -45,7 +45,8 @@ static class TodoEndpoints
         .WithName("GetTodo");
 
         todos.MapPost("/", async (
-            CreateTodo request, AppDbContext db, TodoListCache cache, TodoTelemetry telemetry) =>
+            CreateTodo request, AppDbContext db, TodoListCache cache, TodoTelemetry telemetry,
+            NotificationsClient notifications, CancellationToken cancellation) =>
         {
             using var activity = telemetry.StartActivity("todos.create");
 
@@ -61,6 +62,7 @@ static class TodoEndpoints
             telemetry.Changed(activity, "created", todo.Id);
 
             await cache.RemoveAsync();
+            await notifications.NotifyAsync("todo-added", $"To-do added: {todo.Title}", cancellation);
             return Results.CreatedAtRoute("GetTodo", new { id = todo.Id }, todo);
         })
         .WithName("CreateTodo");
@@ -98,19 +100,24 @@ static class TodoEndpoints
         .WithName("UpdateTodo");
 
         todos.MapDelete("/{id:int}", async (
-            int id, AppDbContext db, TodoListCache cache, TodoTelemetry telemetry) =>
+            int id, AppDbContext db, TodoListCache cache, TodoTelemetry telemetry,
+            NotificationsClient notifications, CancellationToken cancellation) =>
         {
             using var activity = telemetry.StartActivity("todos.delete");
 
-            if (await db.Todos.Where(todo => todo.Id == id).ExecuteDeleteAsync() == 0)
+            // Loaded first, because the notification names the item that was removed.
+            if (await db.Todos.FindAsync(id) is not { } todo)
             {
                 telemetry.Rejected(activity, "not found");
                 return Results.NotFound();
             }
 
+            db.Todos.Remove(todo);
+            await db.SaveChangesAsync();
             telemetry.Changed(activity, "deleted", id);
 
             await cache.RemoveAsync();
+            await notifications.NotifyAsync("todo-removed", $"To-do removed: {todo.Title}", cancellation);
             return Results.NoContent();
         })
         .WithName("DeleteTodo");

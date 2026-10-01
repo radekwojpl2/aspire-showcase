@@ -11,7 +11,7 @@ static class MonitoringExtensions
     public static void AddAzureMonitoring(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<AzureContainerAppEnvironmentResource> acaEnv,
-        IResourceBuilder<ProjectResource> web)
+        params IResourceBuilder<ProjectResource>[] projects)
     {
         if (!builder.ExecutionContext.IsPublishMode)
         {
@@ -25,7 +25,10 @@ static class MonitoringExtensions
 
         var insights = builder.AddAzureApplicationInsights("insights")
             .WithLogAnalyticsWorkspace(logs);
-        web.WithReference(insights);
+        foreach (var project in projects)
+        {
+            project.WithReference(insights);
+        }
 
         // Shared workbooks, listed under Workbooks in Application Insights: an overview with
         // requests, metrics, browser telemetry and logs, and one for troubleshooting the API
