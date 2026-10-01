@@ -1,0 +1,863 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Aspire showcase API\nHealth of the API in the `web` Container App, with its PostgreSQL database and Redis cache, for finding out what is wrong: start on **Overview**, then follow the failing part. Deployed from `src/AspireShowcase.AppHost/workbooks`; changes made in the portal are overwritten on the next deploy."
+      },
+      "name": "title"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2001",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Time range",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 14400000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 1800000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                }
+              ],
+              "allowCustom": true
+            }
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2002",
+            "version": "KqlParameterItem/1.0",
+            "name": "tab",
+            "type": 1,
+            "isHiddenWhenLocked": true,
+            "value": "overview"
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components"
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let req = requests\n| summarize requests = count(), server_errors = countif(toint(resultCode) >= 500), client_errors = countif(toint(resultCode) between (400 .. 499)), p95_ms = round(percentile(duration, 95), 1);\nlet exc = exceptions | where client_Type != \"Browser\" | summarize exceptions = count();\nlet dep = dependencies | where client_Type != \"Browser\"\n| summarize failed_database_calls = countif(success == false and type contains \"postgres\"), failed_cache_calls = countif(success == false and type contains \"redis\");\nreq | extend key = 1\n| join kind=fullouter (exc | extend key = 1) on key\n| join kind=fullouter (dep | extend key = 1) on key\n| project requests, server_errors, client_errors, p95_ms, exceptions, failed_database_calls, failed_cache_calls",
+        "size": 0,
+        "title": "In the selected time range",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": {
+          "rowLimit": 100,
+          "filter": true
+        }
+      },
+      "customWidth": "100",
+      "name": "summary"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2003",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Overview",
+            "subTarget": "overview",
+            "style": "link"
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2004",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Failures",
+            "subTarget": "failures",
+            "style": "link"
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2005",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Database",
+            "subTarget": "database",
+            "style": "link"
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2006",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Cache",
+            "subTarget": "cache",
+            "style": "link"
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2007",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "To-dos",
+            "subTarget": "todos",
+            "style": "link"
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2008",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Runtime",
+            "subTarget": "runtime",
+            "style": "link"
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2009",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Trace lookup",
+            "subTarget": "trace",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "tabs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| extend status = case(toint(resultCode) >= 500, \"5xx\", toint(resultCode) >= 400, \"4xx\", \"ok\")\n| summarize count() by status, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Requests by status",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "requests-by-status"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| summarize p50 = percentile(duration, 50), p95 = percentile(duration, 95), p99 = percentile(duration, 99) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Latency (ms)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "latency"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| summarize requests = count(), server_errors = countif(toint(resultCode) >= 500), client_errors = countif(toint(resultCode) between (400 .. 499)), avg_ms = round(avg(duration), 1), p95_ms = round(percentile(duration, 95), 1), p99_ms = round(percentile(duration, 99), 1) by name\n| order by server_errors desc, p95_ms desc",
+              "size": 0,
+              "title": "Endpoints, worst first",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "endpoints"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let deps = dependencies\n| where client_Type != \"Browser\"\n| summarize database_calls = countif(type contains \"postgres\"), database_ms = sumif(duration, type contains \"postgres\"), cache_calls = countif(type contains \"redis\"), cache_ms = sumif(duration, type contains \"redis\") by operation_Id;\nrequests\n| join kind=leftouter deps on operation_Id\n| summarize requests = count(), request_ms = round(avg(duration), 1), database_calls = round(avg(coalesce(database_calls, 0)), 1), database_ms = round(avg(coalesce(database_ms, 0.0)), 1), cache_calls = round(avg(coalesce(cache_calls, 0)), 1), cache_ms = round(avg(coalesce(cache_ms, 0.0)), 1) by name\n| order by request_ms desc",
+              "size": 0,
+              "title": "Where the time goes, per endpoint (averages per request)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "time-per-endpoint"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| top 50 by duration desc\n| project timestamp, name, resultCode, duration_ms = round(duration, 1), operation_Id",
+              "size": 0,
+              "title": "Slowest requests (copy operation_Id into Trace lookup)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "slowest-requests"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "overview"
+      },
+      "name": "overview-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| where toint(resultCode) >= 500\n| summarize count() by name, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Server errors (5xx) by endpoint",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "errors-by-endpoint"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "exceptions\n| where client_Type != \"Browser\"\n| summarize count() by type, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Exceptions by type",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "exceptions-over-time"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let exc = exceptions\n| where client_Type != \"Browser\"\n| summarize arg_min(timestamp, type, outerMessage) by operation_Id\n| project operation_Id, exception = type, message = outerMessage;\nrequests\n| where toint(resultCode) >= 500 or success == false\n| join kind=leftouter exc on operation_Id\n| project timestamp, name, resultCode, duration_ms = round(duration, 1), exception, message, operation_Id\n| order by timestamp desc",
+              "size": 0,
+              "title": "Failed requests with their exception (copy operation_Id into Trace lookup)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "failed-requests"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "exceptions\n| where client_Type != \"Browser\"\n| summarize count = count(), first_seen = min(timestamp), last_seen = max(timestamp), sample_operation_Id = take_any(operation_Id) by type, outerMessage, method\n| order by count desc",
+              "size": 0,
+              "title": "Exceptions, most frequent first",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "exceptions"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "traces\n| where client_Type != \"Browser\" and severityLevel >= 2\n| project timestamp, level = case(severityLevel == 2, \"Warning\", severityLevel == 3, \"Error\", \"Critical\"), message, operation_Id\n| order by timestamp desc",
+              "size": 0,
+              "title": "Warning and error logs",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "error-logs"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "failures"
+      },
+      "name": "failures-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "PostgreSQL calls made by the API (the `app` database, through EF Core and Npgsql)."
+            },
+            "name": "database-help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and type contains \"postgres\"\n| summarize queries = count(), failed = countif(success == false) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Queries and failures",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "database-calls"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and type contains \"postgres\"\n| summarize p50 = percentile(duration, 50), p95 = percentile(duration, 95), p99 = percentile(duration, 99) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Query duration (ms)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "database-latency"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and type contains \"postgres\"\n| extend statement = iff(isempty(data), name, data)\n| summarize calls = count(), failed = countif(success == false), avg_ms = round(avg(duration), 2), p95_ms = round(percentile(duration, 95), 2), total_ms = round(sum(duration), 1) by statement\n| order by total_ms desc",
+              "size": 0,
+              "title": "Statements, by total time",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "database-statements"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and type contains \"postgres\"\n| where success == false\n| project timestamp, statement = iff(isempty(data), name, data), resultCode, duration_ms = round(duration, 1), target, operation_Id\n| order by timestamp desc",
+              "size": 0,
+              "title": "Failed queries (copy operation_Id into Trace lookup)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "database-failures"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name startswith \"db.client.connection\"\n| summarize value = sum(valueSum) / sum(valueCount) by name, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Connection pool (Npgsql metrics)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "database-connections"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name startswith \"db.client\" or name startswith \"npgsql\"\n| summarize average = round(sum(valueSum) / sum(valueCount), 3), samples = sum(valueCount), latest = max(timestamp) by name\n| order by name asc",
+              "size": 0,
+              "title": "All database client metrics",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "database-metrics"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "database"
+      },
+      "name": "database-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "Redis commands sent by the API. The to-do list is cached for 5 minutes and removed on every change, so a `GET /api/todos` that makes no database call was answered from the cache."
+            },
+            "name": "cache-help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let withDatabase = dependencies | where client_Type != \"Browser\" and type contains \"postgres\" | distinct operation_Id;\nrequests\n| where name in (\"GET /api/todos/\", \"GET /api/todos\")\n| extend result = iff(operation_Id in (withDatabase), \"miss (read the database)\", \"hit\")\n| summarize count() by result, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "To-do list requests: cache hits and misses",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "cache-hit-rate"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and type contains \"redis\"\n| summarize count() by name, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Commands",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "cache-commands"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and type contains \"redis\"\n| summarize p50 = percentile(duration, 50), p95 = percentile(duration, 95), p99 = percentile(duration, 99) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Command duration (ms)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "cache-latency"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and type contains \"redis\"\n| summarize calls = count(), failed = countif(success == false), avg_ms = round(avg(duration), 2), p95_ms = round(percentile(duration, 95), 2) by name, target\n| order by calls desc",
+              "size": 0,
+              "title": "By command",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "cache-by-command"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and type contains \"redis\"\n| where success == false\n| project timestamp, name, data, resultCode, duration_ms = round(duration, 1), target, operation_Id\n| order by timestamp desc",
+              "size": 0,
+              "title": "Failed commands (copy operation_Id into Trace lookup)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "cache-failures"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "cache"
+      },
+      "name": "cache-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "Telemetry the API records itself for the to-do list (`TodoTelemetry.cs`): a span per operation, events inside the spans, and the `todos.*` metrics."
+            },
+            "name": "todos-help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"todos.changes\"\n| summarize changes = sum(valueSum) by change = tostring(customDimensions.change), bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Changes (todos.changes, counter)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "todos-changes"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"todos.list.reads\"\n| summarize reads = sum(valueSum) by result = tostring(customDimensions.result), bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "List reads by cache result (todos.list.reads, counter)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "todos-list-reads"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"todos.completion.time\"\n| summarize average = sum(valueSum) / sum(valueCount), longest = max(valueMax) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Time to complete an item, seconds (todos.completion.time, histogram)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "todos-completion-time"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"todos.items\"\n| summarize items = sum(valueSum) / sum(valueCount) by state = tostring(customDimensions.state), bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Items in the list (todos.items, gauge)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "todos-items"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and name startswith \"todos.\"\n| summarize calls = count(), failed = countif(success == false), avg_ms = round(avg(duration), 2), p95_ms = round(percentile(duration, 95), 2) by name\n| order by calls desc",
+              "size": 0,
+              "title": "Operations (custom spans)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "todos-operations"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "traces\n| where client_Type != \"Browser\" and (message startswith \"todo.\" or message startswith \"cache.\")\n| project timestamp, event = message, details = tostring(customDimensions), operation_Id\n| order by timestamp desc",
+              "size": 0,
+              "title": "Span events (copy operation_Id into Trace lookup)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "todos-events"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "todos"
+      },
+      "name": "todos-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name in (\"http.server.active_requests\")\n| summarize value = sum(valueSum) / sum(valueCount) by name, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Requests in progress",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "active-requests"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name in (\"dotnet.process.memory.working_set\", \"dotnet.gc.last_collection.heap.size\")\n| summarize value = sum(valueSum) / sum(valueCount) by name, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Memory (bytes)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "memory"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name in (\"dotnet.thread_pool.thread.count\", \"dotnet.thread_pool.queue.length\")\n| summarize value = sum(valueSum) / sum(valueCount) by name, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Thread pool",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "thread-pool"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| summarize instances = dcount(cloud_RoleInstance) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Running instances",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "instances"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "traces\n| where message startswith \"Application started\" or message startswith \"Now listening on\" or message startswith \"Application is shutting down\"\n| project timestamp, message, cloud_RoleInstance\n| order by timestamp desc",
+              "size": 0,
+              "title": "App starts and stops (a start nobody deployed is a crash or a restart)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "starts"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "runtime"
+      },
+      "name": "runtime-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "Everything recorded for one request, in order: the request, its database and cache calls, logs and exceptions. Paste an `operation_Id` from any table in this workbook."
+            },
+            "name": "trace-help"
+          },
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b200a",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "OperationId",
+                  "label": "operation_Id",
+                  "type": 1,
+                  "value": ""
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components"
+            },
+            "name": "trace-parameters"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "union\n(requests | project timestamp, kind = \"request\", what = name, duration_ms = round(duration, 2), result = resultCode, operation_Id),\n(dependencies | project timestamp, kind = strcat(\"call: \", type), what = iff(isempty(data), name, data), duration_ms = round(duration, 2), result = iff(success == true, \"ok\", strcat(\"failed \", resultCode)), operation_Id),\n(traces | project timestamp, kind = \"log\", what = message, duration_ms = real(null), result = case(severityLevel >= 3, \"Error\", severityLevel == 2, \"Warning\", \"\"), operation_Id),\n(exceptions | project timestamp, kind = \"exception\", what = strcat(type, \": \", outerMessage), duration_ms = real(null), result = \"\", operation_Id)\n| where operation_Id == \"{OperationId}\"\n| project-away operation_Id\n| order by timestamp asc",
+              "size": 0,
+              "title": "Timeline",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "trace-timeline"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "trace"
+      },
+      "name": "trace-group"
+    }
+  ],
+  "fallbackResourceIds": [
+    "__APPINSIGHTS_ID__"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
