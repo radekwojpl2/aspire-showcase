@@ -1,10 +1,15 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Adds OpenTelemetry, health checks, service discovery and resilience defaults.
 builder.AddServiceDefaults();
+
+// The app's PostgreSQL database. The AppHost passes its connection string as "app-db";
+// this also adds a health check, retries, and traces and metrics for the queries.
+builder.AddNpgsqlDbContext<AppDbContext>("app-db");
 
 builder.Services.AddProblemDetails();
 
@@ -30,6 +35,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+// Creates or updates the tables on startup. Enough for a single instance; with several,
+// run migrations as a separate step so they don't race.
+using (var scope = app.Services.CreateScope())
+{
+    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+}
 
 app.UseExceptionHandler();
 
@@ -73,6 +85,9 @@ api.MapGet("/me", (ClaimsPrincipal user) => new CurrentUser(
     user.FindFirstValue("scope")))
 .RequireAuthorization()
 .WithName("GetCurrentUser");
+
+api.MapTodos();
+
 
 // Runtime settings for the React app. All of them are meant to be public: the browser SDKs
 // need them. The Application Insights connection string is only set in Azure, and the Logto

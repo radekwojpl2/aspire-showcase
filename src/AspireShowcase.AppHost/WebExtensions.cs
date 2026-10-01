@@ -10,6 +10,11 @@ static class WebExtensions
         builder.AddProject<Projects.AspireShowcase_Api>("web")
             .WithHttpHealthCheck("/health")
             .WithExternalHttpEndpoints()
+            // References only pass connection strings: the separate APP_DB_PASSWORD, APP_DB_URI...
+            // variables would put the database password in the Container App itself, bypassing
+            // Key Vault. This has to come before the WithReference calls to apply to them.
+            .WithReferenceEnvironment(
+                ReferenceEnvironmentInjectionFlags.All & ~ReferenceEnvironmentInjectionFlags.ConnectionProperties)
             // Link on the dashboard; Swagger UI is only mapped in Development.
             .WithUrl("/swagger", "Swagger");
 

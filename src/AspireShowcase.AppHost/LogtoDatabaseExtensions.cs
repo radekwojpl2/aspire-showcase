@@ -16,47 +16,17 @@ static class LogtoDatabaseExtensions
     // the Npgsql format, so the URL is stored as its own secret.
     const string DbUrlSecretName = "logto-db-url";
 
-    /// <summary>
-    /// PostgreSQL for Logto. Locally it runs in a container with its data in a volume,
-    /// so users and Logto settings survive restarts; in Azure it's a Flexible Server.
-    /// </summary>
-    /// <remarks>
-    /// Logto connects with a user name and password (it can't use Entra ID). The password is
-    /// generated once and kept in user secrets locally; Deploy passes it from a GitHub secret.
-    /// </remarks>
-    public static LogtoDatabase AddLogtoDatabase(this IDistributedApplicationBuilder builder)
+    /// <summary>Adds Logto's database to the PostgreSQL server.</summary>
+    public static LogtoDatabase AddLogtoDatabase(this PostgresServer postgres)
     {
-        var userName = builder.AddParameter("postgres-username", "logto_admin");
-        var password = builder.AddParameter(
-            "postgres-password",
-            // No special characters: the password goes into a postgresql:// URL.
-            new GenerateParameterDefault { MinLength = 32, Special = false },
-            secret: true,
-            persist: true);
+        var database = postgres.Server.AddDatabase("logto-db", databaseName: "logto");
 
-        var postgres = builder.AddAzurePostgresFlexibleServer("postgres");
-
-        // Azure only: connection strings are kept in Key Vault, and the Logto Container Apps
-        // read DB_URL from there with their managed identities instead of holding the password.
-        var keyVault = builder.ExecutionContext.IsPublishMode ? builder.AddAzureKeyVault("kv") : null;
-        if (keyVault is not null)
+        if (postgres.KeyVault is not null)
         {
-            postgres.WithPasswordAuthentication(keyVault, userName, password);
-        }
-        else
-        {
-            postgres.WithPasswordAuthentication(userName, password);
+            WriteDbUrlSecret(postgres.Server, database.Resource.DatabaseName);
         }
 
-        postgres.RunAsContainer(container => container.WithDataVolume("aspireshowcase-postgres-data"));
-        var database = postgres.AddDatabase("logto-db", databaseName: "logto");
-
-        if (keyVault is not null)
-        {
-            WriteDbUrlSecret(postgres, database.Resource.DatabaseName);
-        }
-
-        return new LogtoDatabase(postgres, database, keyVault);
+        return new LogtoDatabase(postgres.Server, database, postgres.KeyVault);
     }
 
     /// <summary>Gives a Logto container its DB_URL and waits for the database.</summary>

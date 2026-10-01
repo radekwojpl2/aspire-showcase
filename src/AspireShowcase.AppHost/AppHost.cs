@@ -9,8 +9,10 @@ var acaEnv = builder.AddAzureContainerAppEnvironment("aca-env");
 var web = builder.AddWeb();
 builder.AddAzureMonitoring(acaEnv, web);
 
-var logtoDb = builder.AddLogtoDatabase();
-var logto = builder.AddLogto(logtoDb);
+var postgres = builder.AddPostgresServer();
+web.WithAppDatabase(postgres);
+
+var logto = builder.AddLogto(postgres.AddLogtoDatabase());
 web.WithLogto(logto);
 
 builder.AddFrontend(web);

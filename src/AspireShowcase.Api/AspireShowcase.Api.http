@@ -1,6 +1,29 @@
 @AspireShowcase.Api_HostAddress = http://localhost:5268
 
-GET {{AspireShowcase.Api_HostAddress}}/weatherforecast/
+GET {{AspireShowcase.Api_HostAddress}}/api/weatherforecast/
 Accept: application/json
+
+###
+
+GET {{AspireShowcase.Api_HostAddress}}/api/todos
+Accept: application/json
+
+###
+
+POST {{AspireShowcase.Api_HostAddress}}/api/todos
+Content-Type: application/json
+
+{ "title": "Try the Aspire dashboard" }
+
+###
+
+PUT {{AspireShowcase.Api_HostAddress}}/api/todos/1
+Content-Type: application/json
+
+{ "title": "Try the Aspire dashboard", "isDone": true }
+
+###
+
+DELETE {{AspireShowcase.Api_HostAddress}}/api/todos/1
 
 ###
