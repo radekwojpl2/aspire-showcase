@@ -131,12 +131,20 @@
             "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2008",
             "cellValue": "tab",
             "linkTarget": "parameter",
+            "linkLabel": "Notifications",
+            "subTarget": "notifications",
+            "style": "link"
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2009",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
             "linkLabel": "Runtime",
             "subTarget": "runtime",
             "style": "link"
           },
           {
-            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2009",
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b200a",
             "cellValue": "tab",
             "linkTarget": "parameter",
             "linkLabel": "Trace lookup",
@@ -707,6 +715,145 @@
         "groupType": "editable",
         "items": [
           {
+            "type": 1,
+            "content": {
+              "json": "The notifications service and the API calls into it: the API sends a notification after a to-do item is added or removed. Custom telemetry from `NotificationTelemetry.cs` in the service and `NotificationsClient.cs` in the API."
+            },
+            "name": "notifications-help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"todos.notifications\"\n| summarize notifications = sum(valueSum) by result = tostring(customDimensions.result), bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Sent by the API, by result (todos.notifications, counter)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "notifications-sent"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"notifications.received\"\n| summarize notifications = sum(valueSum) by kind = tostring(customDimensions.kind), bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Received by the service, by kind (notifications.received, counter)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "notifications-received"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"notifications.stored\"\n| summarize stored = sum(valueSum) / sum(valueCount) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Kept in memory (notifications.stored, gauge)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "notifications-stored"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"notifications.message.length\"\n| summarize average = sum(valueSum) / sum(valueCount), longest = max(valueMax) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Message length, characters (notifications.message.length, histogram)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "notifications-message-length"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and (target contains \"notifications\" or data contains \"notifications\")\n| summarize calls = count(), failed = countif(success == false), avg_ms = round(avg(duration), 2), p95_ms = round(percentile(duration, 95), 2) by name, resultCode\n| order by calls desc",
+              "size": 0,
+              "title": "Calls from the API to the service",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "notifications-calls"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and name startswith \"notifications.\"\n| summarize calls = count(), failed = countif(success == false), avg_ms = round(avg(duration), 2), p95_ms = round(percentile(duration, 95), 2) by name\n| order by calls desc",
+              "size": 0,
+              "title": "Operations in the service (custom spans)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "notifications-operations"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "traces\n| where client_Type != \"Browser\" and message startswith \"notification.\"\n| project timestamp, event = message, service = cloud_RoleName, details = tostring(customDimensions), operation_Id\n| order by timestamp desc",
+              "size": 0,
+              "title": "Span events (copy operation_Id into Trace lookup)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "notifications-events"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "notifications"
+      },
+      "name": "notifications-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
@@ -813,7 +960,7 @@
               "version": "KqlParameterItem/1.0",
               "parameters": [
                 {
-                  "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b200a",
+                  "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b200b",
                   "version": "KqlParameterItem/1.0",
                   "name": "OperationId",
                   "label": "operation_Id",
