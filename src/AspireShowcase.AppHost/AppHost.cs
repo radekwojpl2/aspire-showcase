@@ -6,7 +6,7 @@ builder.UseReadableAzureResourceNames();
 // (with its own container registry).
 var acaEnv = builder.AddAzureContainerAppEnvironment("aca-env");
 
-var web = builder.AddWeb();
+var web = builder.AddWeb().WithFailureCommands();
 builder.AddAzureMonitoring(acaEnv, web);
 
 var postgres = builder.AddPostgresServer();

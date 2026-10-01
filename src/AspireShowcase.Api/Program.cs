@@ -17,6 +17,10 @@ builder.AddRedisDistributedCache("cache");
 
 // Custom spans, span events and metrics for the to-do list.
 builder.Services.AddSingleton<TodoTelemetry>();
+builder.Services.AddSingleton<TodoListCache>();
+
+// Failures that the Aspire dashboard can switch on, to see how they show up in telemetry.
+builder.Services.AddSingleton<SimulatedFailures>();
 
 builder.Services.AddProblemDetails();
 
@@ -95,6 +99,12 @@ api.MapGet("/me", (ClaimsPrincipal user) => new CurrentUser(
 
 api.MapTodos();
 
+if (app.Environment.IsDevelopment())
+{
+    // The switches for the simulated failures, called by the commands the AppHost
+    // adds to this resource in the Aspire dashboard.
+    api.MapSimulatedFailures();
+}
 
 // Runtime settings for the React app. All of them are meant to be public: the browser SDKs
 // need them. The Application Insights connection string is only set in Azure, and the Logto

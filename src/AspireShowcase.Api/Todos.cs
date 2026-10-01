@@ -1,6 +1,4 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 
 class Todo
 {
@@ -26,15 +24,6 @@ record UpdateTodo(string? Title, bool IsDone);
 
 static class TodoEndpoints
 {
-    // The whole list is cached under one key, and every change to an item removes it.
-    const string ListCacheKey = "todos";
-
-    // A limit on how long a list can be served if a removal is ever missed.
-    static readonly DistributedCacheEntryOptions ListCacheOptions = new()
-    {
-        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
-    };
-
     /// <summary>
     /// CRUD for to-do items, stored in the app's PostgreSQL database. The list is served
     /// from Redis when it's cached there. Each operation runs in its own span and reports
@@ -44,19 +33,26 @@ static class TodoEndpoints
     {
         var todos = api.MapGroup("/todos");
 
-        todos.MapGet("/", async (AppDbContext db, IDistributedCache cache, TodoTelemetry telemetry) =>
+        // Failures switched on from the Aspire dashboard; does nothing unless one is on.
+        todos.AddEndpointFilter(async (context, next) =>
+        {
+            await context.HttpContext.RequestServices.GetRequiredService<SimulatedFailures>()
+                .ApplyAsync(context.HttpContext);
+            return await next(context);
+        });
+
+        todos.MapGet("/", async (AppDbContext db, TodoListCache cache, TodoTelemetry telemetry) =>
         {
             using var activity = telemetry.StartActivity("todos.list");
 
-            if (await cache.GetAsync(ListCacheKey) is { } cached)
+            if (await cache.GetAsync() is { } cachedList)
             {
-                var cachedList = JsonSerializer.Deserialize<List<Todo>>(cached)!;
                 telemetry.ListRead(activity, cacheHit: true, cachedList);
                 return cachedList;
             }
 
             var list = await db.Todos.AsNoTracking().OrderBy(todo => todo.Id).ToListAsync();
-            await cache.SetAsync(ListCacheKey, JsonSerializer.SerializeToUtf8Bytes(list), ListCacheOptions);
+            await cache.SetAsync(list);
             telemetry.ListRead(activity, cacheHit: false, list);
             return list;
         })
@@ -67,7 +63,7 @@ static class TodoEndpoints
         .WithName("GetTodo");
 
         todos.MapPost("/", async (
-            CreateTodo request, AppDbContext db, IDistributedCache cache, TodoTelemetry telemetry) =>
+            CreateTodo request, AppDbContext db, TodoListCache cache, TodoTelemetry telemetry) =>
         {
             using var activity = telemetry.StartActivity("todos.create");
 
@@ -82,14 +78,13 @@ static class TodoEndpoints
             await db.SaveChangesAsync();
             telemetry.Changed(activity, "created", todo.Id);
 
-            await cache.RemoveAsync(ListCacheKey);
-            telemetry.CacheInvalidated(activity);
+            await cache.RemoveAsync();
             return Results.CreatedAtRoute("GetTodo", new { id = todo.Id }, todo);
         })
         .WithName("CreateTodo");
 
         todos.MapPut("/{id:int}", async (
-            int id, UpdateTodo request, AppDbContext db, IDistributedCache cache, TodoTelemetry telemetry) =>
+            int id, UpdateTodo request, AppDbContext db, TodoListCache cache, TodoTelemetry telemetry) =>
         {
             using var activity = telemetry.StartActivity("todos.update");
 
@@ -115,14 +110,13 @@ static class TodoEndpoints
                 telemetry.Completed(activity, todo);
             }
 
-            await cache.RemoveAsync(ListCacheKey);
-            telemetry.CacheInvalidated(activity);
+            await cache.RemoveAsync();
             return Results.Ok(todo);
         })
         .WithName("UpdateTodo");
 
         todos.MapDelete("/{id:int}", async (
-            int id, AppDbContext db, IDistributedCache cache, TodoTelemetry telemetry) =>
+            int id, AppDbContext db, TodoListCache cache, TodoTelemetry telemetry) =>
         {
             using var activity = telemetry.StartActivity("todos.delete");
 
@@ -134,8 +128,7 @@ static class TodoEndpoints
 
             telemetry.Changed(activity, "deleted", id);
 
-            await cache.RemoveAsync(ListCacheKey);
-            telemetry.CacheInvalidated(activity);
+            await cache.RemoveAsync();
             return Results.NoContent();
         })
         .WithName("DeleteTodo");
