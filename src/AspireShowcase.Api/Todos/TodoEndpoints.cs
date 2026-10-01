@@ -1,23 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 
-class Todo
-{
-    public int Id { get; set; }
-    public required string Title { get; set; }
-    public bool IsDone { get; set; }
-    public DateTime CreatedAt { get; set; }
-}
-
-class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
-{
-    public const int MaxTitleLength = 200;
-
-    public DbSet<Todo> Todos => Set<Todo>();
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder) =>
-        modelBuilder.Entity<Todo>().Property(todo => todo.Title).HasMaxLength(MaxTitleLength);
-}
-
 record CreateTodo(string? Title);
 
 record UpdateTodo(string? Title, bool IsDone);

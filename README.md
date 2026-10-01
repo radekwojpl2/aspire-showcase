@@ -118,7 +118,7 @@ Do this once in the local admin console: start the AppHost and open the `Admin c
 
 **API**
 
-1. **API resources** → **Create API resource**: any name, identifier `https://api.aspire-showcase`. It must match `ApiResource` in `LogtoExtensions.cs`, which the AppHost passes to the API.
+1. **API resources** → **Create API resource**: any name, identifier `https://api.aspire-showcase`. It must match `ApiResource` in `Logto/LogtoExtensions.cs`, which the AppHost passes to the API.
 
 **User**
 
@@ -128,7 +128,7 @@ Then open `http://localhost:5173`, click **Sign in**, and **Call /api/me** on th
 
 ## Custom telemetry
 
-On top of what ASP.NET Core, Npgsql and the Redis client record by themselves, the API records its own telemetry for the to-do list in `src/AspireShowcase.Api/TodoTelemetry.cs`.
+On top of what ASP.NET Core, Npgsql and the Redis client record by themselves, the API records its own telemetry for the to-do list in `src/AspireShowcase.Api/Todos/TodoTelemetry.cs`.
 
 Each operation runs in a span (`todos.list`, `todos.create`, `todos.update`, `todos.delete`), and what happens inside is added to the span as events: `cache.hit`, `cache.miss`, `cache.invalidated`, `cache.unavailable`, `todo.created`, `todo.updated`, `todo.completed`, `todo.deleted`, `todo.rejected`.
 
