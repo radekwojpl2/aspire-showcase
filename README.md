@@ -2,6 +2,41 @@
 
 React + ASP.NET Core API with [Aspire](https://aspire.dev), deployed to Azure Container Apps.
 
+![The app: weather forecast and the to-do list](docs/images/app.png)
+
+## What this shows
+
+One AppHost describes the whole system: a React app, an ASP.NET Core API, [Logto](https://logto.io) for sign-in, one PostgreSQL server holding the app's database and Logto's, and Redis as a cache. The same description is used twice:
+
+- **Locally**, `aspire run` starts everything on your machine (the API as a process, Vite with hot reload, Logto, PostgreSQL and Redis as containers) and sends logs, traces and metrics to the Aspire dashboard.
+- **In Azure**, `aspire deploy` turns it into Container Apps, a PostgreSQL Flexible Server, Key Vault and Application Insights, from a GitHub Actions workflow.
+
+The app itself is small on purpose (a weather forecast, a to-do list and one protected endpoint); the point is the AppHost in `src/AspireShowcase.AppHost`.
+
+## Aspire dashboard, locally
+
+Resources, with their state, endpoints and the custom `Admin console` and `Swagger` links:
+
+![Aspire dashboard: resources](docs/images/dashboard-resources.png)
+
+The same resources as a graph of references and wait dependencies:
+
+![Aspire dashboard: resource graph](docs/images/dashboard-graph.png)
+
+Traces of the API requests made by the React app, with the database queries as `app-db` spans and the Redis commands as `cache` spans. A `GET /api/todos/` without an `app-db` span was answered from the cache:
+
+![Aspire dashboard: traces](docs/images/dashboard-traces.png)
+
+One request in detail: the API's own `todos.update` span around the two database queries and the Redis command. The span's events (outlined in red) show as dots on its bar and are listed under Events in the span details: `todo.updated`, `todo.completed` with the time it took, and `cache.invalidated`.
+
+![Aspire dashboard: trace detail](docs/images/dashboard-trace-detail.png)
+
+The API's own metrics, next to the ones from ASP.NET Core and Npgsql:
+
+![Aspire dashboard: metrics](docs/images/dashboard-metrics.png)
+
+## Layout
+
 ```
 src/
 ├── AspireShowcase.AppHost/          # orchestration + Azure target
@@ -12,13 +47,41 @@ src/
 
 ## Run locally
 
-Needs .NET 10, Node.js 22 and Docker (for PostgreSQL and Logto).
+Needs .NET 10, Node.js 22 and Docker (for PostgreSQL, Redis and Logto).
 
 ```
 dotnet run --project src/AspireShowcase.AppHost
 ```
 
 Open the `Dashboard:` link, then `frontend`.
+
+## Database
+
+One PostgreSQL server, the `postgres` resource, holds two databases:
+
+| Resource | Database | Used by |
+|---|---|---|
+| `app-db` | `app` | The API: the to-do list behind `/api/todos` (EF Core) |
+| `logto-db` | `logto` | Logto |
+
+- Local: a PostgreSQL container with its data in a Docker volume, so the data survives restarts. The password is generated on first run and saved in the AppHost's user secrets.
+- Azure: an Azure Database for PostgreSQL Flexible Server (Burstable B1ms, password auth, TLS). The admin password comes from the `POSTGRES_PASSWORD` secret on the `production` environment, which `setup-azure-oidc.ps1` generates.
+  The connection strings are stored in Key Vault (`kv`). The Container Apps read them from there with their managed identities (Key Vault Secrets User), so the password is not in their configuration.
+
+The API creates and updates its tables on startup from the EF Core migrations in `src/AspireShowcase.Api/Migrations`. After changing the model, add a migration:
+
+```
+dotnet tool restore
+dotnet ef migrations add <Name> --project src/AspireShowcase.Api
+```
+
+The `/api/todos` endpoints are open: anyone who can reach the app can add, change and delete items.
+
+## Cache
+
+The API keeps the to-do list in Redis, the `cache` resource, for up to 5 minutes. Adding, changing or deleting an item removes the cached list, so the next request reads the database again.
+
+Redis runs as a container both locally and in Azure. In Azure it's a Container App reachable only from inside the Container Apps environment, protected by a password. It keeps nothing on disk: a restart empties the cache and the API fills it again.
 
 ## Logto
 
@@ -31,11 +94,7 @@ Open the `Dashboard:` link, then `frontend`.
 
 Two containers, because a Container App has only one HTTP ingress port.
 
-Its database, `logto`, lives on the `postgres` resource:
-
-- Local: a PostgreSQL container with its data in a Docker volume, so users and settings survive restarts. The password is generated on first run and saved in the AppHost's user secrets.
-- Azure: an Azure Database for PostgreSQL Flexible Server (Burstable B1ms, password auth, TLS). The admin password comes from the `POSTGRES_PASSWORD` secret on the `production` environment, which `setup-azure-oidc.ps1` generates.
-  The connection URL is stored in Key Vault (`kv`) as the `logto-db-url` secret. The Logto Container Apps read it from there with their managed identities (Key Vault Secrets User), so the password is not in their configuration.
+Its database is `logto-db` (see [Database](#database)). Logto wants a `postgresql://` URL rather than a .NET connection string, so in Azure the URL is stored in Key Vault as its own secret, `logto-db-url`.
 
 The first time, open the `Admin console` link on the `logto-admin` resource and create the admin account. In Azure, do it right after the first deploy: whoever opens the console first becomes the admin.
 
@@ -66,6 +125,63 @@ Do this once in the local admin console: start the AppHost and open the `Admin c
 1. **User management** → create a user to sign in with. The admin account can't sign in to the app.
 
 Then open `http://localhost:5173`, click **Sign in**, and **Call /api/me** on the **Protected endpoint** card.
+
+## Custom telemetry
+
+On top of what ASP.NET Core, Npgsql and the Redis client record by themselves, the API records its own telemetry for the to-do list in `src/AspireShowcase.Api/TodoTelemetry.cs`.
+
+Each operation runs in a span (`todos.list`, `todos.create`, `todos.update`, `todos.delete`), and what happens inside is added to the span as events: `cache.hit`, `cache.miss`, `cache.invalidated`, `cache.unavailable`, `todo.created`, `todo.updated`, `todo.completed`, `todo.deleted`, `todo.rejected`.
+
+| Metric | Kind | Measures |
+|---|---|---|
+| `todos.changes` | Counter | Items created, updated and deleted (`change` tag) |
+| `todos.list.reads` | Counter | Reads of the list, by whether the cache answered (`result` tag: `hit`, `miss`) |
+| `todos.completion.time` | Histogram | Seconds from creating an item to ticking it off |
+| `todos.items` | Gauge | Open and done items when the list was last read from the database (`state` tag) |
+
+The source and the meter are both named `AspireShowcase.Api`, the application name, which is what the ServiceDefaults project subscribes to. Item titles are never recorded.
+
+## Try failures
+
+Three failures can be produced on a local run, to see how each looks in the dashboard. They affect the to-do endpoints only.
+
+Two of them are commands on the `web` resource (⋯ → Commands); **Stop simulated failures** turns both off. The third is stopping the `cache` resource.
+
+![Aspire dashboard: failure commands on the web resource](docs/images/dashboard-failure-commands.png)
+
+The commands post to `/api/failures/*`, which the API maps in Development only, and the AppHost adds the commands in run mode only, so none of this exists in Azure.
+
+### Requests fail
+
+**Fail to-do requests** makes every to-do request throw and answer 500. The to-do card in the app shows the error:
+
+![The to-do card showing HTTP error 500](docs/images/app-failure.png)
+
+In Traces the request is red: status Error, 500, and the exception as an event on its bar.
+
+![Aspire dashboard: trace of a failed request](docs/images/dashboard-failure-trace.png)
+
+Structured logs filtered to Error list the exceptions, each linked to its trace:
+
+![Aspire dashboard: error logs linked to traces](docs/images/dashboard-failure-logs.png)
+
+### Slow database
+
+**Slow down to-do queries** makes every to-do request first run a 2-second query. The trace shows where the time went: the `app-db` span with `SELECT pg_sleep(2)` fills the request, and the app's own work takes milliseconds.
+
+![Aspire dashboard: trace with a 2-second database span](docs/images/dashboard-failure-slow-query.png)
+
+### Redis is down
+
+Stop the `cache` resource. `web` turns Unhealthy, because its health check includes Redis:
+
+![Aspire dashboard: cache exited and web unhealthy](docs/images/dashboard-failure-cache-down.png)
+
+The to-do list keeps working from the database. The first request waits about 5 seconds for Redis, which the trace shows as a long `cache` span; later requests skip Redis for 15 seconds at a time. The span's events say what happened: `cache.unavailable` for the failed read, `cache.unavailable` (skipped) for the write, then `cache.miss`. The log has a warning.
+
+![Aspire dashboard: trace of a request while Redis is down](docs/images/dashboard-failure-cache-trace.png)
+
+Start `cache` again and `web` returns to healthy.
 
 ## Deploy
 
@@ -99,9 +215,11 @@ This keeps the resource group and its role assignments, so Deploy works again wi
 > [!IMPORTANT]
 > If you run `aspire destroy` instead, it deletes the resource group too, so run `./scripts/setup-azure-oidc.ps1` again before the next deploy.
 
-## Application Insights workbook
+## Application Insights workbooks
 
-Deploy publishes **Aspire showcase overview** to `insights` → Workbooks, with a time range picker and four tabs:
+Deploy publishes two workbooks to `insights` → Workbooks, each with a time range picker and tabs.
+
+**Aspire showcase overview**: everything the app sends, server and browser.
 
 | Tab | Shows |
 |---|---|
@@ -110,12 +228,24 @@ Deploy publishes **Aspire showcase overview** to `insights` → Workbooks, with 
 | Browser | Page views, page load time, pages, browser exceptions |
 | Logs & exceptions | Logs by severity, exceptions, warnings and errors, exceptions by type, recent logs |
 
-It is defined in `src/AspireShowcase.AppHost/workbooks`:
+**Aspire showcase API**: for finding out what is wrong with the API, its database or its cache. A summary row on top (requests, 4xx, 5xx, p95, exceptions, failed database and cache calls), then:
 
-- `overview.workbook.json` holds the layout and queries. `__APPINSIGHTS_ID__` is replaced with the Application Insights resource ID at deploy time.
-- `overview.bicep` creates the workbook. The AppHost adds it with `AddBicepTemplate`, in publish mode only.
+| Tab | Shows |
+|---|---|
+| Overview | Requests by status, latency, endpoints worst first, where the time goes per endpoint (database and cache calls and time per request), slowest requests |
+| Failures | 5xx by endpoint, exceptions by type, failed requests with their exception, warning and error logs |
+| Database | PostgreSQL queries and failures, query duration, statements by total time, failed queries, connection pool metrics |
+| Cache | To-do list cache hits and misses, Redis commands, command duration, failed commands |
+| To-dos | The API's custom telemetry: the `todos.*` metrics, the operation spans and their events |
+| Runtime | Requests in progress, memory, thread pool, running instances, app starts and stops |
+| Trace lookup | Everything recorded for one request, in order: paste an `operation_Id` from any table |
 
-To change it, edit `overview.workbook.json` and push. Deploys overwrite changes made in the portal. To design a change in the portal instead, edit the workbook there, copy the JSON from Edit → Advanced Editor → Gallery Template into `overview.workbook.json`, set `fallbackResourceIds` back to `["__APPINSIGHTS_ID__"]`, and push.
+They are defined in `src/AspireShowcase.AppHost/workbooks`:
+
+- `overview.workbook.json` and `api.workbook.json` hold the layout and queries. `__APPINSIGHTS_ID__` is replaced with the Application Insights resource ID at deploy time.
+- `workbook.bicep` creates a workbook. The AppHost adds it once per file with `AddBicepTemplate`, in publish mode only.
+
+To change one, edit its `.workbook.json` and push. Deploys overwrite changes made in the portal. To design a change in the portal instead, edit the workbook there, copy the JSON from Edit → Advanced Editor → Gallery Template into the file, set `fallbackResourceIds` back to `["__APPINSIGHTS_ID__"]`, and push.
 
 ## Aspire dashboard
 
