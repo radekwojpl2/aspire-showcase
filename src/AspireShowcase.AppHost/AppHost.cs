@@ -11,6 +11,7 @@ builder.AddAzureMonitoring(acaEnv, web);
 
 var postgres = builder.AddPostgresServer();
 web.WithAppDatabase(postgres);
+web.WithCache();
 
 var logto = builder.AddLogto(postgres.AddLogtoDatabase());
 web.WithLogto(logto);

@@ -11,6 +11,10 @@ builder.AddServiceDefaults();
 // this also adds a health check, retries, and traces and metrics for the queries.
 builder.AddNpgsqlDbContext<AppDbContext>("app-db");
 
+// Redis behind IDistributedCache, for the cached to-do list. Like the database, it comes
+// with a health check and traces for the Redis commands.
+builder.AddRedisDistributedCache("cache");
+
 builder.Services.AddProblemDetails();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

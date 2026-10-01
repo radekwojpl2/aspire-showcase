@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 
 class Todo
 {
@@ -24,20 +26,41 @@ record UpdateTodo(string? Title, bool IsDone);
 
 static class TodoEndpoints
 {
-    /// <summary>CRUD for to-do items, stored in the app's PostgreSQL database.</summary>
+    // The whole list is cached under one key, and every change to an item removes it.
+    const string ListCacheKey = "todos";
+
+    // A limit on how long a list can be served if a removal is ever missed.
+    static readonly DistributedCacheEntryOptions ListCacheOptions = new()
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
+    };
+
+    /// <summary>
+    /// CRUD for to-do items, stored in the app's PostgreSQL database. The list is served
+    /// from Redis when it's cached there.
+    /// </summary>
     public static void MapTodos(this IEndpointRouteBuilder api)
     {
         var todos = api.MapGroup("/todos");
 
-        todos.MapGet("/", async (AppDbContext db) =>
-            await db.Todos.AsNoTracking().OrderBy(todo => todo.Id).ToListAsync())
+        todos.MapGet("/", async (AppDbContext db, IDistributedCache cache) =>
+        {
+            if (await cache.GetAsync(ListCacheKey) is { } cached)
+            {
+                return JsonSerializer.Deserialize<List<Todo>>(cached)!;
+            }
+
+            var list = await db.Todos.AsNoTracking().OrderBy(todo => todo.Id).ToListAsync();
+            await cache.SetAsync(ListCacheKey, JsonSerializer.SerializeToUtf8Bytes(list), ListCacheOptions);
+            return list;
+        })
         .WithName("GetTodos");
 
         todos.MapGet("/{id:int}", async (int id, AppDbContext db) =>
             await db.Todos.FindAsync(id) is { } todo ? Results.Ok(todo) : Results.NotFound())
         .WithName("GetTodo");
 
-        todos.MapPost("/", async (CreateTodo request, AppDbContext db) =>
+        todos.MapPost("/", async (CreateTodo request, AppDbContext db, IDistributedCache cache) =>
         {
             if (ValidateTitle(request.Title) is { } problem)
             {
@@ -47,11 +70,12 @@ static class TodoEndpoints
             var todo = new Todo { Title = request.Title!.Trim(), CreatedAt = DateTime.UtcNow };
             db.Todos.Add(todo);
             await db.SaveChangesAsync();
+            await cache.RemoveAsync(ListCacheKey);
             return Results.CreatedAtRoute("GetTodo", new { id = todo.Id }, todo);
         })
         .WithName("CreateTodo");
 
-        todos.MapPut("/{id:int}", async (int id, UpdateTodo request, AppDbContext db) =>
+        todos.MapPut("/{id:int}", async (int id, UpdateTodo request, AppDbContext db, IDistributedCache cache) =>
         {
             if (ValidateTitle(request.Title) is { } problem)
             {
@@ -66,14 +90,21 @@ static class TodoEndpoints
             todo.Title = request.Title!.Trim();
             todo.IsDone = request.IsDone;
             await db.SaveChangesAsync();
+            await cache.RemoveAsync(ListCacheKey);
             return Results.Ok(todo);
         })
         .WithName("UpdateTodo");
 
-        todos.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
-            await db.Todos.Where(todo => todo.Id == id).ExecuteDeleteAsync() == 0
-                ? Results.NotFound()
-                : Results.NoContent())
+        todos.MapDelete("/{id:int}", async (int id, AppDbContext db, IDistributedCache cache) =>
+        {
+            if (await db.Todos.Where(todo => todo.Id == id).ExecuteDeleteAsync() == 0)
+            {
+                return Results.NotFound();
+            }
+
+            await cache.RemoveAsync(ListCacheKey);
+            return Results.NoContent();
+        })
         .WithName("DeleteTodo");
     }
 
