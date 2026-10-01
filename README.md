@@ -2,16 +2,16 @@
 
 React + ASP.NET Core API with [Aspire](https://aspire.dev), deployed to Azure Container Apps.
 
-![The app: weather forecast and the to-do list](docs/images/app.png)
+![The app: weather forecast, the to-do list and its notifications](docs/images/app.png)
 
 ## What this shows
 
-One AppHost describes the whole system: a React app, an ASP.NET Core API, [Logto](https://logto.io) for sign-in, one PostgreSQL server holding the app's database and Logto's, and Redis as a cache. The same description is used twice:
+One AppHost describes the whole system: a React app, an ASP.NET Core API, a notifications service the API calls, [Logto](https://logto.io) for sign-in, one PostgreSQL server holding the app's database and Logto's, and Redis as a cache. The same description is used twice:
 
-- **Locally**, `aspire run` starts everything on your machine (the API as a process, Vite with hot reload, Logto, PostgreSQL and Redis as containers) and sends logs, traces and metrics to the Aspire dashboard.
+- **Locally**, `aspire run` starts everything on your machine (the API and the notifications service as processes, Vite with hot reload, Logto, PostgreSQL and Redis as containers) and sends logs, traces and metrics to the Aspire dashboard.
 - **In Azure**, `aspire deploy` turns it into Container Apps, a PostgreSQL Flexible Server, Key Vault and Application Insights, from a GitHub Actions workflow.
 
-The app itself is small on purpose (a weather forecast, a to-do list and one protected endpoint); the point is the AppHost in `src/AspireShowcase.AppHost`.
+The app itself is small on purpose (a weather forecast, a to-do list with notifications and one protected endpoint); the point is the AppHost in `src/AspireShowcase.AppHost`.
 
 ## Aspire dashboard, locally
 
@@ -31,6 +31,10 @@ One request in detail: the API's own `todos.update` span around the two database
 
 ![Aspire dashboard: trace detail](docs/images/dashboard-trace-detail.png)
 
+A trace across two services: adding a to-do item in `web` calls `notifications`, and both sides show in one trace.
+
+![Aspire dashboard: a trace from web into the notifications service](docs/images/dashboard-trace-notifications.png)
+
 The API's own metrics, next to the ones from ASP.NET Core and Npgsql:
 
 ![Aspire dashboard: metrics](docs/images/dashboard-metrics.png)
@@ -42,6 +46,7 @@ src/
 ├── AspireShowcase.AppHost/          # orchestration + Azure target
 ├── AspireShowcase.ServiceDefaults/  # telemetry, health checks
 ├── AspireShowcase.Api/              # API, serves the UI in Azure
+├── AspireShowcase.Notifications/    # notifications service, called by the API
 └── AspireShowcase.Web/              # React + Vite
 ```
 
@@ -82,6 +87,15 @@ The `/api/todos` endpoints are open: anyone who can reach the app can add, chang
 The API keeps the to-do list in Redis, the `cache` resource, for up to 5 minutes. Adding, changing or deleting an item removes the cached list, so the next request reads the database again.
 
 Redis runs as a container both locally and in Azure. In Azure it's a Container App reachable only from inside the Container Apps environment, protected by a password. It keeps nothing on disk: a restart empties the cache and the API fills it again.
+
+## Notifications
+
+`AspireShowcase.Notifications` is a second ASP.NET Core service, the `notifications` resource. After a to-do item is added or removed, the API posts a notification to it; the service keeps the latest 50 in memory, and the Notifications card in the app lists the newest five.
+
+- The API calls it as `http://notifications`. The AppHost's `WithReference` passes the real address, and service discovery from ServiceDefaults resolves the name, both locally and in Azure.
+- The browser never talks to it. The card reads `/api/notifications`, which the API passes on. In Azure the service is a Container App with no external endpoint.
+- Notifications are an extra: a call gets 3 seconds, and after a failure the service is left alone for 15 seconds, so the to-do list keeps working when it's down.
+- They live in memory, so a restart of the service empties the list.
 
 ## Logto
 
@@ -130,7 +144,7 @@ Then open `http://localhost:5173`, click **Sign in**, and **Call /api/me** on th
 
 On top of what ASP.NET Core, Npgsql and the Redis client record by themselves, the API records its own telemetry for the to-do list in `src/AspireShowcase.Api/Todos/TodoTelemetry.cs`.
 
-Each operation runs in a span (`todos.list`, `todos.create`, `todos.update`, `todos.delete`), and what happens inside is added to the span as events: `cache.hit`, `cache.miss`, `cache.invalidated`, `cache.unavailable`, `todo.created`, `todo.updated`, `todo.completed`, `todo.deleted`, `todo.rejected`.
+Each operation runs in a span (`todos.list`, `todos.create`, `todos.update`, `todos.delete`), and what happens inside is added to the span as events: `cache.hit`, `cache.miss`, `cache.invalidated`, `cache.unavailable`, `todo.created`, `todo.updated`, `todo.completed`, `todo.deleted`, `todo.rejected`, `notification.sent`, `notification.failed`, `notification.skipped`.
 
 | Metric | Kind | Measures |
 |---|---|---|
@@ -138,8 +152,24 @@ Each operation runs in a span (`todos.list`, `todos.create`, `todos.update`, `to
 | `todos.list.reads` | Counter | Reads of the list, by whether the cache answered (`result` tag: `hit`, `miss`) |
 | `todos.completion.time` | Histogram | Seconds from creating an item to ticking it off |
 | `todos.items` | Gauge | Open and done items when the list was last read from the database (`state` tag) |
+| `todos.notifications` | Counter | Notifications the API tried to send (`kind` tag; `result` tag: `sent`, `failed`, `skipped`) |
 
 The source and the meter are both named `AspireShowcase.Api`, the application name, which is what the ServiceDefaults project subscribes to. Item titles are never recorded.
+
+The notifications service does the same in `src/AspireShowcase.Notifications/NotificationTelemetry.cs`, under the name `AspireShowcase.Notifications`. Its spans are `notifications.record` and `notifications.list`, with the events `notification.recorded`, `notification.rejected` and `notification.evicted` (an old one dropped to stay within 50).
+
+| Metric | Kind | Measures |
+|---|---|---|
+| `notifications.received` | Counter | Notifications accepted and stored (`kind` tag) |
+| `notifications.rejected` | Counter | Notifications refused as invalid |
+| `notifications.message.length` | Histogram | Characters in the messages received |
+| `notifications.stored` | Gauge | Notifications currently kept in memory |
+
+Because the trace context travels with the HTTP call, the service's `notifications.record` span sits inside the API's `todos.create` span in one trace:
+
+![Aspire dashboard: the notifications service's span and event inside the API's trace](docs/images/dashboard-notifications-trace.png)
+
+![Aspire dashboard: the notifications service's metrics](docs/images/dashboard-notifications-metrics.png)
 
 ## Try failures
 
@@ -182,6 +212,10 @@ The to-do list keeps working from the database. The first request waits about 5 
 ![Aspire dashboard: trace of a request while Redis is down](docs/images/dashboard-failure-cache-trace.png)
 
 Start `cache` again and `web` returns to healthy.
+
+### Notifications service is down
+
+Stop the `notifications` resource. The first add or remove waits 3 seconds for it and then succeeds without a notification; the following ones don't wait. The Notifications card shows an error (503) until the service is started again. The `todos.create` and `todos.delete` spans carry a `notification.failed` event and the log has a warning.
 
 ## Deploy
 
@@ -237,6 +271,7 @@ Deploy publishes two workbooks to `insights` → Workbooks, each with a time ran
 | Database | PostgreSQL queries and failures, query duration, statements by total time, failed queries, connection pool metrics |
 | Cache | To-do list cache hits and misses, Redis commands, command duration, failed commands |
 | To-dos | The API's custom telemetry: the `todos.*` metrics, the operation spans and their events |
+| Notifications | Notifications sent by the API and received by the service, calls between the two, the service's spans and events |
 | Runtime | Requests in progress, memory, thread pool, running instances, app starts and stops |
 | Trace lookup | Everything recorded for one request, in order: paste an `operation_Id` from any table |
 
