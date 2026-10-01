@@ -3,6 +3,7 @@ import aspireLogo from '/Aspire.png';
 import './App.css';
 import { Account, ProtectedData } from './auth.tsx';
 import { Todos } from './todos.tsx';
+import { Notifications } from './notifications.tsx';
 
 interface WeatherForecast {
   date: string;
@@ -16,6 +17,8 @@ function App({ signInEnabled, apiResource }: { signInEnabled: boolean; apiResour
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [useCelsius, setUseCelsius] = useState(false);
+  // Counts changes to the to-do list; the notifications card reloads when it moves.
+  const [todoChanges, setTodoChanges] = useState(0);
 
   const fetchWeatherForecast = async () => {
     setLoading(true);
@@ -160,7 +163,8 @@ function App({ signInEnabled, apiResource }: { signInEnabled: boolean; apiResour
               </div>
             )}
           </div>
-          <Todos />
+          <Todos onChanged={() => setTodoChanges((count) => count + 1)} />
+          <Notifications refresh={todoChanges} />
           {signInEnabled && apiResource && <ProtectedData apiResource={apiResource} />}
         </section>
       </main>

@@ -227,6 +227,22 @@
   cursor: not-allowed;
 }
 
+/* Notifications card: what the notifications service recorded */
+.notification-item {
+  justify-content: flex-start;
+}
+
+.notification-time {
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.notification-message {
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
 /* Card that calls the protected /api/me endpoint */
 .protected-card {
   margin-top: 1.5rem;

@@ -18,7 +18,8 @@ async function request<T>(path: string, method = 'GET', body?: unknown): Promise
 }
 
 // To-do list kept in the app's PostgreSQL database, through the /api/todos CRUD endpoints.
-export function Todos() {
+// onChanged runs after every add, tick and delete, so the notifications card can reload.
+export function Todos({ onChanged }: { onChanged: () => void }) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [title, setTitle] = useState('');
   const [error, setError] = useState<string>();
@@ -28,6 +29,7 @@ export function Todos() {
     setError(undefined);
     try {
       await change?.();
+      if (change) onChanged();
       setTodos((await request<Todo[]>('/api/todos')) ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to call the API');
@@ -35,7 +37,9 @@ export function Todos() {
   };
 
   useEffect(() => {
-    void run();
+    request<Todo[]>('/api/todos')
+      .then((list) => setTodos(list ?? []))
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to call the API'));
   }, []);
 
   const add = (event: FormEvent) => {
