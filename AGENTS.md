@@ -1,0 +1,57 @@
+# Aspire Showcase: notes for AI assistants
+
+A showcase of [Aspire](https://aspire.dev): a React app, an ASP.NET Core API, a notifications service, Logto for sign-in, PostgreSQL and Redis, all described by one AppHost. The README explains each part; this file holds what you need to work in the repo.
+
+To set the project up for someone, follow `.claude/skills/setup/SKILL.md` (in Claude Code: `/setup`).
+
+For general Aspire work (running, monitoring, deploying), Aspire ships its own skills: `aspire agent init` installs them. They aren't committed here, because they belong to the installed CLI version.
+
+## Prerequisites
+
+- .NET 10 SDK (the version in `global.json`)
+- Node.js 22
+- Docker, running (PostgreSQL, Redis and Logto are containers)
+- Aspire CLI: `dotnet tool install --global Aspire.Cli`
+- Azure CLI (`az`) and GitHub CLI (`gh`), both signed in, for the Azure part
+
+## Commands
+
+Run from the repository root.
+
+| Task | Command |
+|---|---|
+| Start everything in the background | `aspire start` |
+| Stop it | `aspire stop` |
+| Resources, their state and URLs | `aspire describe` |
+| Wait for a resource to be healthy | `aspire wait web` |
+| Logs and traces | `aspire logs <resource>`, `aspire otel traces <resource>` |
+| Build and test the .NET projects | `dotnet build`, `dotnet test` |
+| Lint and build the React app | `npm run lint`, `npm run build` in `src/AspireShowcase.Web` |
+| Add an EF Core migration | `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/AspireShowcase.Api` |
+
+## Layout
+
+```
+src/
+├── AspireShowcase.AppHost/          # the system: resources, references, the Azure target
+├── AspireShowcase.ServiceDefaults/  # telemetry, health checks, service discovery
+├── AspireShowcase.Api/              # API (resource "web"); serves the React app in Azure
+├── AspireShowcase.Notifications/    # notifications service, with a Quartz.NET job
+└── AspireShowcase.Web/              # React + Vite (resource "frontend")
+```
+
+## Things that trip people up
+
+- The to-do list and **Sign in** stay hidden until Logto is set up and the `logto-app-id` parameter is set. `curl -skL http://localhost:5268/api/config` shows the value in use.
+- The Logto admin console only works on `http://127.0.0.1:<port>/console`, not `localhost`. Use the `Admin console` link of the `logto-admin` resource.
+- The Logto admin account can't sign in to the app. A separate user has to be created under **User management**.
+- The React app runs on port 5173 on purpose: the redirect URI registered in Logto depends on it.
+- Local and Azure differ: locally the AppHost runs everything, in Azure it only describes what is deployed. See "Local and Azure are not the same" in the README.
+
+## Rules
+
+- Stop the AppHost (`aspire stop`) when you finish a task that started it, unless the user wants it left running.
+- Never print secrets: user secrets, tokens, connection strings.
+- `main` is protected. Changes go on a branch and through a pull request, with the CI checks `build` and `web` passing.
+- Deploying is manual (`gh workflow run Deploy`) and creates billable Azure resources. Do it only when asked.
+- Match the surrounding code: comments explain why, and the README is kept short.
