@@ -15,6 +15,23 @@ One AppHost describes the whole system: a React app, an ASP.NET Core API, a noti
 
 The app itself is small on purpose (a weather forecast, a to-do list with notifications and one protected endpoint); the point is the AppHost in `src/AspireShowcase.AppHost`.
 
+## Local and Azure are not the same
+
+The AppHost is the same code in both, but Aspire uses it differently. With `aspire run` it is a running program that starts the resources and hosts the dashboard. With `aspire deploy` it runs once to describe the system, which Aspire turns into Bicep and container images; nothing of the AppHost runs in Azure.
+
+| | Local | Azure |
+|---|---|---|
+| API, notifications service | Processes | Container Apps |
+| React app | Vite dev server with hot reload | Built into the `web` container |
+| PostgreSQL | Container with a data volume | Flexible Server |
+| Connection strings | Environment variables | Key Vault, read with managed identities |
+| Redis, Logto | Containers | Container Apps |
+| Parameters and secrets | AppHost user secrets | GitHub `production` environment |
+| Telemetry | Aspire dashboard (in memory) | Application Insights, which keeps it, and an Aspire dashboard (in memory) |
+| Swagger, failure commands | Available | Not there |
+
+So something that works locally can still fail in Azure.
+
 ## Run locally
 
 Needs .NET 10, Node.js 22 and Docker (for PostgreSQL, Redis and Logto).
