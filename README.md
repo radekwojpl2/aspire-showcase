@@ -299,26 +299,26 @@ This keeps the resource group and its role assignments, so Deploy works again wi
 
 ## Application Insights workbooks
 
-Deploy publishes two workbooks to `insights` → Workbooks, each with a time range picker and tabs.
+Deploy publishes two workbooks to `insights` → Workbooks.
 
 **Aspire showcase overview**: everything the app sends, server and browser.
 
 | Tab | Shows |
 |---|---|
-| Requests | Request rate and failures, latency, endpoints, failed requests, outgoing calls (server and browser) |
-| Metrics | A picker for any OpenTelemetry metric, HTTP server/client, GC heap, thread pool, all metrics |
-| Browser | Page views, page load time, pages, browser exceptions |
-| Logs & exceptions | Logs by severity, exceptions, warnings and errors, exceptions by type, recent logs |
+| Requests | Rate, failures, latency, outgoing calls |
+| Metrics | Any OpenTelemetry metric, HTTP, runtime |
+| Browser | Page views, load time, exceptions |
+| Logs & exceptions | Logs by severity, exceptions by type |
 
-**Aspire showcase API**: for finding out what is wrong with the API, its database or its cache. A summary row on top (requests, 4xx, 5xx, p95, exceptions, failed database and cache calls), then:
+**Aspire showcase API**: for finding what is wrong with the API, its database or its cache.
 
 | Tab | Shows |
 |---|---|
-| Overview | Requests by status, latency, endpoints worst first, where the time goes per endpoint (database and cache calls and time per request), slowest requests |
-| Failures | 5xx by endpoint, exceptions by type, failed requests with their exception, warning and error logs |
-| Database | PostgreSQL queries and failures, query duration, statements by total time, failed queries, connection pool metrics |
-| Cache | To-do list cache hits and misses, Redis commands, command duration, failed commands |
-| To-dos | The API's custom telemetry: the `todos.*` metrics, the operation spans and their events |
-| Notifications | Notifications sent by the API and received by the service, calls between the two, the service's spans and events, the digest job's runs and the spans they link to |
-| Runtime | Requests in progress, memory, thread pool, running instances, app starts and stops |
-| Trace lookup | One trace in one view, from a pasted trace ID or span ID: the spans as a tree, with the pasted span and what is above and below it marked; logs, span events and exceptions in order; span links to and from other traces; and the metrics reported around that time |
+| Overview | Requests, latency, slowest endpoints |
+| Failures | 5xx, exceptions, error logs |
+| Database | PostgreSQL queries, duration, failures |
+| Cache | Cache hits and misses, Redis commands |
+| To-dos | The `todos.*` metrics, spans and events |
+| Notifications | Sent and received, the digest job and its span links |
+| Runtime | Memory, thread pool, instances, restarts |
+| Trace lookup | Everything for one pasted trace ID or span ID |
