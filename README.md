@@ -2,7 +2,7 @@
 
 React + ASP.NET Core API with [Aspire](https://aspire.dev), deployed to Azure Container Apps.
 
-## This project is juset a showcase what can be done with Aspire. It's not a production-ready app.
+## This project is just a showcase what can be done with Aspire. It's not a production-ready app.
 
 ![The app: weather forecast, the to-do list and its notifications](docs/images/app.png)
 
