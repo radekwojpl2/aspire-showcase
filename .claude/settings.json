@@ -4,13 +4,25 @@
     "pr": ""
   },
   "permissions": {
+    "allow": [
+      "Bash(aspire describe:*)",
+      "Bash(aspire logs:*)",
+      "Bash(aspire otel:*)",
+      "Bash(aspire wait:*)",
+      "PowerShell(aspire describe:*)",
+      "PowerShell(aspire logs:*)",
+      "PowerShell(aspire otel:*)",
+      "PowerShell(aspire wait:*)"
+    ],
     "ask": [
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(aspire:*)",
+      "Bash(aspire deploy:*)",
+      "Bash(aspire destroy:*)",
       "PowerShell(git commit:*)",
       "PowerShell(git push:*)",
-      "PowerShell(aspire:*)"
+      "PowerShell(aspire deploy:*)",
+      "PowerShell(aspire destroy:*)"
     ]
   }
 }
