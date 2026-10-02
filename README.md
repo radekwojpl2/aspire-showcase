@@ -98,6 +98,7 @@ Redis runs as a container both locally and in Azure. In Azure it's a Container A
 - The browser never talks to it. The card reads `/api/notifications`, which the API passes on. In Azure the service is a Container App with no external endpoint.
 - Notifications are an extra: a call gets 3 seconds, and after a failure the service is left alone for 15 seconds, so the to-do list keeps working when it's down.
 - They live in memory, so a restart of the service empties the list.
+- A [Quartz.NET](https://www.quartz-scheduler.net) job, `NotificationDigestJob`, runs every 30 seconds and logs a summary of the notifications recorded since its last run.
 
 ## Logto
 
@@ -180,12 +181,29 @@ The notifications service, in `src/AspireShowcase.Notifications/NotificationTele
 | `notifications.rejected` | Counter | Notifications refused as invalid |
 | `notifications.message.length` | Histogram | Characters in the messages received |
 | `notifications.stored` | Gauge | Notifications currently kept in memory |
+| `notifications.digested` | Counter | Notifications summed up by the scheduled digest |
 
 Because the trace context travels with the HTTP call, the service's `notifications.record` span sits inside the API's `todos.create` span in one trace:
 
 ![Aspire dashboard: the notifications service's span and event inside the API's trace](docs/images/dashboard-notifications-trace.png)
 
 ![Aspire dashboard: the notifications service's metrics](docs/images/dashboard-notifications-metrics.png)
+
+### Span links
+
+The digest job runs on a schedule, not inside a request, so its `notifications.digest` span starts a trace of its own. It carries a span link to every `notifications.record` span whose notification it summed up. In the span details, the digest lists them under **Links**, and each `notifications.record` span shows the digest under **Backlinks**. A run with nothing new records no span.
+
+To see it: add or remove a few to-do items, wait up to 30 seconds, and open the `notifications.digest` trace of the `notifications` resource.
+
+The digest's span, with one link per notification it summed up (outlined in red). Each link opens the trace that recorded the notification:
+
+![Aspire dashboard: the digest span and its links](docs/images/dashboard-digest-links.png)
+
+From the other side, a `notifications.record` span shows the digest that picked it up under Backlinks:
+
+![Aspire dashboard: a notifications.record span with the digest as a backlink](docs/images/dashboard-digest-backlinks.png)
+
+The job also logs one line per run, `Digest of 4 notifications: 3 todo-added, 1 todo-removed`, inside the digest's span, and counts what it summed up in `notifications.digested`.
 
 ## Try failures
 
