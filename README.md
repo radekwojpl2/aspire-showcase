@@ -13,7 +13,19 @@ One AppHost describes the whole system: a React app, an ASP.NET Core API, a noti
 
 The app itself is small on purpose (a weather forecast, a to-do list with notifications and one protected endpoint); the point is the AppHost in `src/AspireShowcase.AppHost`.
 
-## Aspire dashboard, locally
+## Run locally
+
+Needs .NET 10, Node.js 22 and Docker (for PostgreSQL, Redis and Logto).
+
+```
+dotnet run --project src/AspireShowcase.AppHost
+```
+
+Open the `Dashboard:` link (e.g. `https://localhost:17019/login?t=...`), then `frontend`.
+
+The to-do list needs sign-in: the first time, [set up Logto](#set-up-sign-in).
+
+## Aspire dashboard
 
 Resources, with their state, endpoints and the custom `Admin console` and `Swagger` links:
 
@@ -50,16 +62,6 @@ src/
 └── AspireShowcase.Web/              # React + Vite
 ```
 
-## Run locally
-
-Needs .NET 10, Node.js 22 and Docker (for PostgreSQL, Redis and Logto).
-
-```
-dotnet run --project src/AspireShowcase.AppHost
-```
-
-Open the `Dashboard:` link, then `frontend`.
-
 ## Database
 
 One PostgreSQL server, the `postgres` resource, holds two databases:
@@ -79,8 +81,6 @@ The API creates and updates its tables on startup from the EF Core migrations in
 dotnet tool restore
 dotnet ef migrations add <Name> --project src/AspireShowcase.Api
 ```
-
-The `/api/todos` endpoints are open: anyone who can reach the app can add, change and delete items.
 
 ## Cache
 
@@ -110,41 +110,57 @@ Two containers, because a Container App has only one HTTP ingress port.
 
 Its database is `logto-db` (see [Database](#database)). Logto wants a `postgresql://` URL rather than a .NET connection string, so in Azure the URL is stored in Key Vault as its own secret, `logto-db-url`.
 
-The first time, open the `Admin console` link on the `logto-admin` resource and create the admin account. In Azure, do it right after the first deploy: whoever opens the console first becomes the admin.
-
 Locally the console is served on `http://127.0.0.1:<port>/console`, not `localhost`: Logto runs in production mode, which blocks the console's API calls from a `localhost` address. Use the link from the dashboard.
 
-### Set up Logto for the React app and API
+### What needs sign-in
 
-Do this once in the local admin console: start the AppHost and open the `Admin console` link on the `logto-admin` resource.
+`/api/todos` and `/api/me` need a Logto access token for the API and answer 401 without one. The weather forecast and the notifications are open.
 
-**React app**
+The to-do list is shared: every signed-in user sees and changes the same items. Until the app ID is set, the React app hides **Sign in** and the to-do list.
 
-1. **Applications** → **Create application** → **Single page app** → React.
-2. On the application, add:
-   - **Redirect URIs**: `http://localhost:5173/callback`
-   - **Post sign-out redirect URIs**: `http://localhost:5173`
-3. Copy its **App ID** into the AppHost's user secrets and restart the AppHost:
+### Set up sign-in
+
+Local and Azure each have their own Logto with its own database, so do this once in each. In Azure, do it after the first deploy and again after a Deprovision, which empties the Logto database and changes the URLs.
+
+| | Local | Azure |
+|---|---|---|
+| Admin console | `Admin console` link on the `logto-admin` resource | `https://<logto-admin-fqdn>/console` |
+| App URL | `http://localhost:5173` | `https://<web-fqdn>` |
+
+The Azure host names:
+
+```
+az containerapp list -g rg-aspire-showcase --query "[].{name:name, fqdn:properties.configuration.ingress.fqdn}" -o table
+```
+
+1. Open the admin console and create the admin account. Whoever opens it first becomes the admin.
+2. **Applications** → **Create application** → **Single page app** → React. On it, add:
+   - **Redirect URIs**: `<app-url>/callback`
+   - **Post sign-out redirect URIs**: `<app-url>`
+3. **API resources** → **Create API resource**: any name, identifier `https://api.aspire-showcase`. It must match `ApiResource` in `Logto/LogtoExtensions.cs`, which the AppHost passes to the API.
+4. **User management** → create a user to sign in with. The admin account can't sign in to the app.
+5. Give the application's **App ID** to the AppHost.
+
+   Local, then restart the AppHost:
 
    ```
    dotnet user-secrets set Parameters:logto-app-id <app-id> --project src/AspireShowcase.AppHost
    ```
 
-**API**
+   Azure, then deploy again:
 
-1. **API resources** → **Create API resource**: any name, identifier `https://api.aspire-showcase`. It must match `ApiResource` in `Logto/LogtoExtensions.cs`, which the AppHost passes to the API.
+   ```
+   gh variable set LOGTO_APP_ID --env production --body "<app-id>"
+   gh workflow run Deploy
+   ```
 
-**User**
-
-1. **User management** → create a user to sign in with. The admin account can't sign in to the app.
-
-Then open `http://localhost:5173`, click **Sign in**, and **Call /api/me** on the **Protected endpoint** card.
+Then open the app, click **Sign in**, and **Call /api/me** on the **Protected endpoint** card. `<app-url>/api/config` shows the app ID the app is using, in `logtoAppId`.
 
 ## Custom telemetry
 
-On top of what ASP.NET Core, Npgsql and the Redis client record by themselves, the API records its own telemetry for the to-do list in `src/AspireShowcase.Api/Todos/TodoTelemetry.cs`.
+On top of what ASP.NET Core, Npgsql and the Redis client record by themselves, both services record their own spans, span events and metrics. Each uses its application name for the source and the meter, which is what the ServiceDefaults project subscribes to. Item titles are never recorded.
 
-Each operation runs in a span (`todos.list`, `todos.create`, `todos.update`, `todos.delete`), and what happens inside is added to the span as events: `cache.hit`, `cache.miss`, `cache.invalidated`, `cache.unavailable`, `todo.created`, `todo.updated`, `todo.completed`, `todo.deleted`, `todo.rejected`, `notification.sent`, `notification.failed`, `notification.skipped`.
+The API, in `src/AspireShowcase.Api/Todos/TodoTelemetry.cs`:
 
 | Metric | Kind | Measures |
 |---|---|---|
@@ -154,9 +170,7 @@ Each operation runs in a span (`todos.list`, `todos.create`, `todos.update`, `to
 | `todos.items` | Gauge | Open and done items when the list was last read from the database (`state` tag) |
 | `todos.notifications` | Counter | Notifications the API tried to send (`kind` tag; `result` tag: `sent`, `failed`, `skipped`) |
 
-The source and the meter are both named `AspireShowcase.Api`, the application name, which is what the ServiceDefaults project subscribes to. Item titles are never recorded.
-
-The notifications service does the same in `src/AspireShowcase.Notifications/NotificationTelemetry.cs`, under the name `AspireShowcase.Notifications`. Its spans are `notifications.record` and `notifications.list`, with the events `notification.recorded`, `notification.rejected` and `notification.evicted` (an old one dropped to stay within 50).
+The notifications service, in `src/AspireShowcase.Notifications/NotificationTelemetry.cs`:
 
 | Metric | Kind | Measures |
 |---|---|---|
@@ -173,7 +187,7 @@ Because the trace context travels with the HTTP call, the service's `notificatio
 
 ## Try failures
 
-Three failures can be produced on a local run, to see how each looks in the dashboard. They affect the to-do endpoints only.
+Three failures can be produced on a local run, to see how each looks in the dashboard. They affect the to-do endpoints only, so sign in to the app first.
 
 Two of them are commands on the `web` resource (⋯ → Commands); **Stop simulated failures** turns both off. The third is stopping the `cache` resource.
 
@@ -228,15 +242,15 @@ One-time setup (after `az login`, `gh auth login`):
 ./scripts/setup-azure-oidc.ps1 -GitHubRepo radekwojpl2/aspire-showcase -Location northeurope -ResourceGroup rg-aspire-demo
 ```
 
-If you already ran it before Logto was added, run it again: it adds the `POSTGRES_PASSWORD` secret and leaves everything else as is.
-
-Then push to `main`: CI runs, and if it passes, Deploy runs.
+Then push to `main`: CI runs, and if it passes, Deploy runs. After the first deploy, [set up sign-in](#set-up-sign-in).
 
 | Workflow | Runs on |
 |---|---|
 | CI | PRs, pushes to `main` |
 | Deploy | CI passing on `main`, manual |
 | Deprovision | manual |
+
+Each deploy prints the URL of the Aspire dashboard in Azure, `https://aspire-dashboard.ext.<environment>.westeurope.azurecontainerapps.io`.
 
 Tear down:
 
@@ -281,8 +295,3 @@ They are defined in `src/AspireShowcase.AppHost/workbooks`:
 - `workbook.bicep` creates a workbook. The AppHost adds it once per file with `AddBicepTemplate`, in publish mode only.
 
 To change one, edit its `.workbook.json` and push. Deploys overwrite changes made in the portal. To design a change in the portal instead, edit the workbook there, copy the JSON from Edit → Advanced Editor → Gallery Template into the file, set `fallbackResourceIds` back to `["__APPINSIGHTS_ID__"]`, and push.
-
-## Aspire dashboard
-
-- Local: `Dashboard:` link from `dotnet run`, e.g. `https://localhost:17019/login?t=...`
-- Azure: printed after each deploy, e.g. https://aspire-dashboard.ext.wonderfulplant-84971e34.westeurope.azurecontainerapps.io
