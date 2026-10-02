@@ -2,6 +2,8 @@
 
 React + ASP.NET Core API with [Aspire](https://aspire.dev), deployed to Azure Container Apps.
 
+## This project is juset a showcase what can be done with Aspire. It's not a production-ready app.
+
 ![The app: weather forecast, the to-do list and its notifications](docs/images/app.png)
 
 ## What this shows
@@ -288,10 +290,3 @@ Deploy publishes two workbooks to `insights` → Workbooks, each with a time ran
 | Notifications | Notifications sent by the API and received by the service, calls between the two, the service's spans and events |
 | Runtime | Requests in progress, memory, thread pool, running instances, app starts and stops |
 | Trace lookup | One trace in one view, from a pasted trace ID or span ID: the spans as a tree, with the pasted span and what is above and below it marked; logs, span events and exceptions in order; and the metrics reported around that time |
-
-They are defined in `src/AspireShowcase.AppHost/workbooks`:
-
-- `overview.workbook.json` and `api.workbook.json` hold the layout and queries. `__APPINSIGHTS_ID__` is replaced with the Application Insights resource ID at deploy time.
-- `workbook.bicep` creates a workbook. The AppHost adds it once per file with `AddBicepTemplate`, in publish mode only.
-
-To change one, edit its `.workbook.json` and push. Deploys overwrite changes made in the portal. To design a change in the portal instead, edit the workbook there, copy the JSON from Edit → Advanced Editor → Gallery Template into the file, set `fallbackResourceIds` back to `["__APPINSIGHTS_ID__"]`, and push.
