@@ -279,6 +279,13 @@ One-time setup (after `az login`, `gh auth login`):
 ./scripts/setup-azure-oidc.ps1 -GitHubRepo radekwojpl2/aspire-showcase -Location northeurope -ResourceGroup rg-aspire-demo
 ```
 
+The script lets the Deploy workflow sign in to Azure with OIDC, so no Azure secret is stored in GitHub. It creates an app registration in Entra ID that trusts tokens GitHub issues for this repository's `production` environment, and gives it two roles on the resource group:
+
+- **Contributor**, to create the resources.
+- **User Access Administrator**, because the deployment assigns roles to the apps' managed identities.
+
+A managed identity is an identity in Entra ID that Azure creates for a resource and keeps the credentials of. The app asks Azure for a token at run time, so there is no password or key to store or rotate. The deployment creates one for each Container App, which uses it to pull its image from the container registry (AcrPull) and to read its connection strings from Key Vault (Key Vault Secrets User).
+
 Then push to `main`: CI runs, and if it passes, Deploy runs. After the first deploy, [set up sign-in](#set-up-sign-in).
 
 | Workflow | Runs on |
