@@ -286,12 +286,12 @@ The script lets the Deploy workflow sign in to Azure with OIDC, so no Azure secr
 
 A managed identity is an identity in Entra ID that Azure creates for a resource and keeps the credentials of. The app asks Azure for a token at run time, so there is no password or key to store or rotate. The deployment creates one for each Container App, which uses it to pull its image from the container registry (AcrPull) and to read its connection strings from Key Vault (Key Vault Secrets User).
 
-Then push to `main`: CI runs, and if it passes, Deploy runs. After the first deploy, [set up sign-in](#set-up-sign-in).
+Then start the Deploy workflow by hand: **Actions** → **Deploy** → **Run workflow** on GitHub, or `gh workflow run Deploy`. It deploys `main`; merging to `main` does not deploy by itself. After the first deploy, [set up sign-in](#set-up-sign-in).
 
 | Workflow | Runs on |
 |---|---|
 | CI | PRs, pushes to `main` |
-| Deploy | CI passing on `main`, manual |
+| Deploy | manual, `main` only |
 | Deprovision | manual |
 
 Each deploy prints the URL of the Aspire dashboard in Azure, `https://aspire-dashboard.ext.<environment>.westeurope.azurecontainerapps.io`.
