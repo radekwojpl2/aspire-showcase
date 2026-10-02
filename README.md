@@ -128,12 +128,6 @@ Its database is `logto-db` (see [Database](#database)). Logto wants a `postgresq
 
 Locally the console is served on `http://127.0.0.1:<port>/console`, not `localhost`: Logto runs in production mode, which blocks the console's API calls from a `localhost` address. Use the link from the dashboard.
 
-### What needs sign-in
-
-`/api/todos` and `/api/me` need a Logto access token for the API and answer 401 without one. The weather forecast and the notifications are open.
-
-The to-do list is shared: every signed-in user sees and changes the same items. Until the app ID is set, the React app hides **Sign in** and the to-do list.
-
 ### Set up sign-in
 
 Local and Azure each have their own Logto with its own database, so do this once in each. In Azure, do it after the first deploy and again after a Deprovision, which empties the Logto database and changes the URLs.
