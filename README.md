@@ -83,18 +83,12 @@ src/
 
 ## Database
 
-One PostgreSQL server, the `postgres` resource, holds two databases:
+One PostgreSQL server (`postgres`) with two databases: `app-db` for the API's to-do list and `logto-db` for Logto.
 
-| Resource | Database | Used by |
-|---|---|---|
-| `app-db` | `app` | The API: the to-do list behind `/api/todos` (EF Core) |
-| `logto-db` | `logto` | Logto |
+- Local: a container, with its data in a Docker volume.
+- Azure: a Flexible Server. The connection strings are in Key Vault, and the Container Apps read them with their managed identities.
 
-- Local: a PostgreSQL container with its data in a Docker volume, so the data survives restarts. The password is generated on first run and saved in the AppHost's user secrets.
-- Azure: an Azure Database for PostgreSQL Flexible Server (Burstable B1ms, password auth, TLS). The admin password comes from the `POSTGRES_PASSWORD` secret on the `production` environment, which `setup-azure-oidc.ps1` generates.
-  The connection strings are stored in Key Vault (`kv`). The Container Apps read them from there with their managed identities (Key Vault Secrets User), so the password is not in their configuration.
-
-The API creates and updates its tables on startup from the EF Core migrations in `src/AspireShowcase.Api/Migrations`. After changing the model, add a migration:
+The API applies its EF Core migrations on startup. To add one after changing the model:
 
 ```
 dotnet tool restore
@@ -103,19 +97,21 @@ dotnet ef migrations add <Name> --project src/AspireShowcase.Api
 
 ## Cache
 
-The API keeps the to-do list in Redis, the `cache` resource, for up to 5 minutes. Adding, changing or deleting an item removes the cached list, so the next request reads the database again.
+The API caches the to-do list in Redis (`cache`) for up to 5 minutes and drops it when an item changes.
 
-Redis runs as a container both locally and in Azure. In Azure it's a Container App reachable only from inside the Container Apps environment, protected by a password. It keeps nothing on disk: a restart empties the cache and the API fills it again.
+- Local: a container.
+- Azure: a Container App, reachable only from inside the Container Apps environment.
 
 ## Notifications
 
-`AspireShowcase.Notifications` is a second ASP.NET Core service, the `notifications` resource. After a to-do item is added or removed, the API posts a notification to it; the service keeps the latest 50 in memory, and the Notifications card in the app lists the newest five.
+A second ASP.NET Core service (`notifications`). The API posts to it when a to-do item is added or removed, and it keeps the latest 50 in memory. The API calls it as `http://notifications`, which service discovery resolves.
 
-- The API calls it as `http://notifications`. The AppHost's `WithReference` passes the real address, and service discovery from ServiceDefaults resolves the name, both locally and in Azure.
-- The browser never talks to it. The card reads `/api/notifications`, which the API passes on. In Azure the service is a Container App with no external endpoint.
-- Notifications are an extra: a call gets 3 seconds, and after a failure the service is left alone for 15 seconds, so the to-do list keeps working when it's down.
-- They live in memory, so a restart of the service empties the list.
-- A [Quartz.NET](https://www.quartz-scheduler.net) job, `NotificationDigestJob`, runs every 30 seconds and logs a summary of the notifications recorded since its last run.
+- Local: a process.
+- Azure: a Container App with no external endpoint.
+
+A [Quartz.NET](https://www.quartz-scheduler.net) job, `NotificationDigestJob`, runs every 30 seconds and logs a summary of the notifications recorded since its last run. It is there to show how work that runs outside a request looks in telemetry: a scheduled job has no request to belong to, so its span starts a trace of its own.
+
+To tie that trace back to what caused it, the job's span carries a span link to each `notifications.record` span it summed up. See [Span links](#span-links).
 
 ## Logto
 
