@@ -1,5 +1,9 @@
 @AspireShowcase.Api_HostAddress = http://localhost:5268
 
+# The /api/todos endpoints need an access token: sign in to the React app, click
+# "Call /api/me" and copy the JWT from the Protected endpoint card.
+@AccessToken = <access-token>
+
 GET {{AspireShowcase.Api_HostAddress}}/api/weatherforecast/
 Accept: application/json
 
@@ -7,11 +11,13 @@ Accept: application/json
 
 GET {{AspireShowcase.Api_HostAddress}}/api/todos
 Accept: application/json
+Authorization: Bearer {{AccessToken}}
 
 ###
 
 POST {{AspireShowcase.Api_HostAddress}}/api/todos
 Content-Type: application/json
+Authorization: Bearer {{AccessToken}}
 
 { "title": "Try the Aspire dashboard" }
 
@@ -19,11 +25,13 @@ Content-Type: application/json
 
 PUT {{AspireShowcase.Api_HostAddress}}/api/todos/1
 Content-Type: application/json
+Authorization: Bearer {{AccessToken}}
 
 { "title": "Try the Aspire dashboard", "isDone": true }
 
 ###
 
 DELETE {{AspireShowcase.Api_HostAddress}}/api/todos/1
+Authorization: Bearer {{AccessToken}}
 
 ###

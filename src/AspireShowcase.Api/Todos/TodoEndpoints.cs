@@ -9,11 +9,12 @@ static class TodoEndpoints
     /// <summary>
     /// CRUD for to-do items, stored in the app's PostgreSQL database. The list is served
     /// from Redis when it's cached there. Each operation runs in its own span and reports
-    /// what happened to <see cref="TodoTelemetry"/>.
+    /// what happened to <see cref="TodoTelemetry"/>. Only for signed-in users: every
+    /// endpoint needs a Logto access token for this API (401 without one).
     /// </summary>
     public static void MapTodos(this IEndpointRouteBuilder api)
     {
-        var todos = api.MapGroup("/todos");
+        var todos = api.MapGroup("/todos").RequireAuthorization();
 
         // Failures switched on from the Aspire dashboard; does nothing unless one is on.
         todos.AddEndpointFilter(async (context, next) =>

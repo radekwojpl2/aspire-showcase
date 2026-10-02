@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useLogto } from '@logto/react';
 
 type Todo = {
   id: number;
@@ -7,22 +8,43 @@ type Todo = {
   createdAt: string;
 };
 
-async function request<T>(path: string, method = 'GET', body?: unknown): Promise<T | undefined> {
-  const response = await fetch(path, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : {},
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-  return response.status === 204 ? undefined : await response.json();
+// The /api/todos endpoints only answer signed-in users, so without sign-in there is no list.
+export function TodosUnavailable() {
+  return (
+    <section className="card todos-card" aria-labelledby="todos-heading">
+      <div className="section-header">
+        <h2 id="todos-heading" className="section-title">To-do list</h2>
+      </div>
+      <p className="protected-hint">The to-do list needs sign-in, which isn't set up yet.</p>
+    </section>
+  );
 }
 
-// To-do list kept in the app's PostgreSQL database, through the /api/todos CRUD endpoints.
+// To-do list kept in the app's PostgreSQL database, through the /api/todos CRUD endpoints,
+// called with an access token for the API resource.
 // onChanged runs after every add, tick and delete, so the notifications card can reload.
-export function Todos({ onChanged }: { onChanged: () => void }) {
+export function Todos({ apiResource, onChanged }: { apiResource: string; onChanged: () => void }) {
+  const { isAuthenticated, getAccessToken } = useLogto();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [title, setTitle] = useState('');
   const [error, setError] = useState<string>();
+
+  const request = useCallback(
+    async <T,>(path: string, method = 'GET', body?: unknown): Promise<T | undefined> => {
+      const token = await getAccessToken(apiResource);
+      const response = await fetch(path, {
+        method,
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return response.status === 204 ? undefined : await response.json();
+    },
+    [getAccessToken, apiResource],
+  );
 
   // Runs a change against the API, then reloads the list so it shows what the database holds.
   const run = async (change?: () => Promise<unknown>) => {
@@ -37,16 +59,31 @@ export function Todos({ onChanged }: { onChanged: () => void }) {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setTodos([]);
+      return;
+    }
     request<Todo[]>('/api/todos')
       .then((list) => setTodos(list ?? []))
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to call the API'));
-  }, []);
+  }, [isAuthenticated, request]);
 
   const add = (event: FormEvent) => {
     event.preventDefault();
     if (!title.trim()) return;
     void run(() => request('/api/todos', 'POST', { title })).then(() => setTitle(''));
   };
+
+  if (!isAuthenticated) {
+    return (
+      <section className="card todos-card" aria-labelledby="todos-heading">
+        <div className="section-header">
+          <h2 id="todos-heading" className="section-title">To-do list</h2>
+        </div>
+        <p className="protected-hint">Sign in to see and change the to-do list.</p>
+      </section>
+    );
+  }
 
   return (
     <section className="card todos-card" aria-labelledby="todos-heading">

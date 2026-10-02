@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import aspireLogo from '/Aspire.png';
 import './App.css';
 import { Account, ProtectedData } from './auth.tsx';
-import { Todos } from './todos.tsx';
+import { Todos, TodosUnavailable } from './todos.tsx';
 import { Notifications } from './notifications.tsx';
 
 interface WeatherForecast {
@@ -163,7 +163,11 @@ function App({ signInEnabled, apiResource }: { signInEnabled: boolean; apiResour
               </div>
             )}
           </div>
-          <Todos onChanged={() => setTodoChanges((count) => count + 1)} />
+          {signInEnabled && apiResource ? (
+            <Todos apiResource={apiResource} onChanged={() => setTodoChanges((count) => count + 1)} />
+          ) : (
+            <TodosUnavailable />
+          )}
           <Notifications refresh={todoChanges} />
           {signInEnabled && apiResource && <ProtectedData apiResource={apiResource} />}
         </section>
