@@ -44,6 +44,12 @@ Open the `Dashboard:` link (e.g. `https://localhost:17019/login?t=...`), then `f
 
 The to-do list needs sign-in: the first time, [set up Logto](#set-up-sign-in).
 
+### Set up with an AI assistant
+
+In [Claude Code](https://claude.com/claude-code), run `/setup`: it checks the prerequisites, starts the app and walks you through the Logto setup. Other assistants read `AGENTS.md`, which has the same facts.
+
+For Aspire itself (running, monitoring, deploying), `aspire agent init` installs [Aspire's own skills](https://aspire.dev/get-started/aspire-skills/) for your assistant.
+
 ## Aspire dashboard
 
 Resources, with their state, endpoints and the custom `Admin console` and `Swagger` links:
