@@ -34,10 +34,10 @@ So something that works locally can still fail in Azure.
 
 ## Run locally
 
-Needs .NET 10, Node.js 22 and Docker (for PostgreSQL, Redis and Logto).
+Needs .NET 10, Node.js 22, Docker (for PostgreSQL, Redis and Logto) and the Aspire CLI (`dotnet tool install --global Aspire.Cli`).
 
 ```
-dotnet run --project src/AspireShowcase.AppHost
+aspire run
 ```
 
 Open the `Dashboard:` link (e.g. `https://localhost:17019/login?t=...`), then `frontend`.
