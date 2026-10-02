@@ -203,4 +203,4 @@ if ($SkipGitHub) {
 }
 
 Write-Host ""
-Write-Host "Done. Push to main (or run the Deploy workflow manually) to deploy." -ForegroundColor Green
+Write-Host "Done. Run the Deploy workflow to deploy: gh workflow run Deploy" -ForegroundColor Green

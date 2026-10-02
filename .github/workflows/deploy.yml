@@ -1,11 +1,7 @@
 name: Deploy
 
 on:
-  # Deploy only after CI (backend + frontend) succeeds on main.
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  # Started by hand only: Actions → Deploy → Run workflow, or `gh workflow run Deploy`.
   workflow_dispatch:
 
 permissions:
@@ -19,10 +15,9 @@ concurrency:
 
 jobs:
   deploy:
-    # Skip failed CI runs and CI runs triggered by pull requests.
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    # The run can be started from any branch, but only main is deployed: it's the branch
+    # that pull requests and CI protect.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -49,9 +44,6 @@ jobs:
           fi
 
       - uses: actions/checkout@v7
-        with:
-          # Deploy exactly the commit CI built, not whatever main points to now.
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - uses: actions/setup-dotnet@v6
         with:
