@@ -40,14 +40,6 @@ src/
 └── AspireShowcase.Web/              # React + Vite (resource "frontend")
 ```
 
-## Things that trip people up
-
-- The to-do list and **Sign in** stay hidden until Logto is set up and the `logto-app-id` parameter is set. `curl -skL http://localhost:5268/api/config` shows the value in use.
-- The Logto admin console only works on `http://127.0.0.1:<port>/console`, not `localhost`. Use the `Admin console` link of the `logto-admin` resource.
-- The Logto admin account can't sign in to the app. A separate user has to be created under **User management**.
-- The React app runs on port 5173 on purpose: the redirect URI registered in Logto depends on it.
-- Local and Azure differ: locally the AppHost runs everything, in Azure it only describes what is deployed. See "Local and Azure are not the same" in the README.
-
 ## Rules
 
 - Stop the AppHost (`aspire stop`) when you finish a task that started it, unless the user wants it left running.
