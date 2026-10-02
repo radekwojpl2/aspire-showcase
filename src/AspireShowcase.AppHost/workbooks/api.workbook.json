@@ -717,7 +717,7 @@
           {
             "type": 1,
             "content": {
-              "json": "The notifications service and the API calls into it: the API sends a notification after a to-do item is added or removed. Custom telemetry from `NotificationTelemetry.cs` in the service and `NotificationsClient.cs` in the API."
+              "json": "The notifications service and the API calls into it: the API sends a notification after a to-do item is added or removed. Custom telemetry from `NotificationTelemetry.cs` in the service and `NotificationsClient.cs` in the API. A scheduled job in the service, `NotificationDigestJob`, sums up what was recorded since its last run; its span is a trace of its own, with a span link to each `notifications.record` span it covers."
             },
             "name": "notifications-help"
           },
@@ -785,6 +785,40 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name in (\"notifications.received\", \"notifications.digested\")\n| summarize notifications = sum(valueSum) by name, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Received and summed up by the digest job (notifications.received, notifications.digested, counters)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "notifications-digested"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and name == \"notifications.digest\"\n| extend links = todynamic(tostring(customDimensions[\"_MS.links\"]))\n| project timestamp, notifications = toint(customDimensions[\"notifications.count\"]), linked_spans = array_length(links), duration_ms = round(duration, 2), operation_Id\n| order by timestamp desc",
+              "size": 0,
+              "title": "Digest runs (a run with nothing new records no span)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "notifications-digest-runs"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
               "query": "dependencies\n| where client_Type != \"Browser\" and (target contains \"notifications\" or data contains \"notifications\")\n| summarize calls = count(), failed = countif(success == false), avg_ms = round(avg(duration), 2), p95_ms = round(percentile(duration, 95), 2) by name, resultCode\n| order by calls desc",
               "size": 0,
               "title": "Calls from the API to the service",
@@ -837,6 +871,25 @@
             },
             "customWidth": "100",
             "name": "notifications-events"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and name == \"notifications.digest\"\n| mv-expand link = todynamic(tostring(customDimensions[\"_MS.links\"]))\n| project timestamp, digest_trace = operation_Id, digest_span = id, linked_trace = tostring(link.operation_Id), linked_span = tostring(link.id)\n| join kind=leftouter (dependencies | where name == \"notifications.record\" | project linked_span = id, linked_name = name, kind = tostring(customDimensions[\"notification.kind\"]), recorded = timestamp) on linked_span\n| project timestamp, digest_trace, linked_name, kind, recorded, linked_trace, linked_span\n| order by timestamp desc, recorded asc",
+              "size": 0,
+              "title": "Span links of the digest: one row per notification it summed up (paste linked_trace into Trace lookup)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "notifications-digest-links"
           }
         ]
       },
@@ -950,7 +1003,7 @@
           {
             "type": 1,
             "content": {
-              "json": "Everything recorded for one trace in one place. Paste a trace ID (`operation_Id` in the other tabs, the trace ID in the Aspire dashboard) or the ID of one span in it. The trace has to fall inside the time range picked above.\n\nMetrics carry no trace ID, so the last two panels show what the services reported in the 5 minutes before and after the trace, as context. For a waterfall chart of the same trace, paste the trace ID into Transaction search in Application Insights."
+              "json": "Everything recorded for one trace in one place. Paste a trace ID (`operation_Id` in the other tabs, the trace ID in the Aspire dashboard) or the ID of one span in it. The trace has to fall inside the time range picked above.\n\nA span link points from one trace to another: the digest job's trace links to the traces whose notifications it summed up. The span links panel lists both directions; paste `other_trace` to follow one.\n\nMetrics carry no trace ID, so the last two panels show what the services reported in the 5 minutes before and after the trace, as context. For a waterfall chart of the same trace, paste the trace ID into Transaction search in Application Insights."
             },
             "name": "trace-help"
           },
@@ -1046,6 +1099,25 @@
             },
             "customWidth": "100",
             "name": "trace-logs"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "let input = trim(\" \", \"{TraceOrSpanId}\");\nlet spans = union\n(requests | project timestamp, id, parentId = operation_ParentId, operation_Id, service = cloud_RoleName, span_kind = \"request\", name, detail = url, duration, result = resultCode, failed = (success == false)),\n(dependencies | project timestamp, id, parentId = operation_ParentId, operation_Id, service = cloud_RoleName, span_kind = iff(type ==\"InProc\", \"internal\", type), name, detail = data, duration, result = resultCode, failed = (success == false));\nlet op = toscalar(spans | where operation_Id == input or id == input | take 1 | project operation_Id);\nunion requests, dependencies\n| where isnotempty(customDimensions[\"_MS.links\"])\n| mv-expand link = todynamic(tostring(customDimensions[\"_MS.links\"]))\n| extend linked_trace = tostring(link.operation_Id), linked_span = tostring(link.id)\n| where operation_Id == op or linked_trace == op\n| extend direction = iff(operation_Id == op, \"link\", \"backlink\")\n| project timestamp, direction, linking_span = name, service = cloud_RoleName, other_trace = iff(direction == \"link\", linked_trace, operation_Id), other_span = iff(direction == \"link\", linked_span, id), span_in_this_trace = iff(direction == \"link\", id, linked_span)\n| order by timestamp asc",
+              "size": 0,
+              "title": "Span links: spans this trace links to (link), and spans in other traces that link to it (backlink)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "trace-links"
           },
           {
             "type": 3,

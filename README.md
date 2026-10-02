@@ -305,6 +305,6 @@ Deploy publishes two workbooks to `insights` → Workbooks, each with a time ran
 | Database | PostgreSQL queries and failures, query duration, statements by total time, failed queries, connection pool metrics |
 | Cache | To-do list cache hits and misses, Redis commands, command duration, failed commands |
 | To-dos | The API's custom telemetry: the `todos.*` metrics, the operation spans and their events |
-| Notifications | Notifications sent by the API and received by the service, calls between the two, the service's spans and events |
+| Notifications | Notifications sent by the API and received by the service, calls between the two, the service's spans and events, the digest job's runs and the spans they link to |
 | Runtime | Requests in progress, memory, thread pool, running instances, app starts and stops |
-| Trace lookup | One trace in one view, from a pasted trace ID or span ID: the spans as a tree, with the pasted span and what is above and below it marked; logs, span events and exceptions in order; and the metrics reported around that time |
+| Trace lookup | One trace in one view, from a pasted trace ID or span ID: the spans as a tree, with the pasted span and what is above and below it marked; logs, span events and exceptions in order; span links to and from other traces; and the metrics reported around that time |
