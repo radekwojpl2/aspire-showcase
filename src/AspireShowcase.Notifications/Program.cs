@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,13 +12,20 @@ builder.Services.AddSingleton<NotificationStore>();
 // Custom spans, span events and metrics for the notifications.
 builder.Services.AddSingleton<NotificationTelemetry>();
 
+// A scheduled job (Quartz.NET) that sums up what was recorded since its last run.
+builder.Services.AddSingleton<PendingDigest>();
+builder.Services.AddQuartz(quartz => quartz.ScheduleJob<NotificationDigestJob>(
+    trigger => trigger.WithCronSchedule(NotificationDigestJob.Schedule)));
+builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
 
 // Called by the API after a to-do item is added or removed.
 app.MapPost("/notifications", (
-    CreateNotification request, NotificationStore store, NotificationTelemetry telemetry, ILogger<Program> logger) =>
+    CreateNotification request, NotificationStore store, PendingDigest pending,
+    NotificationTelemetry telemetry, ILogger<Program> logger) =>
 {
     using var activity = telemetry.StartActivity("notifications.record");
 
@@ -35,6 +43,7 @@ app.MapPost("/notifications", (
 
     var notification = store.Add(request.Kind, request.Message, out var evicted);
     telemetry.Recorded(activity, notification, evicted);
+    pending.Add(notification.Kind, activity);
     // The message holds what the user typed, so only the kind is logged.
     logger.LogInformation("Notification {Id} of kind {Kind} recorded", notification.Id, notification.Kind);
     return Results.Created($"/notifications/{notification.Id}", notification);

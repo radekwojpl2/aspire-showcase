@@ -18,6 +18,7 @@ sealed class NotificationTelemetry
 
     readonly Counter<long> _received;
     readonly Counter<long> _rejected;
+    readonly Counter<long> _digested;
     readonly Histogram<int> _messageLength;
 
     public NotificationTelemetry(IMeterFactory meterFactory, NotificationStore store)
@@ -28,6 +29,8 @@ sealed class NotificationTelemetry
             "notifications.received", "{notification}", "Notifications accepted and stored, by kind.");
         _rejected = meter.CreateCounter<long>(
             "notifications.rejected", "{notification}", "Notifications refused because they were invalid.");
+        _digested = meter.CreateCounter<long>(
+            "notifications.digested", "{notification}", "Notifications summed up by the scheduled digest.");
 
         // The default buckets are meant for milliseconds; these fit a message of up to 300 characters.
         _messageLength = meter.CreateHistogram(
@@ -63,6 +66,16 @@ sealed class NotificationTelemetry
         _rejected.Add(1);
         activity?.AddEvent(new ActivityEvent(
             "notification.rejected", tags: new ActivityTagsCollection { ["reason"] = reason }));
+    }
+
+    /// <summary>Starts the digest's span, linked to the spans that recorded its notifications.</summary>
+    public Activity? StartDigest(IEnumerable<ActivityLink> links) =>
+        Source.StartActivity("notifications.digest", ActivityKind.Internal, parentContext: default, links: links);
+
+    public void Digested(Activity? activity, int count)
+    {
+        _digested.Add(count);
+        activity?.SetTag("notifications.count", count);
     }
 
     public void Listed(Activity? activity, int count) => activity?.SetTag("notifications.count", count);
