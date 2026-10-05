@@ -30,9 +30,13 @@ jobs:
       # Admin password of the PostgreSQL server that Logto uses. It has to stay the same
       # across deploys, so it comes from a secret instead of being generated on each run.
       Parameters__postgres-password: ${{ secrets.POSTGRES_PASSWORD }}
-      # ID of the Logto application the React app signs in with, created in the Azure Logto
-      # admin console after the first deploy. Until it's set, the app runs without sign-in.
+      # The Logto applications, created in the Azure Logto admin console after the first deploy:
+      # the "Traditional web" one bff signs users in with (until it's set, the app runs without
+      # sign-in), and the machine-to-machine one web gives owners their role with.
       Parameters__logto-app-id: ${{ vars.LOGTO_APP_ID }}
+      Parameters__logto-app-secret: ${{ secrets.LOGTO_APP_SECRET }}
+      Parameters__logto-m2m-app-id: ${{ vars.LOGTO_M2M_APP_ID }}
+      Parameters__logto-m2m-app-secret: ${{ secrets.LOGTO_M2M_APP_SECRET }}
     steps:
       - name: Check secrets
         env:
