@@ -1,5 +1,6 @@
 using AspireShowcase.BusinessSetup;
 using AspireShowcase.Identity;
+using AspireShowcase.Scheduling;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,10 +8,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 // The modules, as described in docs/architecture/ddd-modules.md, each a project in src/Modules.
-// Identity & Access is the anti-corruption layer over Logto. Business Setup keeps its tables in
-// the app's PostgreSQL database, whose connection string the AppHost passes as "app-db".
+// Identity & Access is the anti-corruption layer over Logto. Business Setup and Scheduling keep
+// their tables in the app's PostgreSQL database, whose connection string the AppHost passes as
+// "app-db", each in its own schema.
 builder.AddIdentityAccess();
 builder.AddBusinessSetup("app-db");
+builder.AddScheduling("app-db");
 
 builder.Services.AddProblemDetails();
 
@@ -21,6 +24,7 @@ var app = builder.Build();
 
 // Each module creates or updates its own tables on startup.
 await app.Services.MigrateBusinessSetupAsync();
+await app.Services.MigrateSchedulingAsync();
 
 app.UseExceptionHandler();
 
@@ -37,6 +41,8 @@ app.UseHttpsRedirection();
 var api = app.MapGroup("/api");
 
 api.MapBusinessSetup();
+// Sample bookings are a development tool, called from the Aspire dashboard (see the AppHost).
+api.MapScheduling(includeDevelopmentTools: app.Environment.IsDevelopment());
 
 // Runtime settings for the React app, which gets them through bff. The Application Insights
 // connection string is public by design (the browser SDK needs it) and only set in Azure.

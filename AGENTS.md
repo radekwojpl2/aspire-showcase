@@ -26,7 +26,7 @@ Run from the repository root.
 | Logs and traces | `aspire logs <resource>`, `aspire otel traces <resource>` |
 | Build and test the .NET projects | `dotnet build`, `dotnet test` |
 | Lint and build the React app | `npm run lint`, `npm run build` in `src/AspireShowcase.Web` |
-| Add an EF Core migration | `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/AspireShowcase.BusinessSetup --startup-project src/AspireShowcase.Api` (or `--project src/AspireShowcase.Bff` alone) |
+| Add an EF Core migration | `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/<Module> --startup-project src/AspireShowcase.Api --context <Module>DbContext` (or `--project src/AspireShowcase.Bff` alone) |
 
 ## Layout
 
@@ -37,20 +37,23 @@ src/
 ├── AspireShowcase.Bff/              # backend for frontend (resource "bff"): sign-in, sessions, proxy to web; serves the React app in Azure
 ├── AspireShowcase.Api/              # API host (resource "web"), reachable only from bff; composes the modules
 ├── Modules/                         # one project per module of docs/architecture/ddd-modules.md
-│   ├── AspireShowcase.BusinessSetup/  # business, booking link, opening hours; own DbContext and migrations
+│   ├── AspireShowcase.BusinessSetup/  # business, booking link, hours, services, staff; own DbContext and migrations
+│   ├── AspireShowcase.BusinessSetup.PublicClient/  # contracts other modules use to talk to Business Setup
+│   ├── AspireShowcase.Scheduling/     # bookings and the owner's calendar; own DbContext and migrations
 │   ├── AspireShowcase.Identity/       # anti-corruption layer over Logto
 │   └── AspireShowcase.SharedKernel/   # what every module's domain may use
 ├── AspireShowcase.Notifications/    # notifications service, with a Quartz.NET job
 └── AspireShowcase.Web/              # React + Vite (resource "frontend")
 tests/
-└── AspireShowcase.BusinessSetup.Tests/  # xUnit tests of Business Setup's domain rules
+├── AspireShowcase.BusinessSetup.Tests/  # xUnit tests of Business Setup's domain rules
+└── AspireShowcase.Scheduling.Tests/     # xUnit tests of Scheduling's domain rules
 ```
 
 ## Rules
 
 - Stop the AppHost (`aspire stop`) when you finish a task that started it, unless the user wants it left running.
 - Never print secrets: user secrets, tokens, connection strings.
-- API code belongs to a module project in `src/Modules`, not to the host. Keep a module's domain and storage `internal`, and use another module only through its public entry points; don't add `InternalsVisibleTo` except for its tests.
+- API code belongs to a module project in `src/Modules`, not to the host. Keep a module's domain and storage `internal`, and use another module only through its public client project (`<Module>.PublicClient`), never the module itself; don't add `InternalsVisibleTo` except for its tests.
 - `main` is protected. Changes go on a branch and through a pull request, with the CI checks `build` and `web` passing.
 - Deploying is manual (`gh workflow run Deploy`) and creates billable Azure resources. Do it only when asked.
 - Match the surrounding code: comments explain why, and the README is kept short.

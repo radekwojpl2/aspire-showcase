@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Business Setup's public client: the only way other modules talk to Business Setup.
+       Plain contracts with no dependencies; Business Setup implements them, others reference
+       only this project, never Business Setup itself. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

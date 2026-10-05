@@ -76,3 +76,9 @@ Authorization: Bearer {{AccessToken}}
 }
 
 ###
+
+# The calendar: view=day or week, date as yyyy-MM-dd (default: today, in the business's time zone).
+GET {{AspireShowcase.Api_HostAddress}}/api/businesses/mine/bookings?view=week
+Authorization: Bearer {{AccessToken}}
+
+###

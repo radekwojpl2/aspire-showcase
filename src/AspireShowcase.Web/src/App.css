@@ -418,6 +418,104 @@
   gap: 0.5rem;
 }
 
+/* The owner's calendar: a toolbar, then one column per day */
+.page:has(.calendar-week) {
+  max-width: 72rem;
+}
+
+.calendar-card {
+  max-width: 100%;
+}
+
+.calendar-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.calendar-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.button-secondary.active {
+  background: var(--accent-gradient-start);
+  color: white;
+}
+
+.calendar-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.calendar {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.calendar-week {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-day {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.calendar-day-name {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.calendar-bookings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.calendar-booking {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.5rem;
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
+  border-left: 3px solid var(--accent-gradient-start);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.calendar-time {
+  font-weight: 600;
+}
+
+.calendar-client {
+  color: var(--text-primary);
+}
+
+.calendar-email {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+}
+
 /* Checkbox lists: services and working hours of a staff member */
 .choice-group {
   margin: 0;
@@ -608,6 +706,10 @@
   .service-item {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .calendar-week {
+    grid-template-columns: 1fr;
   }
 
   .app-footer > * {

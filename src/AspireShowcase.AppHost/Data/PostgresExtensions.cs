@@ -1,4 +1,5 @@
 using Aspire.Hosting.Azure;
+using Azure.Provisioning.PostgreSql;
 
 /// <summary>The PostgreSQL server, and in Azure the Key Vault its connection strings are kept in.</summary>
 sealed record PostgresServer(
@@ -35,6 +36,7 @@ static class PostgresExtensions
         if (keyVault is not null)
         {
             postgres.WithPasswordAuthentication(keyVault, userName, password);
+            AllowExtensions(postgres, "BTREE_GIST");
         }
         else
         {
@@ -45,6 +47,21 @@ static class PostgresExtensions
 
         return new PostgresServer(postgres, keyVault);
     }
+
+    // A Flexible Server only lets databases create the extensions on its allow list.
+    // Scheduling's migration creates btree_gist, for its no-overlap constraint on bookings.
+    static void AllowExtensions(IResourceBuilder<AzurePostgresFlexibleServerResource> postgres, string extensions) =>
+        postgres.ConfigureInfrastructure(infra =>
+        {
+            var server = infra.GetProvisionableResources().OfType<PostgreSqlFlexibleServer>().Single();
+            infra.Add(new PostgreSqlFlexibleServerConfiguration("allowExtensions")
+            {
+                Parent = server,
+                Name = "azure.extensions",
+                Value = extensions,
+                Source = "user-override",
+            });
+        });
 
     /// <summary>
     /// Adds the app's own database to the server and gives the API its connection string
