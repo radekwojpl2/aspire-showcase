@@ -45,11 +45,24 @@ public class BookingTests
         var start = DateTimeOffset.UtcNow.AddDays(1);
         var booking = BookingAt(start);
 
-        booking.Cancel(start.AddHours(-2));
+        booking.Cancel(start.AddHours(-2), CancelledBy.Client);
 
         // Only confirmed bookings count for the database's no-overlap rule, so the time is free.
         Assert.Equal(BookingStatus.Cancelled, booking.Status);
         Assert.Equal(start.AddHours(-2), booking.CancelledAt);
+        Assert.Equal(CancelledBy.Client, booking.CancelledBy);
+    }
+
+    [Fact]
+    public void The_business_can_cancel_a_booking_for_its_client()
+    {
+        var start = DateTimeOffset.UtcNow.AddDays(1);
+        var booking = BookingAt(start);
+
+        booking.Cancel(start.AddHours(-3), CancelledBy.Business);
+
+        Assert.Equal(BookingStatus.Cancelled, booking.Status);
+        Assert.Equal(CancelledBy.Business, booking.CancelledBy);
     }
 
     [Fact]
@@ -58,7 +71,7 @@ public class BookingTests
         var start = DateTimeOffset.UtcNow.AddDays(1);
         var booking = BookingAt(start);
 
-        var errors = Assert.Throws<DomainValidationException>(() => booking.Cancel(start.AddMinutes(5))).Errors;
+        var errors = Assert.Throws<DomainValidationException>(() => booking.Cancel(start.AddMinutes(5), CancelledBy.Business)).Errors;
 
         Assert.True(errors.ContainsKey("booking"));
         Assert.Equal(BookingStatus.Confirmed, booking.Status);
@@ -69,11 +82,12 @@ public class BookingTests
     {
         var start = DateTimeOffset.UtcNow.AddDays(1);
         var booking = BookingAt(start);
-        booking.Cancel(start.AddHours(-2));
+        booking.Cancel(start.AddHours(-2), CancelledBy.Client);
 
-        booking.Cancel(start.AddHours(-1));
+        booking.Cancel(start.AddHours(-1), CancelledBy.Business);
 
         Assert.Equal(start.AddHours(-2), booking.CancelledAt);
+        Assert.Equal(CancelledBy.Client, booking.CancelledBy);
     }
 
     [Theory]

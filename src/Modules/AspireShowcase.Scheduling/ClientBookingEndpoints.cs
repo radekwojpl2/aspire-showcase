@@ -80,7 +80,7 @@ static class ClientBookingEndpoints
 
             try
             {
-                booking.Cancel(time.GetUtcNow());
+                booking.Cancel(time.GetUtcNow(), CancelledBy.Client);
             }
             catch (DomainValidationException exception)
             {
