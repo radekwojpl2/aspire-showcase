@@ -61,7 +61,9 @@ function BusinessCard({ business }: { business: Business }) {
     <section className="card" aria-labelledby="business-heading">
       <h2 id="business-heading" className="section-title">{business.name}</h2>
       <p className="hint">Share this link, and clients can book with you:</p>
-      <p className="booking-link">{bookingLink(business.slug)}</p>
+      <p className="booking-link">
+        <a href={`/book/${business.slug}`}>{bookingLink(business.slug)}</a>
+      </p>
       <div className="form-actions">
         <a className="button" href="/bookings">
           Bookings

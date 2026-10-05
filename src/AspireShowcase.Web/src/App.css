@@ -516,6 +516,63 @@
   font-size: 0.75rem;
 }
 
+/* The public booking page: services as cards, then free times by day */
+.option-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.5rem;
+}
+
+.option-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
+  cursor: pointer;
+}
+
+.option-card input {
+  position: absolute;
+  opacity: 0;
+}
+
+.option-card.selected {
+  border-color: var(--accent-gradient-start);
+  box-shadow: 0 0 0 1px var(--accent-gradient-start);
+}
+
+.option-card:focus-within {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
+}
+
+.slot-days {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.slot-day {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  align-items: start;
+  gap: 0.5rem;
+}
+
+.slot-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.slot {
+  padding: 0.375rem 0.625rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Checkbox lists: services and working hours of a staff member */
 .choice-group {
   margin: 0;
@@ -709,6 +766,10 @@
   }
 
   .calendar-week {
+    grid-template-columns: 1fr;
+  }
+
+  .slot-day {
     grid-template-columns: 1fr;
   }
 

@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react';
 
 export type SessionUser = {
   name: string;
+  email: string | null;
   // The access token has the owner role's permission.
   isOwner: boolean;
 };

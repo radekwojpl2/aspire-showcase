@@ -9,12 +9,18 @@ sealed class BusinessDirectory(BusinessSetupDbContext db) : IBusinessDirectory
     public async Task<BusinessInfo?> FindOwnedAsync(string ownerId, CancellationToken cancellation) =>
         await db.Businesses.AsNoTracking()
             .Where(business => business.OwnerId == ownerId)
-            .Select(business => new BusinessInfo(business.Id, business.Name, business.TimeZone))
+            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone))
+            .SingleOrDefaultAsync(cancellation);
+
+    public async Task<BusinessInfo?> FindBySlugAsync(string slug, CancellationToken cancellation) =>
+        await db.Businesses.AsNoTracking()
+            .Where(business => business.Slug == slug)
+            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone))
             .SingleOrDefaultAsync(cancellation);
 
     public async Task<IReadOnlyList<BusinessInfo>> ListAsync(CancellationToken cancellation) =>
         await db.Businesses.AsNoTracking()
-            .Select(business => new BusinessInfo(business.Id, business.Name, business.TimeZone))
+            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone))
             .ToListAsync(cancellation);
 
     public async Task<IReadOnlyList<StaffInfo>> StaffAsync(BusinessId businessId, CancellationToken cancellation)
@@ -42,6 +48,7 @@ sealed class BusinessDirectory(BusinessSetupDbContext db) : IBusinessDirectory
         await db.Services.AsNoTracking()
             .Where(service => service.BusinessId == businessId)
             .OrderBy(service => service.Name)
-            .Select(service => new ServiceInfo(service.Id, service.Name, service.Duration, service.IsHidden))
+            .Select(service => new ServiceInfo(
+                service.Id, service.Name, service.Duration, service.Price.Amount, service.Price.Currency, service.IsHidden))
             .ToListAsync(cancellation);
 }

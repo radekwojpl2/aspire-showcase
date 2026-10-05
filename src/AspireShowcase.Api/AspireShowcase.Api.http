@@ -82,3 +82,21 @@ GET {{AspireShowcase.Api_HostAddress}}/api/businesses/mine/bookings?view=week
 Authorization: Bearer {{AccessToken}}
 
 ###
+
+# The public booking page: no token needed to see the business and its free slots.
+GET {{AspireShowcase.Api_HostAddress}}/api/public/businesses/anna-hair
+
+###
+
+GET {{AspireShowcase.Api_HostAddress}}/api/public/businesses/anna-hair/slots?serviceId=<service-id>
+
+###
+
+# Booking needs a signed-in client. Leave staffMemberId out for anyone who is free.
+POST {{AspireShowcase.Api_HostAddress}}/api/public/businesses/anna-hair/bookings
+Content-Type: application/json
+Authorization: Bearer {{AccessToken}}
+
+{ "serviceId": "<service-id>", "startsAt": "2026-10-06T07:00:00Z", "clientName": "Ola Nowak", "clientEmail": "ola.nowak@example.com" }
+
+###

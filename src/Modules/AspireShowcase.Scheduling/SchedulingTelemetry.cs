@@ -20,13 +20,13 @@ sealed class SchedulingTelemetry
     {
         var meter = meterFactory.Create(Name);
         _booked = meter.CreateCounter<long>(
-            "bookings.attempts", "{booking}", "Attempts to book, by result (booked, slot_taken) and source.");
+            "bookings.attempts", "{booking}", "Attempts to book, by result (booked, slot_taken) and source (client, sample).");
     }
 
     /// <summary>Starts a span for one operation, under the request's span.</summary>
     public Activity? StartActivity(string name) => Source.StartActivity(name);
 
-    /// <param name="source">Where the booking came from: sample, for now.</param>
+    /// <param name="source">Where the booking came from: client, or sample in development.</param>
     public void Booking(BookingResult result, string source) => _booked.Add(1,
         new KeyValuePair<string, object?>("result", result == BookingResult.Booked ? "booked" : "slot_taken"),
         new KeyValuePair<string, object?>("source", source));

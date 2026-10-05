@@ -2,7 +2,7 @@
 
 User stories for the booking SaaS in [the proposed architecture](README.md), in three phases. Each phase is usable on its own: the MVP lets a small business and its staff take bookings, v1 makes it work for the day-to-day of a real shop, and v2 adds what keeps businesses on the platform.
 
-Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 5 of 14 MVP stories (MVP-8 to MVP-12), none of v1 or v2.
+Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 8 of 14 MVP stories (MVP-1, 2, 4 and MVP-8 to 12) and part of MVP-3, none of v1 or v2.
 
 People in the stories:
 
@@ -17,22 +17,22 @@ Goal: a small business with one or more staff can share a link, and clients book
 
 ### Clients
 
-**MVP-1. See free slots without an account**
+**MVP-1. See free slots without an account** ✅
 As a visitor, I want to see a business's services and free slots on its booking page, so that I can check availability before signing up.
 - `/book/{slug}` shows the services and the free slots for the next 4 weeks, without signing in.
 - Slots already booked, and times outside the staff's working hours, aren't shown.
 
-**MVP-2. Choose a staff member**
+**MVP-2. Choose a staff member** ✅
 As a client, I want to pick a staff member or "anyone", so that I can book with the person I prefer.
 - Only staff who do the chosen service are offered.
 - "Anyone" shows the union of their free slots, and assigns whoever is free.
 
-**MVP-3. Sign up to book**
+**MVP-3. Sign up to book** 🟡
 As a visitor, I want to create an account or sign in when I choose a slot, so that my booking is tied to me.
-- Choosing **Book** while signed out goes to sign-in and comes back to the same slot.
-- Sign-up verifies the email address before the account can book.
+- ✅ Choosing **Book** while signed out goes to sign-in and comes back to the same slot.
+- ❌ Sign-up verifies the email address before the account can book. Needs an email provider for Logto's verification codes.
 
-**MVP-4. Book a slot**
+**MVP-4. Book a slot** ✅
 As a client, I want to book a free slot for a service, so that I have an appointment.
 - The booking is saved for me, with the service, the staff member, and the start and end time.
 - If someone else just took an overlapping time, I see "This time was just taken" and the updated free slots, not an error page.

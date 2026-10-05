@@ -14,6 +14,9 @@ public interface IBusinessDirectory
     /// <summary>The business the user owns, or null when they have none.</summary>
     Task<BusinessInfo?> FindOwnedAsync(string ownerId, CancellationToken cancellation);
 
+    /// <summary>The business booked at /book/{slug}, or null when there's none.</summary>
+    Task<BusinessInfo?> FindBySlugAsync(string slug, CancellationToken cancellation);
+
     /// <summary>Every business. For development tools, such as sample data.</summary>
     Task<IReadOnlyList<BusinessInfo>> ListAsync(CancellationToken cancellation);
 
@@ -25,7 +28,7 @@ public interface IBusinessDirectory
 }
 
 /// <param name="TimeZone">The IANA time zone its hours are in.</param>
-public sealed record BusinessInfo(BusinessId Id, string Name, string TimeZone);
+public sealed record BusinessInfo(BusinessId Id, string Name, string Slug, string TimeZone);
 
 /// <param name="ServiceIds">The services they do; every service when <paramref name="DoesAllServices"/>.</param>
 /// <param name="WorkingHours">When they work: their own hours, or else the business's opening hours.</param>
@@ -35,4 +38,6 @@ public sealed record StaffInfo(
 /// <summary>A stretch of a weekday, in the business's local time: [Start, End).</summary>
 public sealed record WorkingPeriod(DayOfWeek Day, TimeOnly Start, TimeOnly End);
 
-public sealed record ServiceInfo(ServiceId Id, string Name, TimeSpan Duration, bool IsHidden);
+/// <param name="Price">Shown to clients, in <paramref name="Currency"/> (ISO 4217); nothing is paid online.</param>
+public sealed record ServiceInfo(
+    ServiceId Id, string Name, TimeSpan Duration, decimal Price, string Currency, bool IsHidden);

@@ -6,9 +6,10 @@ using OpenTelemetry.Trace;
 namespace AspireShowcase.Scheduling;
 
 /// <summary>
-/// Scheduling, the core of the booking SaaS: bookings, and later availability. So far the
-/// owner's calendar (user story MVP-12). This class is the module's whole public surface; it
-/// reads businesses, staff and services only through Business Setup's public client.
+/// Scheduling, the core of the booking SaaS: availability and bookings. Clients see free slots
+/// and book them (user stories MVP-1 to MVP-4), owners see their calendar (MVP-12). This class
+/// is the module's whole public surface; it reads businesses, staff and services only through
+/// Business Setup's public client.
 /// </summary>
 public static class SchedulingModule
 {
@@ -28,6 +29,7 @@ public static class SchedulingModule
         builder.EnrichNpgsqlDbContext<SchedulingDbContext>();
 
         builder.Services.AddScoped<Bookings>();
+        builder.Services.AddScoped<Availability>();
         builder.Services.AddSingleton<SchedulingTelemetry>();
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing.AddSource(TelemetryName))
@@ -38,6 +40,7 @@ public static class SchedulingModule
     public static void MapScheduling(this IEndpointRouteBuilder api, bool includeDevelopmentTools)
     {
         CalendarEndpoints.Map(api);
+        PublicBookingEndpoints.Map(api);
         if (includeDevelopmentTools)
         {
             SampleBookings.Map(api);
