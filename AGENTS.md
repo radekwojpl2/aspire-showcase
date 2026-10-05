@@ -38,6 +38,8 @@ src/
 ├── AspireShowcase.Api/              # API (resource "web"), reachable only from bff
 ├── AspireShowcase.Notifications/    # notifications service, with a Quartz.NET job
 └── AspireShowcase.Web/              # React + Vite (resource "frontend")
+tests/
+└── AspireShowcase.Api.Tests/        # xUnit tests of the API's domain rules
 ```
 
 ## Rules

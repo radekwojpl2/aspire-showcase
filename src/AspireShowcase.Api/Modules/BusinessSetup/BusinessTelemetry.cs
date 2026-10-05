@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
+namespace AspireShowcase.Api.BusinessSetup;
+
 /// <summary>
-/// Custom telemetry for businesses: a span per operation, and counters for businesses
-/// started and attempts turned down.
+/// Custom telemetry for Business Setup: a span per operation, and counters for businesses
+/// started, attempts turned down, and opening hours changed.
 /// </summary>
 /// <remarks>
 /// The source and the meter are named after the application, which is the name the
@@ -17,6 +19,7 @@ sealed class BusinessTelemetry
 
     readonly Counter<long> _created;
     readonly Counter<long> _rejected;
+    readonly Counter<long> _openingHoursChanged;
 
     public BusinessTelemetry(IMeterFactory meterFactory)
     {
@@ -24,6 +27,8 @@ sealed class BusinessTelemetry
         _created = meter.CreateCounter<long>("businesses.created", "{business}", "Businesses started.");
         _rejected = meter.CreateCounter<long>(
             "businesses.rejected", "{business}", "Attempts to start a business that were turned down, by reason.");
+        _openingHoursChanged = meter.CreateCounter<long>(
+            "businesses.opening_hours.changes", "{change}", "Opening hours saved, by result.");
     }
 
     /// <summary>Starts a span for one operation, under the request's span.</summary>
@@ -42,5 +47,17 @@ sealed class BusinessTelemetry
         _rejected.Add(1, new KeyValuePair<string, object?>("reason", reason));
         activity?.SetTag("business.rejected", reason);
         activity?.AddEvent(new ActivityEvent("business.rejected"));
+    }
+
+    /// <param name="result">saved or invalid.</param>
+    public void OpeningHoursChanged(Activity? activity, Business? business, string result)
+    {
+        _openingHoursChanged.Add(1, new KeyValuePair<string, object?>("result", result));
+        if (business is not null)
+        {
+            activity?.SetTag("business.id", business.Id);
+            activity?.SetTag("business.opening_hours.periods", business.OpeningHours.Periods.Count);
+        }
+        activity?.AddEvent(new ActivityEvent($"opening_hours.{result}"));
     }
 }
