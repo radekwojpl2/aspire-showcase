@@ -6,19 +6,22 @@ builder.UseReadableAzureResourceNames();
 // (with its own container registry).
 var acaEnv = builder.AddAzureContainerAppEnvironment("aca-env");
 
-var web = builder.AddWeb().WithFailureCommands();
+var web = builder.AddWeb();
 var notifications = builder.AddNotifications();
 web.WithNotifications(notifications);
 
-builder.AddAzureMonitoring(acaEnv, web, notifications);
+var bff = builder.AddBff(web);
+
+builder.AddAzureMonitoring(acaEnv, bff, web, notifications);
 
 var postgres = builder.AddPostgresServer();
 web.WithAppDatabase(postgres);
-web.WithCache();
+bff.WithBffDatabase(postgres);
 
 var logto = builder.AddLogto(postgres.AddLogtoDatabase());
-web.WithLogto(logto);
+web.WithLogtoApi(logto);
+bff.WithLogtoSignIn(logto);
 
-builder.AddFrontend(web);
+builder.AddFrontend(bff);
 
 builder.Build().Run();

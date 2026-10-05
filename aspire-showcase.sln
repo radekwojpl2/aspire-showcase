@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Api", "src\A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Notifications", "src\AspireShowcase.Notifications\AspireShowcase.Notifications.csproj", "{52303F6D-92BF-4378-A2A4-343F0DEDD9A2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Bff", "src\AspireShowcase.Bff\AspireShowcase.Bff.csproj", "{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -68,6 +70,18 @@ Global
 		{52303F6D-92BF-4378-A2A4-343F0DEDD9A2}.Release|x64.Build.0 = Release|Any CPU
 		{52303F6D-92BF-4378-A2A4-343F0DEDD9A2}.Release|x86.ActiveCfg = Release|Any CPU
 		{52303F6D-92BF-4378-A2A4-343F0DEDD9A2}.Release|x86.Build.0 = Release|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Debug|x64.Build.0 = Debug|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Debug|x86.Build.0 = Debug|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Release|x64.ActiveCfg = Release|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Release|x64.Build.0 = Release|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Release|x86.ActiveCfg = Release|Any CPU
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -77,5 +91,6 @@ Global
 		{C619B583-BF39-4A6B-9665-2FAF6F588AD1} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{B188622A-CC41-410A-A09E-19353DB1E610} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{52303F6D-92BF-4378-A2A4-343F0DEDD9A2} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{00B88208-4934-4B3B-8B9B-58B44EFEA1F2} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

@@ -1,19 +1,17 @@
 # Aspire Showcase
 
-React + ASP.NET Core API with [Aspire](https://aspire.dev), deployed to Azure Container Apps.
+React + ASP.NET Core with [Aspire](https://aspire.dev), deployed to Azure Container Apps.
 
 ## This project is just a showcase what can be done with Aspire. It's not a production-ready app.
 
-![The app: weather forecast, the to-do list and its notifications](docs/images/app.png)
-
 ## What this shows
 
-One AppHost describes the whole system: a React app, an ASP.NET Core API, a notifications service the API calls, [Logto](https://logto.io) for sign-in, one PostgreSQL server holding the app's database and Logto's, and Redis as a cache. The same description is used twice:
+One AppHost describes the whole system: a React app, a backend for frontend (`bff`) that the browser talks to, an ASP.NET Core API behind it, a notifications service, [Logto](https://logto.io) for sign-in, and one PostgreSQL server holding the app's, `bff`'s and Logto's databases. The same description is used twice:
 
-- **Locally**, `aspire run` starts everything on your machine (the API and the notifications service as processes, Vite with hot reload, Logto, PostgreSQL and Redis as containers) and sends logs, traces and metrics to the Aspire dashboard.
+- **Locally**, `aspire run` starts everything on your machine (`bff`, the API and the notifications service as processes, Vite with hot reload, Logto and PostgreSQL as containers) and sends logs, traces and metrics to the Aspire dashboard.
 - **In Azure**, `aspire deploy` turns it into Container Apps, a PostgreSQL Flexible Server, Key Vault and Application Insights, from a GitHub Actions workflow.
 
-The app itself is small on purpose (a weather forecast, a to-do list with notifications and one protected endpoint); the point is the AppHost in `src/AspireShowcase.AppHost`.
+The app is the start of an appointment booking SaaS for small businesses. So far it does one thing: someone signs up and starts a business with a name and a booking link (user story MVP-8). The point is still the AppHost in `src/AspireShowcase.AppHost`.
 
 ## Local and Azure are not the same
 
@@ -21,20 +19,20 @@ The AppHost is the same code in both, but Aspire uses it differently. With `aspi
 
 | | Local | Azure |
 |---|---|---|
-| API, notifications service | Processes | Container Apps |
-| React app | Vite dev server with hot reload | Built into the `web` container |
+| bff, API, notifications service | Processes | Container Apps; only `bff` is public |
+| React app | Vite dev server with hot reload, proxying to `bff` | Built into the `bff` container |
 | PostgreSQL | Container with a data volume | Flexible Server |
 | Connection strings | Environment variables | Key Vault, read with managed identities |
-| Redis, Logto | Containers | Container Apps |
+| Logto | Containers | Container Apps |
 | Parameters and secrets | AppHost user secrets | GitHub `production` environment |
 | Telemetry | Aspire dashboard (in memory) | Application Insights, which keeps it, and an Aspire dashboard (in memory) |
-| Swagger, failure commands | Available | Not there |
+| Swagger | Available | Not there |
 
 So something that works locally can still fail in Azure.
 
 ## Run locally
 
-Needs .NET 10, Node.js 22, Docker (for PostgreSQL, Redis and Logto) and the Aspire CLI (`dotnet tool install --global Aspire.Cli`).
+Needs .NET 10, Node.js 22, Docker (for PostgreSQL and Logto) and the Aspire CLI (`dotnet tool install --global Aspire.Cli`).
 
 ```
 aspire run
@@ -42,7 +40,7 @@ aspire run
 
 Open the `Dashboard:` link (e.g. `https://localhost:17019/login?t=...`), then `frontend`.
 
-The to-do list needs sign-in: the first time, [set up Logto](#set-up-sign-in).
+Starting a business needs sign-in: the first time, [set up Logto](#set-up-sign-in).
 
 ### Set up with an AI assistant
 
@@ -60,21 +58,7 @@ The same resources as a graph of references and wait dependencies:
 
 ![Aspire dashboard: resource graph](docs/images/dashboard-graph.png)
 
-Traces of the API requests made by the React app, with the database queries as `app-db` spans and the Redis commands as `cache` spans. A `GET /api/todos/` without an `app-db` span was answered from the cache:
-
-![Aspire dashboard: traces](docs/images/dashboard-traces.png)
-
-One request in detail: the API's own `todos.update` span around the two database queries and the Redis command. The span's events (outlined in red) show as dots on its bar and are listed under Events in the span details: `todo.updated`, `todo.completed` with the time it took, and `cache.invalidated`.
-
-![Aspire dashboard: trace detail](docs/images/dashboard-trace-detail.png)
-
-A trace across two services: adding a to-do item in `web` calls `notifications`, and both sides show in one trace.
-
-![Aspire dashboard: a trace from web into the notifications service](docs/images/dashboard-trace-notifications.png)
-
-The API's own metrics, next to the ones from ASP.NET Core and Npgsql:
-
-![Aspire dashboard: metrics](docs/images/dashboard-metrics.png)
+Starting a business shows as one trace across services: the browser's `POST /api/businesses` reaches `bff`, which forwards it to `web` with the user's access token. Inside, `web`'s own `businesses.create` span holds the `app-db` queries and the calls to Logto's Management API that give the user the owner role.
 
 ## Layout
 
@@ -82,35 +66,46 @@ The API's own metrics, next to the ones from ASP.NET Core and Npgsql:
 src/
 ├── AspireShowcase.AppHost/          # orchestration + Azure target
 ├── AspireShowcase.ServiceDefaults/  # telemetry, health checks
-├── AspireShowcase.Api/              # API, serves the UI in Azure
-├── AspireShowcase.Notifications/    # notifications service, called by the API
+├── AspireShowcase.Bff/              # backend for frontend: sign-in, sessions, proxy; serves the UI in Azure
+├── AspireShowcase.Api/              # API, reachable only from bff
+├── AspireShowcase.Notifications/    # notifications service
 └── AspireShowcase.Web/              # React + Vite
 ```
 
+## Backend for frontend
+
+The React app never holds a token. `bff` signs users in with Logto's authorization code flow as a confidential client (it has an app secret), keeps their ID, access and refresh tokens in its own database, and gives the browser only an HttpOnly session cookie. It forwards `/api/*` to `web` with [YARP](https://dotnet.github.io/yarp/), swapping the cookie for the user's access token and refreshing that token when it's about to expire.
+
+| Path | Does |
+|---|---|
+| `/bff/login?returnUrl=/start` | Signs in through Logto; `&signup=true` opens Logto's sign-up form |
+| `/bff/logout` | Signs out of `bff` and Logto (a form post) |
+| `/bff/user` | Whether sign-in is set up, and who is signed in |
+| `/api/*` | Forwarded to `web` |
+| `/signin-oidc`, `/signout-callback-oidc` | Where Logto sends the browser back |
+
+Against CSRF, the session cookie is `SameSite=Strict`, and `bff` refuses `/api` requests without an `X-CSRF: 1` header, which only the app's own scripts can send.
+
+Locally, Vite proxies these paths to `bff` and keeps the `Host` header, so Logto's redirect URIs are on `http://localhost:5173`. In Azure, `bff` serves the built React app itself, and `web` has no public endpoint.
+
 ## Database
 
-One PostgreSQL server (`postgres`) with two databases: `app-db` for the API's to-do list and `logto-db` for Logto.
+One PostgreSQL server (`postgres`) with three databases: `app-db` for the API's businesses, `bff-db` for `bff`'s sessions and data protection keys, and `logto-db` for Logto.
 
 - Local: a container, with its data in a Docker volume.
 - Azure: a Flexible Server. The connection strings are in Key Vault, and the Container Apps read them with their managed identities.
 
-The API applies its EF Core migrations on startup. To add one after changing the model:
+The API and `bff` apply their EF Core migrations on startup. To add one after changing a model:
 
 ```
 dotnet tool restore
 dotnet ef migrations add <Name> --project src/AspireShowcase.Api
+dotnet ef migrations add <Name> --project src/AspireShowcase.Bff
 ```
-
-## Cache
-
-The API caches the to-do list in Redis (`cache`) for up to 5 minutes and drops it when an item changes.
-
-- Local: a container.
-- Azure: a Container App, reachable only from inside the Container Apps environment.
 
 ## Notifications
 
-A second ASP.NET Core service (`notifications`). The API posts to it when a to-do item is added or removed, and it keeps the latest 50 in memory. The API calls it as `http://notifications`, which service discovery resolves.
+A second ASP.NET Core service (`notifications`). It records notifications posted to it and keeps the latest 50 in memory. Nothing posts to it yet: it's there for the booking emails of user story MVP-5. The API can call it as `http://notifications`, which service discovery resolves.
 
 - Local: a process.
 - Azure: a Container App with no external endpoint.
@@ -141,7 +136,7 @@ Local and Azure each have their own Logto with its own database, so do this once
 | | Local | Azure |
 |---|---|---|
 | Admin console | `Admin console` link on the `logto-admin` resource | `https://<logto-admin-fqdn>/console` |
-| App URL | `http://localhost:5173` | `https://<web-fqdn>` |
+| App URL | `http://localhost:5173` | `https://<bff-fqdn>` |
 
 The Azure host names:
 
@@ -150,41 +145,50 @@ az containerapp list -g rg-aspire-showcase --query "[].{name:name, fqdn:properti
 ```
 
 1. Open the admin console and create the admin account. Whoever opens it first becomes the admin.
-2. **Applications** → **Create application** → **Single page app** → React. On it, add:
-   - **Redirect URIs**: `<app-url>/callback`
-   - **Post sign-out redirect URIs**: `<app-url>`
-3. **API resources** → **Create API resource**: any name, identifier `https://api.aspire-showcase`. It must match `ApiResource` in `Logto/LogtoExtensions.cs`, which the AppHost passes to the API.
-4. **User management** → create a user to sign in with. The admin account can't sign in to the app.
-5. Give the application's **App ID** to the AppHost.
+2. **API resources** → **Create API resource**: any name, identifier `https://api.aspire-showcase`. It must match `ApiResource` in `Logto/LogtoExtensions.cs`. On its **Permissions** tab, add `manage:business`.
+3. **Roles** → **Create role**: name `owner`, type **User**, with the `manage:business` permission of that API resource. The API gives it to everyone who starts a business.
+4. **Applications** → **Create application** → **Traditional web**, for `bff`. On it, add:
+   - **Redirect URIs**: `<app-url>/signin-oidc`
+   - **Post sign-out redirect URIs**: `<app-url>/signout-callback-oidc`
+
+   Note its **App ID** and **App secret**.
+5. **Applications** → **Create application** → **Machine-to-machine**, for the API to call Logto's Management API. Give it a role with the Logto Management API's `all` permission. Note its **App ID** and **App secret**.
+6. **Sign-in experience**: allow sign-up (e.g. with a username and password), so people can create their account when they start a business.
+7. Give the four values to the AppHost.
 
    Local, then restart the AppHost:
 
    ```
    dotnet user-secrets set Parameters:logto-app-id <app-id> --project src/AspireShowcase.AppHost
+   dotnet user-secrets set Parameters:logto-app-secret <app-secret> --project src/AspireShowcase.AppHost
+   dotnet user-secrets set Parameters:logto-m2m-app-id <m2m-app-id> --project src/AspireShowcase.AppHost
+   dotnet user-secrets set Parameters:logto-m2m-app-secret <m2m-app-secret> --project src/AspireShowcase.AppHost
    ```
 
    Azure, then deploy again:
 
    ```
    gh variable set LOGTO_APP_ID --env production --body "<app-id>"
+   gh secret set LOGTO_APP_SECRET --env production --body "<app-secret>"
+   gh variable set LOGTO_M2M_APP_ID --env production --body "<m2m-app-id>"
+   gh secret set LOGTO_M2M_APP_SECRET --env production --body "<m2m-app-secret>"
    gh workflow run Deploy
    ```
 
-Then open the app, click **Sign in**, and **Call /api/me** on the **Protected endpoint** card. `<app-url>/api/config` shows the app ID the app is using, in `logtoAppId`.
+Then open the app and click **Start your business**: it takes you to Logto's sign-up, then to the form. Once the business is created you're signed in again, so the new owner role is in the access token, and the header shows **Owner**. `<app-url>/bff/user` shows whether sign-in is on, in `signInEnabled`.
 
 ## Custom telemetry
 
-On top of what ASP.NET Core, Npgsql and the Redis client record by themselves, both services record their own spans, span events and metrics. Each uses its application name for the source and the meter, which is what the ServiceDefaults project subscribes to. Item titles are never recorded.
+On top of what ASP.NET Core, the HTTP clients and Npgsql record by themselves, the API and the notifications service record their own spans, span events and metrics. Each uses its application name for the source and the meter, which is what the ServiceDefaults project subscribes to. Names, links and messages that users type are never recorded.
 
-The API, in `src/AspireShowcase.Api/Todos/TodoTelemetry.cs`:
+The API, in `src/AspireShowcase.Api/Businesses/BusinessTelemetry.cs`:
 
 | Metric | Kind | Measures |
 |---|---|---|
-| `todos.changes` | Counter | Items created, updated and deleted (`change` tag) |
-| `todos.list.reads` | Counter | Reads of the list, by whether the cache answered (`result` tag: `hit`, `miss`) |
-| `todos.completion.time` | Histogram | Seconds from creating an item to ticking it off |
-| `todos.items` | Gauge | Open and done items when the list was last read from the database (`state` tag) |
-| `todos.notifications` | Counter | Notifications the API tried to send (`kind` tag; `result` tag: `sent`, `failed`, `skipped`) |
+| `businesses.created` | Counter | Businesses started |
+| `businesses.rejected` | Counter | Attempts turned down (`reason` tag: `invalid`, `slug_taken`, `already_owner`, `logto_unavailable`) |
+
+Its `businesses.create` span carries a `business.created` or `business.rejected` event.
 
 The notifications service, in `src/AspireShowcase.Notifications/NotificationTelemetry.cs`:
 
@@ -196,17 +200,17 @@ The notifications service, in `src/AspireShowcase.Notifications/NotificationTele
 | `notifications.stored` | Gauge | Notifications currently kept in memory |
 | `notifications.digested` | Counter | Notifications summed up by the scheduled digest |
 
-Because the trace context travels with the HTTP call, the service's `notifications.record` span sits inside the API's `todos.create` span in one trace:
-
-![Aspire dashboard: the notifications service's span and event inside the API's trace](docs/images/dashboard-notifications-trace.png)
-
 ![Aspire dashboard: the notifications service's metrics](docs/images/dashboard-notifications-metrics.png)
 
 ### Span links
 
 The digest job runs on a schedule, not inside a request, so its `notifications.digest` span starts a trace of its own. It carries a span link to every `notifications.record` span whose notification it summed up. In the span details, the digest lists them under **Links**, and each `notifications.record` span shows the digest under **Backlinks**. A run with nothing new records no span.
 
-To see it: add or remove a few to-do items, wait up to 30 seconds, and open the `notifications.digest` trace of the `notifications` resource.
+To see it locally, post a few notifications to the service (its address is on the `notifications` resource), wait up to 30 seconds, and open the `notifications.digest` trace of the `notifications` resource:
+
+```
+curl -X POST http://localhost:5186/notifications -H "Content-Type: application/json" -d "{\"kind\":\"test\",\"message\":\"Hello\"}"
+```
 
 The digest's span, with one link per notification it summed up (outlined in red). Each link opens the trace that recorded the notification:
 
@@ -216,53 +220,7 @@ From the other side, a `notifications.record` span shows the digest that picked 
 
 ![Aspire dashboard: a notifications.record span with the digest as a backlink](docs/images/dashboard-digest-backlinks.png)
 
-The job also logs one line per run, `Digest of 4 notifications: 3 todo-added, 1 todo-removed`, inside the digest's span, and counts what it summed up in `notifications.digested`.
-
-## Try failures
-
-Three failures can be produced on a local run, to see how each looks in the dashboard. They affect the to-do endpoints only, so sign in to the app first.
-
-Two of them are commands on the `web` resource (⋯ → Commands); **Stop simulated failures** turns both off. The third is stopping the `cache` resource.
-
-![Aspire dashboard: failure commands on the web resource](docs/images/dashboard-failure-commands.png)
-
-The commands post to `/api/failures/*`, which the API maps in Development only, and the AppHost adds the commands in run mode only, so none of this exists in Azure.
-
-### Requests fail
-
-**Fail to-do requests** makes every to-do request throw and answer 500. The to-do card in the app shows the error:
-
-![The to-do card showing HTTP error 500](docs/images/app-failure.png)
-
-In Traces the request is red: status Error, 500, and the exception as an event on its bar.
-
-![Aspire dashboard: trace of a failed request](docs/images/dashboard-failure-trace.png)
-
-Structured logs filtered to Error list the exceptions, each linked to its trace:
-
-![Aspire dashboard: error logs linked to traces](docs/images/dashboard-failure-logs.png)
-
-### Slow database
-
-**Slow down to-do queries** makes every to-do request first run a 2-second query. The trace shows where the time went: the `app-db` span with `SELECT pg_sleep(2)` fills the request, and the app's own work takes milliseconds.
-
-![Aspire dashboard: trace with a 2-second database span](docs/images/dashboard-failure-slow-query.png)
-
-### Redis is down
-
-Stop the `cache` resource. `web` turns Unhealthy, because its health check includes Redis:
-
-![Aspire dashboard: cache exited and web unhealthy](docs/images/dashboard-failure-cache-down.png)
-
-The to-do list keeps working from the database. The first request waits about 5 seconds for Redis, which the trace shows as a long `cache` span; later requests skip Redis for 15 seconds at a time. The span's events say what happened: `cache.unavailable` for the failed read, `cache.unavailable` (skipped) for the write, then `cache.miss`. The log has a warning.
-
-![Aspire dashboard: trace of a request while Redis is down](docs/images/dashboard-failure-cache-trace.png)
-
-Start `cache` again and `web` returns to healthy.
-
-### Notifications service is down
-
-Stop the `notifications` resource. The first add or remove waits 3 seconds for it and then succeeds without a notification; the following ones don't wait. The Notifications card shows an error (503) until the service is started again. The `todos.create` and `todos.delete` spans carry a `notification.failed` event and the log has a warning.
+The job also logs one line per run, such as `Digest of 3 notifications: 3 test`, inside the digest's span, and counts what it summed up in `notifications.digested`.
 
 ## Deploy
 
@@ -316,15 +274,13 @@ Deploy publishes two workbooks to `insights` → Workbooks.
 | Browser | Page views, load time, exceptions |
 | Logs & exceptions | Logs by severity, exceptions by type |
 
-**Aspire showcase API**: for finding what is wrong with the API, its database or its cache.
+**Aspire showcase API**: for finding what is wrong with the API or its database.
 
 | Tab | Shows |
 |---|---|
 | Overview | Requests, latency, slowest endpoints |
 | Failures | 5xx, exceptions, error logs |
 | Database | PostgreSQL queries, duration, failures |
-| Cache | Cache hits and misses, Redis commands |
-| To-dos | The `todos.*` metrics, spans and events |
-| Notifications | Sent and received, the digest job and its span links |
+| Notifications | Received notifications, the digest job and its span links |
 | Runtime | Memory, thread pool, instances, restarts |
 | Trace lookup | Everything for one pasted trace ID or span ID |

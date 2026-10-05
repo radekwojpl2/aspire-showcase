@@ -1,6 +1,6 @@
 # Aspire Showcase: notes for AI assistants
 
-A showcase of [Aspire](https://aspire.dev): a React app, an ASP.NET Core API, a notifications service, Logto for sign-in, PostgreSQL and Redis, all described by one AppHost. The README explains each part; this file holds what you need to work in the repo.
+A showcase of [Aspire](https://aspire.dev): a React app, a backend for frontend (bff), an ASP.NET Core API, a notifications service, Logto for sign-in and PostgreSQL, all described by one AppHost. The README explains each part; this file holds what you need to work in the repo.
 
 To set the project up for someone, follow `.claude/skills/setup/SKILL.md` (in Claude Code: `/setup`).
 
@@ -9,7 +9,7 @@ For general Aspire work (running, monitoring, deploying), Aspire's own skills ar
 
 - .NET 10 SDK (the version in `global.json`)
 - Node.js 22
-- Docker, running (PostgreSQL, Redis and Logto are containers)
+- Docker, running (PostgreSQL and Logto are containers)
 - Aspire CLI: `dotnet tool install --global Aspire.Cli`
 - Azure CLI (`az`) and GitHub CLI (`gh`), both signed in, for the Azure part
 
@@ -26,7 +26,7 @@ Run from the repository root.
 | Logs and traces | `aspire logs <resource>`, `aspire otel traces <resource>` |
 | Build and test the .NET projects | `dotnet build`, `dotnet test` |
 | Lint and build the React app | `npm run lint`, `npm run build` in `src/AspireShowcase.Web` |
-| Add an EF Core migration | `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/AspireShowcase.Api` |
+| Add an EF Core migration | `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/AspireShowcase.Api` (or `src/AspireShowcase.Bff`) |
 
 ## Layout
 
@@ -34,7 +34,8 @@ Run from the repository root.
 src/
 ├── AspireShowcase.AppHost/          # the system: resources, references, the Azure target
 ├── AspireShowcase.ServiceDefaults/  # telemetry, health checks, service discovery
-├── AspireShowcase.Api/              # API (resource "web"); serves the React app in Azure
+├── AspireShowcase.Bff/              # backend for frontend (resource "bff"): sign-in, sessions, proxy to web; serves the React app in Azure
+├── AspireShowcase.Api/              # API (resource "web"), reachable only from bff
 ├── AspireShowcase.Notifications/    # notifications service, with a Quartz.NET job
 └── AspireShowcase.Web/              # React + Vite (resource "frontend")
 ```

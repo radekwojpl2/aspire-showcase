@@ -40,28 +40,54 @@ static class LogtoExtensions
     }
 
     /// <summary>
-    /// Lets the React app sign in with Logto: /api/config passes it Logto's public URL and the
-    /// ID of the "Single page app" application created for it in the Logto console. The API
-    /// accepts access tokens issued for the API resource.
+    /// Lets bff sign users in with Logto, as the "Traditional web" application created for it in
+    /// the Logto console, and get access tokens for the API resource.
     /// </summary>
     /// <remarks>
-    /// The ID only exists once that application has been created, so it's read from the
-    /// logto-app-id parameter and is empty until then; the React app then hides sign-in.
+    /// The ID and secret only exist once that application has been created, so they're read
+    /// from parameters that are empty until then; bff then runs without sign-in.
     /// </remarks>
-    public static IResourceBuilder<ProjectResource> WithLogto(
+    public static IResourceBuilder<ProjectResource> WithLogtoSignIn(
+        this IResourceBuilder<ProjectResource> bff, IResourceBuilder<ContainerResource> logto)
+    {
+        var builder = bff.ApplicationBuilder;
+        var appId = builder.AddOptionalParameter(
+            "logto-app-id", "ID of the Logto application bff signs users in with.");
+        var appSecret = builder.AddOptionalParameter(
+            "logto-app-secret", "Secret of the Logto application bff signs users in with.", secret: true);
+
+        return bff
+            .WithEnvironment("Logto__Endpoint", builder.PublicEndpoint(logto))
+            .WithEnvironment("Logto__AppId", appId)
+            .WithEnvironment("Logto__AppSecret", appSecret)
+            .WithEnvironment("Logto__ApiResource", ApiResource);
+    }
+
+    /// <summary>
+    /// The API accepts access tokens issued for the API resource, and gives owners their role
+    /// through Logto's Management API, as the machine-to-machine application created for it.
+    /// </summary>
+    public static IResourceBuilder<ProjectResource> WithLogtoApi(
         this IResourceBuilder<ProjectResource> web, IResourceBuilder<ContainerResource> logto)
     {
         var builder = web.ApplicationBuilder;
-        var appId = builder.AddParameter(
-                "logto-app-id",
-                () => builder.Configuration["Parameters:logto-app-id"] ?? "")
-            .WithDescription("ID of the Logto application the React app signs in with.");
+        var m2mAppId = builder.AddOptionalParameter(
+            "logto-m2m-app-id", "ID of the Logto machine-to-machine application web calls the Management API as.");
+        var m2mAppSecret = builder.AddOptionalParameter(
+            "logto-m2m-app-secret", "Secret of the Logto machine-to-machine application.", secret: true);
 
         return web
             .WithEnvironment("Logto__Endpoint", builder.PublicEndpoint(logto))
-            .WithEnvironment("Logto__AppId", appId)
-            .WithEnvironment("Logto__ApiResource", ApiResource);
+            .WithEnvironment("Logto__ApiResource", ApiResource)
+            .WithEnvironment("Logto__M2mAppId", m2mAppId)
+            .WithEnvironment("Logto__M2mAppSecret", m2mAppSecret);
     }
+
+    // Empty until set in user secrets (locally) or by the Deploy workflow (Azure).
+    static IResourceBuilder<ParameterResource> AddOptionalParameter(
+        this IDistributedApplicationBuilder builder, string name, string description, bool secret = false) =>
+        builder.AddParameter(name, () => builder.Configuration[$"Parameters:{name}"] ?? "", secret: secret)
+            .WithDescription(description);
 
     static IResourceBuilder<ContainerResource> AddLogtoContainer(
         this IDistributedApplicationBuilder builder, string name, int port, LogtoDatabase db) =>

@@ -8,7 +8,7 @@ sealed record PostgresServer(
 static class PostgresExtensions
 {
     /// <summary>
-    /// One PostgreSQL server for both databases, Logto's and the app's. Locally it runs in a
+    /// One PostgreSQL server for all the databases: the app's, bff's and Logto's. Locally it runs in a
     /// container with its data in a volume, so the data survives restarts; in Azure it's a
     /// Flexible Server.
     /// </summary>
@@ -56,5 +56,17 @@ static class PostgresExtensions
         var database = postgres.Server.AddDatabase("app-db", databaseName: "app");
 
         return web.WithReference(database).WaitFor(database);
+    }
+
+    /// <summary>
+    /// Adds bff's own database, for sessions and data protection keys, and gives bff its
+    /// connection string (ConnectionStrings__bff-db).
+    /// </summary>
+    public static IResourceBuilder<ProjectResource> WithBffDatabase(
+        this IResourceBuilder<ProjectResource> bff, PostgresServer postgres)
+    {
+        var database = postgres.Server.AddDatabase("bff-db", databaseName: "bff");
+
+        return bff.WithReference(database).WaitFor(database);
     }
 }
