@@ -11,11 +11,11 @@ One AppHost describes the whole system: a React app, a backend for frontend (`bf
 - **Locally**, `aspire run` starts everything on your machine (`bff`, the API and the notifications service as processes, Vite with hot reload, Logto and PostgreSQL as containers) and sends logs, traces and metrics to the Aspire dashboard.
 - **In Azure**, `aspire deploy` turns it into Container Apps, a PostgreSQL Flexible Server, Key Vault and Application Insights, from a GitHub Actions workflow.
 
-The app is the start of an appointment booking SaaS for small businesses. So far, someone signs up and starts a business with a name and a booking link (user story MVP-8), sets its weekly opening hours (MVP-9), and adds the services clients can book (MVP-10). The point is still the AppHost in `src/AspireShowcase.AppHost`.
+The app is the start of an appointment booking SaaS for small businesses. So far, someone signs up and starts a business with a name and a booking link (user story MVP-8), sets its weekly opening hours (MVP-9), adds the services clients can book (MVP-10), and adds staff with their services and working hours (MVP-11). The point is still the AppHost in `src/AspireShowcase.AppHost`.
 
 The API is a modular monolith, split into the modules of [`docs/architecture/ddd-modules.md`](docs/architecture/ddd-modules.md). Each module is its own project in `src/Modules`, so the compiler keeps the boundaries: a module's domain model is internal, and other projects only see its entry points. So far:
 
-- **Business Setup**: the `Business` aggregate with its `OpeningHours`, and the `Service` aggregate with its `Money` price, with its own `DbContext`, migrations and `business_setup` schema. Public: `AddBusinessSetup`, `MapBusinessSetup`.
+- **Business Setup**: the `Business`, `Service` and `StaffMember` aggregates, with `WeeklyHours` (opening and working hours) and `Money` as value objects, with its own `DbContext`, migrations and `business_setup` schema. Public: `AddBusinessSetup`, `MapBusinessSetup`.
 - **Identity & Access**: the anti-corruption layer over Logto. Public: `AddIdentityAccess`, the owner policy and `IOwnerRoles`.
 - **Shared kernel**: what every domain may use (validation errors).
 
@@ -203,8 +203,9 @@ The API's Business Setup module, `AspireShowcase.BusinessSetup`, in `src/Modules
 | `businesses.rejected` | Counter | Attempts turned down (`reason` tag: `invalid`, `slug_taken`, `already_owner`, `logto_unavailable`) |
 | `businesses.opening_hours.changes` | Counter | Opening hours saved (`result` tag: `saved`, `invalid`) |
 | `businesses.services.changes` | Counter | Services added, changed, hidden and shown (`result` tag: `added`, `changed`, `hidden`, `shown`, `invalid`, `name_taken`) |
+| `businesses.staff.changes` | Counter | Staff members added and changed (`result` tag: `added`, `changed`, `invalid`, `name_taken`) |
 
-Its `businesses.create` span carries a `business.created` or `business.rejected` event, `businesses.opening_hours.set` an `opening_hours.saved` or `opening_hours.invalid` one, and the `businesses.services.*` spans a `service.<result>` one.
+Its `businesses.create` span carries a `business.created` or `business.rejected` event, `businesses.opening_hours.set` an `opening_hours.saved` or `opening_hours.invalid` one, the `businesses.services.*` spans a `service.<result>` one, and the `businesses.staff.*` spans a `staff_member.<result>` one.
 
 The notifications service, in `src/AspireShowcase.Notifications/NotificationTelemetry.cs`:
 

@@ -5,7 +5,7 @@ namespace AspireShowcase.BusinessSetup;
 
 /// <summary>
 /// Custom telemetry for Business Setup: a span per operation, and counters for businesses
-/// started, attempts turned down, opening hours and services changed.
+/// started, attempts turned down, opening hours, services and staff changed.
 /// </summary>
 /// <remarks>
 /// The source and the meter are named after the module; AddBusinessSetup subscribes to them.
@@ -21,6 +21,7 @@ sealed class BusinessTelemetry
     readonly Counter<long> _rejected;
     readonly Counter<long> _openingHoursChanged;
     readonly Counter<long> _servicesChanged;
+    readonly Counter<long> _staffChanged;
 
     public BusinessTelemetry(IMeterFactory meterFactory)
     {
@@ -32,6 +33,8 @@ sealed class BusinessTelemetry
             "businesses.opening_hours.changes", "{change}", "Opening hours saved, by result.");
         _servicesChanged = meter.CreateCounter<long>(
             "businesses.services.changes", "{change}", "Services added, changed, hidden and shown, by result.");
+        _staffChanged = meter.CreateCounter<long>(
+            "businesses.staff.changes", "{change}", "Staff members added and changed, by result.");
     }
 
     /// <summary>Starts a span for one operation, under the request's span.</summary>
@@ -62,6 +65,18 @@ sealed class BusinessTelemetry
             activity?.SetTag("business.id", service.BusinessId);
         }
         activity?.AddEvent(new ActivityEvent($"service.{result}"));
+    }
+
+    /// <param name="result">added, changed, invalid or name_taken.</param>
+    public void StaffChanged(Activity? activity, StaffMember? member, string result)
+    {
+        _staffChanged.Add(1, new KeyValuePair<string, object?>("result", result));
+        if (member is not null)
+        {
+            activity?.SetTag("staff_member.id", member.Id);
+            activity?.SetTag("business.id", member.BusinessId);
+        }
+        activity?.AddEvent(new ActivityEvent($"staff_member.{result}"));
     }
 
     /// <param name="result">saved or invalid.</param>

@@ -3,10 +3,10 @@ using AspireShowcase.SharedKernel;
 
 namespace AspireShowcase.BusinessSetup.Tests;
 
-/// <summary>The rules of user story MVP-9, on the OpeningHours value object and the Business aggregate.</summary>
-public class OpeningHoursTests
+/// <summary>The rules of user story MVP-9, on the WeeklyHours value object and the Business aggregate.</summary>
+public class WeeklyHoursTests
 {
-    static OpeningPeriod Period(DayOfWeek day, string opens, string closes) =>
+    static WeeklyPeriod Period(DayOfWeek day, string opens, string closes) =>
         new(day, TimeOnly.Parse(opens), TimeOnly.Parse(closes));
 
     static IReadOnlyDictionary<string, string[]> ErrorsOf(Action change) =>
@@ -15,7 +15,7 @@ public class OpeningHoursTests
     [Fact]
     public void A_day_can_have_more_than_one_period()
     {
-        var hours = OpeningHours.Create([
+        var hours = WeeklyHours.Create([
             Period(DayOfWeek.Monday, "13:00", "17:00"),
             Period(DayOfWeek.Monday, "09:00", "12:00"),
         ]);
@@ -28,7 +28,7 @@ public class OpeningHoursTests
     [Fact]
     public void A_day_without_periods_is_closed()
     {
-        var hours = OpeningHours.Create([Period(DayOfWeek.Monday, "09:00", "17:00")]);
+        var hours = WeeklyHours.Create([Period(DayOfWeek.Monday, "09:00", "17:00")]);
 
         Assert.False(hours.Covers(DayOfWeek.Tuesday, TimeOnly.Parse("10:00"), TimeOnly.Parse("11:00")));
     }
@@ -36,7 +36,7 @@ public class OpeningHoursTests
     [Fact]
     public void Periods_can_touch()
     {
-        var hours = OpeningHours.Create([
+        var hours = WeeklyHours.Create([
             Period(DayOfWeek.Friday, "09:00", "12:00"),
             Period(DayOfWeek.Friday, "12:00", "15:00"),
         ]);
@@ -47,7 +47,7 @@ public class OpeningHoursTests
     [Fact]
     public void Overlapping_periods_are_refused_under_their_day()
     {
-        var errors = ErrorsOf(() => OpeningHours.Create([
+        var errors = ErrorsOf(() => WeeklyHours.Create([
             Period(DayOfWeek.Monday, "09:00", "12:00"),
             Period(DayOfWeek.Monday, "11:00", "14:00"),
         ]));
@@ -58,7 +58,7 @@ public class OpeningHoursTests
     [Fact]
     public void The_same_times_on_different_days_dont_overlap()
     {
-        var hours = OpeningHours.Create([
+        var hours = WeeklyHours.Create([
             Period(DayOfWeek.Monday, "09:00", "12:00"),
             Period(DayOfWeek.Tuesday, "09:00", "12:00"),
         ]);
@@ -71,7 +71,7 @@ public class OpeningHoursTests
     [InlineData("17:00", "09:00")]
     public void Closing_has_to_be_after_opening(string opens, string closes)
     {
-        var errors = ErrorsOf(() => OpeningHours.Create([Period(DayOfWeek.Wednesday, opens, closes)]));
+        var errors = ErrorsOf(() => WeeklyHours.Create([Period(DayOfWeek.Wednesday, opens, closes)]));
 
         Assert.Contains("closing has to be after opening", Assert.Single(errors["wednesday"]));
     }
@@ -79,7 +79,7 @@ public class OpeningHoursTests
     [Fact]
     public void Times_come_in_5_minute_steps()
     {
-        var errors = ErrorsOf(() => OpeningHours.Create([Period(DayOfWeek.Thursday, "09:03", "17:00")]));
+        var errors = ErrorsOf(() => WeeklyHours.Create([Period(DayOfWeek.Thursday, "09:03", "17:00")]));
 
         Assert.Contains("5-minute steps", Assert.Single(errors["thursday"]));
     }
@@ -87,7 +87,7 @@ public class OpeningHoursTests
     [Fact]
     public void Every_problem_is_reported_at_once()
     {
-        var errors = ErrorsOf(() => OpeningHours.Create([
+        var errors = ErrorsOf(() => WeeklyHours.Create([
             Period(DayOfWeek.Monday, "10:00", "09:00"),
             Period(DayOfWeek.Saturday, "09:01", "12:00"),
         ]));
@@ -98,12 +98,12 @@ public class OpeningHoursTests
     [Fact]
     public void A_day_has_at_most_six_periods()
     {
-        var periods = Enumerable.Range(0, OpeningHours.MaxPeriodsPerDay + 1)
+        var periods = Enumerable.Range(0, WeeklyHours.MaxPeriodsPerDay + 1)
             .Select(hour => Period(DayOfWeek.Sunday, $"{8 + hour:00}:00", $"{8 + hour:00}:30"));
 
-        var errors = ErrorsOf(() => OpeningHours.Create(periods));
+        var errors = ErrorsOf(() => WeeklyHours.Create(periods));
 
-        Assert.Contains($"at most {OpeningHours.MaxPeriodsPerDay}", errors["sunday"][0]);
+        Assert.Contains($"at most {WeeklyHours.MaxPeriodsPerDay}", errors["sunday"][0]);
     }
 
     [Theory]
@@ -114,7 +114,7 @@ public class OpeningHoursTests
     [InlineData("16:30", "17:30", false)] // runs past closing
     public void An_appointment_fits_only_within_one_period(string start, string end, bool covered)
     {
-        var hours = OpeningHours.Create([
+        var hours = WeeklyHours.Create([
             Period(DayOfWeek.Monday, "09:00", "12:00"),
             Period(DayOfWeek.Monday, "13:00", "17:00"),
         ]);
@@ -125,8 +125,8 @@ public class OpeningHoursTests
     [Fact]
     public void Hours_with_the_same_periods_are_equal()
     {
-        var first = OpeningHours.Create([Period(DayOfWeek.Monday, "09:00", "17:00")]);
-        var second = OpeningHours.Create([Period(DayOfWeek.Monday, "09:00", "17:00")]);
+        var first = WeeklyHours.Create([Period(DayOfWeek.Monday, "09:00", "17:00")]);
+        var second = WeeklyHours.Create([Period(DayOfWeek.Monday, "09:00", "17:00")]);
 
         Assert.Equal(first, second);
         Assert.Equal(first.GetHashCode(), second.GetHashCode());
@@ -137,16 +137,16 @@ public class OpeningHoursTests
     {
         var business = Business.Start("Anna's Hair", "anna-hair", "Europe/Warsaw", "user-1", DateTimeOffset.UtcNow);
 
-        Assert.Equal(OpeningHours.Closed, business.OpeningHours);
+        Assert.Equal(WeeklyHours.Closed, business.OpeningHours);
     }
 
     [Fact]
     public void Setting_hours_replaces_them_and_the_time_zone()
     {
         var business = Business.Start("Anna's Hair", "anna-hair", "Europe/Warsaw", "user-1", DateTimeOffset.UtcNow);
-        var hours = OpeningHours.Create([Period(DayOfWeek.Monday, "09:00", "17:00")]);
+        var hours = WeeklyHours.Create([Period(DayOfWeek.Monday, "09:00", "17:00")]);
 
-        business.SetOpeningHours(hours, "Europe/London");
+        business.SetOpeningHours(hours, "Europe/London", []);
 
         Assert.Equal(hours, business.OpeningHours);
         Assert.Equal("Europe/London", business.TimeZone);
@@ -161,7 +161,7 @@ public class OpeningHoursTests
     {
         var business = Business.Start("Anna's Hair", "anna-hair", "Europe/Warsaw", "user-1", DateTimeOffset.UtcNow);
 
-        var errors = ErrorsOf(() => business.SetOpeningHours(OpeningHours.Closed, timeZone));
+        var errors = ErrorsOf(() => business.SetOpeningHours(WeeklyHours.Closed, timeZone, []));
 
         Assert.True(errors.ContainsKey("timeZone"));
         Assert.Equal("Europe/Warsaw", business.TimeZone);

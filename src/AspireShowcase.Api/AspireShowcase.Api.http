@@ -18,7 +18,7 @@ POST {{AspireShowcase.Api_HostAddress}}/api/businesses
 Content-Type: application/json
 Authorization: Bearer {{AccessToken}}
 
-{ "name": "Anna's Hair", "slug": "anna-hair", "timeZone": "Europe/Warsaw" }
+{ "name": "Anna's Hair", "slug": "anna-hair", "timeZone": "Europe/Warsaw", "ownerName": "Anna" }
 
 ###
 
@@ -54,5 +54,25 @@ Content-Type: application/json
 Authorization: Bearer {{AccessToken}}
 
 { "name": "Haircut", "durationMinutes": 45, "price": 120, "currency": "PLN" }
+
+###
+
+# Staff too. Without workingHours, they work whenever the business is open.
+GET {{AspireShowcase.Api_HostAddress}}/api/businesses/mine/staff
+Authorization: Bearer {{AccessToken}}
+
+###
+
+POST {{AspireShowcase.Api_HostAddress}}/api/businesses/mine/staff
+Content-Type: application/json
+Authorization: Bearer {{AccessToken}}
+
+{
+  "name": "Ben",
+  "doesAllServices": true,
+  "workingHours": [
+    { "day": "monday", "opens": "09:00", "closes": "13:00" }
+  ]
+}
 
 ###

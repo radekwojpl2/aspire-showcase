@@ -69,6 +69,9 @@ function BusinessCard({ business }: { business: Business }) {
         <a className="button button-secondary" href="/services">
           Services
         </a>
+        <a className="button button-secondary" href="/staff">
+          Staff
+        </a>
       </div>
     </section>
   );
@@ -187,7 +190,13 @@ export function StartBusiness() {
         method: 'POST',
         // Opening hours are in the business's time zone; the browser's is the likely one, and
         // the owner can change it with the hours.
-        body: JSON.stringify({ name, slug, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
+        // The owner becomes the first staff member, under the name they signed in with.
+        body: JSON.stringify({
+          name,
+          slug,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          ownerName: user?.name,
+        }),
       });
       if (response.ok) {
         // Sign in again, so the new owner role is in the access token. Logto still has the

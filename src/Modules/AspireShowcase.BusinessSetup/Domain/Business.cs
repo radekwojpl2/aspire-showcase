@@ -30,7 +30,7 @@ sealed class Business
     public string TimeZone { get; private set; } = BusinessTimeZone.Default;
 
     /// <summary>Closed every day until the owner sets them.</summary>
-    public OpeningHours OpeningHours { get; private set; } = OpeningHours.Closed;
+    public WeeklyHours OpeningHours { get; private set; } = WeeklyHours.Closed;
 
     public DateTimeOffset CreatedAt { get; private set; }
 
@@ -67,11 +67,25 @@ sealed class Business
     /// Existing bookings stay as they are: the hours only decide which new bookings are offered,
     /// so nothing here touches them.
     /// </summary>
-    /// <exception cref="DomainValidationException">The time zone isn't a known IANA time zone.</exception>
-    public void SetOpeningHours(OpeningHours hours, string? timeZone)
+    /// <param name="staff">The business's staff, whose own working hours have to stay within the
+    /// new opening hours (user story MVP-11). Staff who work whenever the business is open follow
+    /// the change on their own.</param>
+    /// <exception cref="DomainValidationException">The time zone isn't a known IANA time zone, or
+    /// the new hours would leave someone's working hours outside them (under "staff").</exception>
+    public void SetOpeningHours(WeeklyHours hours, string? timeZone, IEnumerable<StaffMember> staff)
     {
         var errors = new DomainErrors();
         CheckTimeZone(timeZone, errors);
+        foreach (var member in staff.Where(member => member.BusinessId == Id && member.WorkingHours is not null))
+        {
+            var outside = member.WorkingHours!.OutsideOf(hours);
+            if (outside.Count > 0)
+            {
+                errors.Add("staff",
+                    $"{member.Name} works {string.Join(", ", outside.Select(WeeklyHours.Describe))}, outside these hours. " +
+                    "Change their working hours first.");
+            }
+        }
         errors.ThrowIfAny();
 
         OpeningHours = hours;

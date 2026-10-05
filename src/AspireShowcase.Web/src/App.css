@@ -418,6 +418,32 @@
   gap: 0.5rem;
 }
 
+/* Checkbox lists: services and working hours of a staff member */
+.choice-group {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.choice-group legend {
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.choice-nested {
+  padding-left: 1.5rem;
+}
+
 .form-actions {
   display: flex;
   align-items: center;
