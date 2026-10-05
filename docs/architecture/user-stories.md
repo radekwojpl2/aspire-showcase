@@ -2,6 +2,8 @@
 
 User stories for the booking SaaS in [the proposed architecture](README.md), in three phases. Each phase is usable on its own: the MVP lets a small business and its staff take bookings, v1 makes it work for the day-to-day of a real shop, and v2 adds what keeps businesses on the platform.
 
+Stories marked ✅ are built. So far: 2 of 14 MVP stories (MVP-8, MVP-9), none of v1 or v2.
+
 People in the stories:
 
 - **Visitor**: anyone on a business's booking page, not signed in.
@@ -52,12 +54,12 @@ As a client, I want to see my upcoming bookings and cancel one, so that I can fr
 
 ### Owners
 
-**MVP-8. Start a business**
+**MVP-8. Start a business** ✅
 As someone with a small business, I want to sign up and create my business with a name and a booking link, so that I can start taking bookings.
 - **Start your business** creates an account (if needed) and the business, and gives me the owner role.
 - The link `/book/{slug}` must be unique; I'm told if it's taken.
 
-**MVP-9. Set opening hours**
+**MVP-9. Set opening hours** ✅
 As an owner, I want to set my business's weekly opening hours, so that clients can only book when we're open.
 - Hours per weekday, with more than one range per day (e.g. 9–12 and 13–17).
 - Changing hours doesn't cancel existing bookings.
