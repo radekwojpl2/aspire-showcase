@@ -17,6 +17,13 @@ enum BookingStatus
     Cancelled,
 }
 
+/// <summary>Who cancelled a booking: the client (MVP-7), or the business for them (MVP-14).</summary>
+enum CancelledBy
+{
+    Client,
+    Business,
+}
+
 /// <summary>
 /// A client's appointment with one staff member for one service: the aggregate root of
 /// Scheduling. It refers to the business, staff member and service by ID; they belong to
@@ -57,6 +64,12 @@ sealed class Booking
     /// <summary>When it was cancelled, if it was.</summary>
     public DateTimeOffset? CancelledAt { get; private set; }
 
+    /// <summary>
+    /// Who cancelled it, if it was: the message to the client differs ("you cancelled", or "the
+    /// business had to cancel").
+    /// </summary>
+    public CancelledBy? CancelledBy { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     /// <summary>Books a staff member for a service. Whether the time is free is the database's call.</summary>
@@ -87,11 +100,12 @@ sealed class Booking
     }
 
     /// <summary>
-    /// Cancels the booking (user story MVP-7). Its time is free again at once: the no-overlap
-    /// constraint only counts confirmed bookings. Cancelling twice changes nothing.
+    /// Cancels the booking: by the client (MVP-7), or by the business, for sickness or emergencies
+    /// (MVP-14). Its time is free again at once: the no-overlap constraint only counts confirmed
+    /// bookings. Cancelling twice changes nothing.
     /// </summary>
     /// <exception cref="DomainValidationException">It has already started.</exception>
-    public void Cancel(DateTimeOffset now)
+    public void Cancel(DateTimeOffset now, CancelledBy by)
     {
         if (Status == BookingStatus.Cancelled)
         {
@@ -106,6 +120,7 @@ sealed class Booking
 
         Status = BookingStatus.Cancelled;
         CancelledAt = now;
+        CancelledBy = by;
     }
 }
 

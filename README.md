@@ -11,7 +11,7 @@ One AppHost describes the whole system: a React app, a backend for frontend (`bf
 - **Locally**, `aspire run` starts everything on your machine (`bff`, the API and the notifications service as processes, Vite with hot reload, Logto and PostgreSQL as containers) and sends logs, traces and metrics to the Aspire dashboard.
 - **In Azure**, `aspire deploy` turns it into Container Apps, a PostgreSQL Flexible Server, Key Vault and Application Insights, from a GitHub Actions workflow.
 
-The app is the start of an appointment booking SaaS for small businesses. So far, someone signs up and starts a business with a name and a booking link (user story MVP-8), sets its weekly opening hours (MVP-9), adds the services clients can book (MVP-10), adds staff with their services and working hours (MVP-11), and sees the bookings by day and week (MVP-12). Clients book on the business's public page, `/book/{slug}`: they see the free times for the next 4 weeks without an account, choose a staff member or anyone, and sign in or sign up to book (MVP-1 to MVP-4). Signed in, **My bookings** lists their upcoming bookings at every business and cancels one, which frees the time at once (MVP-7). On a local run, the `web` resource also has an **Add sample bookings** command in the dashboard. The point is still the AppHost in `src/AspireShowcase.AppHost`.
+The app is the start of an appointment booking SaaS for small businesses. So far, someone signs up and starts a business with a name and a booking link (user story MVP-8), sets its weekly opening hours (MVP-9), adds the services clients can book (MVP-10), adds staff with their services and working hours (MVP-11), and sees the bookings by day and week and cancels one for sickness or emergencies (MVP-12, MVP-14). Clients book on the business's public page, `/book/{slug}`: they see the free times for the next 4 weeks without an account, choose a staff member or anyone, and sign in or sign up to book (MVP-1 to MVP-4). Signed in, **My bookings** lists their upcoming bookings at every business and cancels one, which frees the time at once (MVP-7). On a local run, the `web` resource also has an **Add sample bookings** command in the dashboard. The point is still the AppHost in `src/AspireShowcase.AppHost`.
 
 The API is a modular monolith, split into the modules of [`docs/architecture/ddd-modules.md`](docs/architecture/ddd-modules.md). Each module is its own project in `src/Modules`, so the compiler keeps the boundaries: a module's domain model is internal, and other projects only see its entry points. So far:
 
@@ -218,7 +218,7 @@ The Scheduling module, `AspireShowcase.Scheduling`, in `src/Modules/AspireShowca
 | Metric | Kind | Measures |
 |---|---|---|
 | `bookings.attempts` | Counter | Attempts to book (`result` tag: `booked`, `slot_taken`; `source` tag: `client`, `sample`) |
-| `bookings.cancellations` | Counter | Bookings cancelled (`by` tag: `client`) |
+| `bookings.cancellations` | Counter | Bookings cancelled (`by` tag: `client`, `business`) |
 
 Its `bookings.book` span is a client booking, `bookings.cancel` a cancellation, `availability.slots` says how many free slots were found, `bookings.calendar` which view was read and how many bookings it had, and `bookings.sample` how many sample bookings were made and refused. Client names and emails are never recorded.
 

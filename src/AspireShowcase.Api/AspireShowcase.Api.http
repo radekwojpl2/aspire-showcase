@@ -111,3 +111,9 @@ POST {{AspireShowcase.Api_HostAddress}}/api/me/bookings/<booking-id>/cancel
 Authorization: Bearer {{AccessToken}}
 
 ###
+
+# An owner cancelling a booking of their business.
+POST {{AspireShowcase.Api_HostAddress}}/api/businesses/mine/bookings/<booking-id>/cancel
+Authorization: Bearer {{AccessToken}}
+
+###

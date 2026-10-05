@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Claims;
 using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.Identity;
+using AspireShowcase.SharedKernel;
 using Microsoft.EntityFrameworkCore;
 
 namespace AspireShowcase.Scheduling;
@@ -23,9 +24,11 @@ static class CalendarEndpoints
 {
     /// <summary>
     /// The owner's calendar (user story MVP-12): bookings by day or week, for everyone or one staff
-    /// member, in the business's time zone. Only the owner's own business, by the query filter.
+    /// member, in the business's time zone, and cancelling one (MVP-14). Only the owner's own
+    /// business, by the query filter.
     /// </summary>
-    public static void Map(IEndpointRouteBuilder api) =>
+    public static void Map(IEndpointRouteBuilder api)
+    {
         api.MapGet("/businesses/mine/bookings", async (
             string? view, string? date, Guid? staffMemberId, ClaimsPrincipal user, IBusinessDirectory directory,
             SchedulingDbContext db, BusinessScope scope, SchedulingTelemetry telemetry, TimeProvider time,
@@ -99,6 +102,45 @@ static class CalendarEndpoints
         })
         .RequireAuthorization(IdentityAccess.OwnerPolicy)
         .WithName("GetCalendar");
+
+        // For sickness or emergencies; the client's time is free again at once. Another business's
+        // booking answers 404: the query filter doesn't see it.
+        api.MapPost("/businesses/mine/bookings/{id:guid}/cancel", async (
+            Guid id, ClaimsPrincipal user, IBusinessDirectory directory, SchedulingDbContext db, BusinessScope scope,
+            SchedulingTelemetry telemetry, TimeProvider time, CancellationToken cancellation) =>
+        {
+            using var activity = telemetry.StartActivity("bookings.cancel");
+
+            var ownerId = user.FindFirstValue("sub") ?? throw new InvalidOperationException("The access token has no sub claim.");
+            if (await directory.FindOwnedAsync(ownerId, cancellation) is not { } business)
+            {
+                return Results.NotFound();
+            }
+            scope.BusinessId = business.Id;
+
+            var bookingId = new BookingId(id);
+            if (await db.Bookings.SingleOrDefaultAsync(booking => booking.Id == bookingId, cancellation) is not { } booking)
+            {
+                return Results.NotFound();
+            }
+
+            try
+            {
+                booking.Cancel(time.GetUtcNow(), CancelledBy.Business);
+            }
+            catch (DomainValidationException exception)
+            {
+                return Results.Problem(
+                    title: exception.Errors.Values.First()[0], statusCode: StatusCodes.Status409Conflict);
+            }
+
+            await db.SaveChangesAsync(cancellation);
+            telemetry.Cancelled(activity, booking, "business");
+            return Results.NoContent();
+        })
+        .RequireAuthorization(IdentityAccess.OwnerPolicy)
+        .WithName("CancelBooking");
+    }
 
     static string Format(DateOnly day) => day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 }

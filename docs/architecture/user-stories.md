@@ -2,7 +2,7 @@
 
 User stories for the booking SaaS in [the proposed architecture](README.md), in three phases. Each phase is usable on its own: the MVP lets a small business and its staff take bookings, v1 makes it work for the day-to-day of a real shop, and v2 adds what keeps businesses on the platform.
 
-Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 8 of 14 MVP stories (MVP-1, 2, 4 and MVP-8 to 12) and parts of MVP-3 and MVP-7, none of v1 or v2.
+Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 8 of 14 MVP stories (MVP-1, 2, 4 and MVP-8 to 12) and parts of MVP-3, MVP-7 and MVP-14, none of v1 or v2.
 
 People in the stories:
 
@@ -83,9 +83,9 @@ As an owner, I want to see my bookings by day and week, for everyone or one staf
 **MVP-13. Hear about new bookings**
 As an owner, I want an email when a client books or cancels, so that I don't have to keep checking.
 
-**MVP-14. Cancel a booking**
+**MVP-14. Cancel a booking** 🟡
 As an owner, I want to cancel a client's booking, so that I can handle sickness or emergencies.
-- The client gets an email; the slot becomes free.
+- 🟡 The client gets an email ❌; the slot becomes free ✅. The email needs an email provider and the Notifications module (MVP-5).
 
 ### Done for every MVP story
 

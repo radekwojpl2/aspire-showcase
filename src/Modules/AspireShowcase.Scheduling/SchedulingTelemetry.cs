@@ -34,7 +34,7 @@ sealed class SchedulingTelemetry
         new KeyValuePair<string, object?>("result", result == BookingResult.Booked ? "booked" : "slot_taken"),
         new KeyValuePair<string, object?>("source", source));
 
-    /// <param name="by">Who cancelled: client, for now.</param>
+    /// <param name="by">Who cancelled: client or business.</param>
     public void Cancelled(Activity? activity, Booking booking, string by)
     {
         _cancelled.Add(1, new KeyValuePair<string, object?>("by", by));

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiFetch } from './api.ts';
+import { apiFetch, readProblem } from './api.ts';
 import { signInUrl, useSession } from './session.ts';
 import { ErrorMessage } from './ui.tsx';
 
@@ -57,6 +57,10 @@ export function BookingsPage() {
   // Undefined until the first answer: the API knows "today" in the business's time zone.
   const [date, setDate] = useState<string>();
   const [staffMemberId, setStaffMemberId] = useState('');
+  // Bumped to load the calendar again, after a cancellation.
+  const [reload, setReload] = useState(0);
+  const [cancelling, setCancelling] = useState<string>();
+  const [cancelled, setCancelled] = useState<string>();
 
   useEffect(() => {
     if (signInEnabled && !user) window.location.replace(signInUrl('/bookings'));
@@ -83,7 +87,7 @@ export function BookingsPage() {
     return () => {
       current = false;
     };
-  }, [user, view, date, staffMemberId]);
+  }, [user, view, date, staffMemberId, reload]);
 
   if (!signInEnabled) {
     return (
@@ -104,6 +108,23 @@ export function BookingsPage() {
     );
   }
   if (!calendar) return error ? <ErrorMessage message={error} /> : <p className="status" role="status">Loading...</p>;
+
+  // User story MVP-14: the owner cancels for sickness or emergencies; the time is free again.
+  const cancel = async (booking: CalendarBooking) => {
+    if (!window.confirm(`Cancel ${booking.clientName}'s ${booking.serviceName} on ${booking.day}, ${booking.start}?`)) return;
+    setCancelling(booking.id);
+    setError(undefined);
+    setCancelled(undefined);
+    try {
+      const response = await apiFetch(`/api/businesses/mine/bookings/${booking.id}/cancel`, { method: 'POST' });
+      if (!response.ok) throw new Error((await readProblem(response)).title ?? `HTTP error! status: ${response.status}`);
+      setCancelled(`${booking.clientName}'s booking at ${booking.start} is cancelled, and the time is free again.`);
+      setReload((count) => count + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to call the API');
+    }
+    setCancelling(undefined);
+  };
 
   const step = view === 'week' ? 7 : 1;
   const days = daysBetween(calendar.firstDay, calendar.lastDay);
@@ -162,6 +183,7 @@ export function BookingsPage() {
       <p className="calendar-title" aria-live="polite">
         {title} <span className="hint">({calendar.timeZone.replace(/_/g, ' ')})</span>
       </p>
+      <p className="field-hint" role="status">{cancelled ?? ''}</p>
       {error && <ErrorMessage message={error} />}
 
       <div className={`calendar calendar-${view}`}>
@@ -182,6 +204,15 @@ export function BookingsPage() {
                       <span className="calendar-client">{booking.clientName}</span>
                       <span className="hint">{booking.serviceName} · {booking.staffName}</span>
                       <a className="calendar-email" href={`mailto:${booking.clientEmail}`}>{booking.clientEmail}</a>
+                      <button
+                        type="button"
+                        className="button button-secondary calendar-cancel"
+                        disabled={cancelling === booking.id}
+                        onClick={() => void cancel(booking)}
+                      >
+                        {cancelling === booking.id ? 'Cancelling...' : 'Cancel'}
+                        <span className="visually-hidden"> {booking.clientName}, {booking.start}</span>
+                      </button>
                     </li>
                   ))}
                 </ul>
