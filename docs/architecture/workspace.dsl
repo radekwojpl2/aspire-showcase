@@ -8,9 +8,6 @@ workspace "Booking SaaS" "Proposed: appointment booking for small businesses, bu
 
     !identifiers hierarchical
 
-    # arc42 documentation, one Markdown file per section; diagrams are embedded with ![](embed:<view key>).
-    !docs arc42
-
     model {
         owner = person "Business owner" "Runs a small business (hairdresser, tutor, physio). Sets up services and hours, manages bookings. The customer of the SaaS."
         client = person "Client" "Signs in to book an appointment from the business's public page, and sees or cancels their own bookings."

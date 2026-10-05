@@ -12,7 +12,7 @@ The model is in [`workspace.dsl`](workspace.dsl) ([Structurizr DSL](https://docs
 - **OwnerSignIn**: an owner signing in, and the first API call with the session cookie.
 - **AzureDeployment**: what `aspire deploy` would create.
 
-The [arc42](https://arc42.org) documentation is in [`arc42/`](arc42), one file per section, with the diagrams embedded; only sections 3, 5, 6 and 7 have content so far. The viewer shows it under Documentation.
+The [arc42](https://arc42.org) documentation is [`arc42.md`](arc42.md), with these diagrams in it as Mermaid, which GitHub renders; only sections 3, 5, 6 and 7 have content so far. After changing the model, update the diagrams there with `scripts/export-diagrams.ps1` (needs Docker).
 
 ## View it
 
