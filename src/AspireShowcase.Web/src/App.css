@@ -126,6 +126,11 @@
   margin: 0;
 }
 
+.account-link {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
 .account-name {
   display: inline-flex;
   align-items: center;

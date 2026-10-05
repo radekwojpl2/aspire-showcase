@@ -12,6 +12,12 @@ sealed class BusinessDirectory(BusinessSetupDbContext db) : IBusinessDirectory
             .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone))
             .SingleOrDefaultAsync(cancellation);
 
+    public async Task<BusinessInfo?> FindAsync(BusinessId businessId, CancellationToken cancellation) =>
+        await db.Businesses.AsNoTracking()
+            .Where(business => business.Id == businessId)
+            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone))
+            .SingleOrDefaultAsync(cancellation);
+
     public async Task<BusinessInfo?> FindBySlugAsync(string slug, CancellationToken cancellation) =>
         await db.Businesses.AsNoTracking()
             .Where(business => business.Slug == slug)

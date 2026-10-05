@@ -7,6 +7,7 @@ import { ServicesPage } from './services.tsx';
 import { StaffPage } from './staff.tsx';
 import { BookingsPage } from './bookings.tsx';
 import { BookingPage } from './book.tsx';
+import { MyBookingsPage } from './my-bookings.tsx';
 
 // A few pages, so no router: the path picks the page, and links reload. bff serves index.html
 // for every path that isn't /api or /bff.
@@ -26,6 +27,8 @@ function Page() {
       return <StaffPage />;
     case '/bookings':
       return <BookingsPage />;
+    case '/my-bookings':
+      return <MyBookingsPage />;
     default:
       return <Home />;
   }

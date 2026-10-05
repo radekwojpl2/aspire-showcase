@@ -100,3 +100,14 @@ Authorization: Bearer {{AccessToken}}
 { "serviceId": "<service-id>", "startsAt": "2026-10-06T07:00:00Z", "clientName": "Ola Nowak", "clientEmail": "ola.nowak@example.com" }
 
 ###
+
+# A client's own upcoming bookings, at every business, and cancelling one.
+GET {{AspireShowcase.Api_HostAddress}}/api/me/bookings
+Authorization: Bearer {{AccessToken}}
+
+###
+
+POST {{AspireShowcase.Api_HostAddress}}/api/me/bookings/<booking-id>/cancel
+Authorization: Bearer {{AccessToken}}
+
+###

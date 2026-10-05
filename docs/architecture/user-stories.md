@@ -2,7 +2,7 @@
 
 User stories for the booking SaaS in [the proposed architecture](README.md), in three phases. Each phase is usable on its own: the MVP lets a small business and its staff take bookings, v1 makes it work for the day-to-day of a real shop, and v2 adds what keeps businesses on the platform.
 
-Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 8 of 14 MVP stories (MVP-1, 2, 4 and MVP-8 to 12) and part of MVP-3, none of v1 or v2.
+Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 8 of 14 MVP stories (MVP-1, 2, 4 and MVP-8 to 12) and parts of MVP-3 and MVP-7, none of v1 or v2.
 
 People in the stories:
 
@@ -47,10 +47,10 @@ As a client, I want a reminder email 24 hours before my appointment, so that I d
 - Bookings made less than 24 hours ahead get no reminder.
 - A cancelled booking sends no reminder.
 
-**MVP-7. See and cancel my bookings**
+**MVP-7. See and cancel my bookings** 🟡
 As a client, I want to see my upcoming bookings and cancel one, so that I can free a time I can't make.
-- **My bookings** lists my upcoming bookings across all businesses.
-- Cancelling frees the slot straight away and sends me and the owner an email.
+- ✅ **My bookings** lists my upcoming bookings across all businesses.
+- 🟡 Cancelling frees the slot straight away ✅ and sends me and the owner an email ❌. The emails need an email provider and the Notifications module (MVP-5).
 
 ### Owners
 

@@ -182,7 +182,10 @@ export function BookingPage({ slug }: { slug: string }) {
         <p>
           {booked.serviceName} with {booked.staffName}, {dayLabel(booked.date)} {booked.start}–{booked.end}.
         </p>
-        <div>
+        <div className="form-actions">
+          <a className="button" href="/my-bookings">
+            My bookings
+          </a>
           <button
             type="button"
             className="button button-secondary"

@@ -54,6 +54,9 @@ sealed class Booking
 
     public BookingStatus Status { get; private set; }
 
+    /// <summary>When it was cancelled, if it was.</summary>
+    public DateTimeOffset? CancelledAt { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
 
     /// <summary>Books a staff member for a service. Whether the time is free is the database's call.</summary>
@@ -81,6 +84,28 @@ sealed class Booking
             Status = BookingStatus.Confirmed,
             CreatedAt = now,
         };
+    }
+
+    /// <summary>
+    /// Cancels the booking (user story MVP-7). Its time is free again at once: the no-overlap
+    /// constraint only counts confirmed bookings. Cancelling twice changes nothing.
+    /// </summary>
+    /// <exception cref="DomainValidationException">It has already started.</exception>
+    public void Cancel(DateTimeOffset now)
+    {
+        if (Status == BookingStatus.Cancelled)
+        {
+            return;
+        }
+        if (Start <= now)
+        {
+            var errors = new DomainErrors();
+            errors.Add("booking", "It has already started, so it can't be cancelled.");
+            errors.ThrowIfAny();
+        }
+
+        Status = BookingStatus.Cancelled;
+        CancelledAt = now;
     }
 }
 
