@@ -43,7 +43,7 @@ sealed class BusinessTelemetry
     public void Created(Activity? activity, Business business)
     {
         _created.Add(1);
-        activity?.SetTag("business.id", business.Id);
+        activity?.SetTag("business.id", business.Id.Value);
         activity?.AddEvent(new ActivityEvent("business.created"));
     }
 
@@ -61,8 +61,8 @@ sealed class BusinessTelemetry
         _servicesChanged.Add(1, new KeyValuePair<string, object?>("result", result));
         if (service is not null)
         {
-            activity?.SetTag("service.id", service.Id);
-            activity?.SetTag("business.id", service.BusinessId);
+            activity?.SetTag("service.id", service.Id.Value);
+            activity?.SetTag("business.id", service.BusinessId.Value);
         }
         activity?.AddEvent(new ActivityEvent($"service.{result}"));
     }
@@ -73,8 +73,8 @@ sealed class BusinessTelemetry
         _staffChanged.Add(1, new KeyValuePair<string, object?>("result", result));
         if (member is not null)
         {
-            activity?.SetTag("staff_member.id", member.Id);
-            activity?.SetTag("business.id", member.BusinessId);
+            activity?.SetTag("staff_member.id", member.Id.Value);
+            activity?.SetTag("business.id", member.BusinessId.Value);
         }
         activity?.AddEvent(new ActivityEvent($"staff_member.{result}"));
     }
@@ -85,7 +85,7 @@ sealed class BusinessTelemetry
         _openingHoursChanged.Add(1, new KeyValuePair<string, object?>("result", result));
         if (business is not null)
         {
-            activity?.SetTag("business.id", business.Id);
+            activity?.SetTag("business.id", business.Id.Value);
             activity?.SetTag("business.opening_hours.periods", business.OpeningHours.Periods.Count);
         }
         activity?.AddEvent(new ActivityEvent($"opening_hours.{result}"));

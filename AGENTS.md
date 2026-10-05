@@ -54,6 +54,7 @@ tests/
 - Stop the AppHost (`aspire stop`) when you finish a task that started it, unless the user wants it left running.
 - Never print secrets: user secrets, tokens, connection strings.
 - API code belongs to a module project in `src/Modules`, not to the host. Keep a module's domain and storage `internal`, and use another module only through its public client project (`<Module>.PublicClient`), never the module itself; don't add `InternalsVisibleTo` except for its tests.
+- An aggregate refers to another only by its typed ID (`BusinessId`, `ServiceId`...), never by object: no navigation properties, and no aggregate as a method argument. When a rule needs another aggregate's data, pass the values (as `StaffMember.Change` takes the opening hours, not the `Business`).
 - `main` is protected. Changes go on a branch and through a pull request, with the CI checks `build` and `web` passing.
 - Deploying is manual (`gh workflow run Deploy`) and creates billable Azure resources. Do it only when asked.
 - Match the surrounding code: comments explain why, and the README is kept short.

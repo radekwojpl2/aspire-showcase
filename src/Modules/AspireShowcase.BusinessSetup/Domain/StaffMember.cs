@@ -1,3 +1,4 @@
+using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.SharedKernel;
 
 namespace AspireShowcase.BusinessSetup;
@@ -22,16 +23,16 @@ sealed class StaffMember
     /// <summary>The owner's name, until they change it, when sign-in didn't give one.</summary>
     public const string DefaultOwnerName = "Owner";
 
-    readonly List<Guid> _serviceIds = [];
+    readonly List<ServiceId> _serviceIds = [];
 
     // For EF Core.
     StaffMember()
     {
     }
 
-    public Guid Id { get; private set; }
+    public StaffMemberId Id { get; private set; }
 
-    public Guid BusinessId { get; private set; }
+    public BusinessId BusinessId { get; private set; }
 
     /// <summary>As clients see it when they choose who to book with.</summary>
     public string Name { get; private set; } = "";
@@ -46,7 +47,7 @@ sealed class StaffMember
     public bool DoesAllServices { get; private set; } = true;
 
     /// <summary>The services they do, when not <see cref="DoesAllServices"/>.</summary>
-    public IReadOnlyList<Guid> ServiceIds => _serviceIds;
+    public IReadOnlyList<ServiceId> ServiceIds => _serviceIds;
 
     /// <summary>Their own hours, or null to work whenever the business is open.</summary>
     public WeeklyHours? WorkingHours { get; private set; }
@@ -57,12 +58,13 @@ sealed class StaffMember
     /// The owner, as the business's first staff member: created with the business, so a
     /// one-person business can be booked without setting anything up.
     /// </summary>
-    public static StaffMember ForOwner(Business business, string? name, DateTimeOffset now) => new()
+    /// <param name="ownerId">The owner's Logto user ID, the business's <see cref="Business.OwnerId"/>.</param>
+    public static StaffMember ForOwner(BusinessId businessId, string ownerId, string? name, DateTimeOffset now) => new()
     {
-        Id = Guid.CreateVersion7(),
-        BusinessId = business.Id,
+        Id = StaffMemberId.New(),
+        BusinessId = businessId,
         Name = name?.Trim() is { Length: >= MinNameLength and <= MaxNameLength } trimmed ? trimmed : DefaultOwnerName,
-        UserId = business.OwnerId,
+        UserId = ownerId,
         CreatedAt = now,
     };
 
@@ -70,29 +72,27 @@ sealed class StaffMember
     /// <param name="serviceIds">The services they do, unless <paramref name="doesAllServices"/>.</param>
     /// <param name="workingHours">Their own hours, or null to work whenever the business is open.</param>
     /// <param name="businessServiceIds">Every service of the business, to check the chosen ones against.</param>
+    /// <param name="openingHours">The business's opening hours, which working hours have to stay within.</param>
     /// <exception cref="DomainValidationException">The name, services or hours can't be used; every
     /// problem is reported at once.</exception>
     public static StaffMember Add(
-        Business business, string? name, bool doesAllServices, IEnumerable<Guid>? serviceIds,
-        IReadOnlyCollection<Guid> businessServiceIds, WeeklyHours? workingHours, DateTimeOffset now)
+        BusinessId businessId, string? name, bool doesAllServices, IEnumerable<ServiceId>? serviceIds,
+        IReadOnlyCollection<ServiceId> businessServiceIds, WeeklyHours? workingHours, WeeklyHours openingHours,
+        DateTimeOffset now)
     {
-        var staffMember = new StaffMember { Id = Guid.CreateVersion7(), BusinessId = business.Id, CreatedAt = now };
-        staffMember.Change(business, name, doesAllServices, serviceIds, businessServiceIds, workingHours);
+        var staffMember = new StaffMember { Id = StaffMemberId.New(), BusinessId = businessId, CreatedAt = now };
+        staffMember.Change(name, doesAllServices, serviceIds, businessServiceIds, workingHours, openingHours);
         return staffMember;
     }
 
     /// <summary>Changes the name, the services and the working hours together, as the owner edits them.</summary>
+    /// <param name="openingHours">The business's opening hours, which working hours have to stay within.</param>
     /// <exception cref="DomainValidationException">The name, services or hours can't be used; every
     /// problem is reported at once.</exception>
     public void Change(
-        Business business, string? name, bool doesAllServices, IEnumerable<Guid>? serviceIds,
-        IReadOnlyCollection<Guid> businessServiceIds, WeeklyHours? workingHours)
+        string? name, bool doesAllServices, IEnumerable<ServiceId>? serviceIds,
+        IReadOnlyCollection<ServiceId> businessServiceIds, WeeklyHours? workingHours, WeeklyHours openingHours)
     {
-        if (business.Id != BusinessId)
-        {
-            throw new InvalidOperationException("A staff member only works for their own business.");
-        }
-
         var errors = new DomainErrors();
         var trimmedName = name?.Trim();
         if (trimmedName is not { Length: >= MinNameLength and <= MaxNameLength })
@@ -111,7 +111,7 @@ sealed class StaffMember
         }
 
         // The rule that crosses aggregates: staff only work while the business is open.
-        foreach (var period in workingHours?.OutsideOf(business.OpeningHours) ?? [])
+        foreach (var period in workingHours?.OutsideOf(openingHours) ?? [])
         {
             errors.Add(WeeklyHours.FieldName(period.Day), $"{WeeklyHours.Describe(period)} is outside the opening hours.");
         }
@@ -126,5 +126,11 @@ sealed class StaffMember
     }
 
     /// <summary>Whether clients can book them for the service.</summary>
-    public bool Does(Guid serviceId) => DoesAllServices || _serviceIds.Contains(serviceId);
+    public bool Does(ServiceId serviceId) => DoesAllServices || _serviceIds.Contains(serviceId);
 }
+
+/// <summary>
+/// A staff member's own working hours, by name, for <see cref="Business.SetOpeningHours"/> to
+/// check against: the values it needs, not the StaffMember aggregate.
+/// </summary>
+sealed record StaffHours(string StaffName, WeeklyHours WorkingHours);

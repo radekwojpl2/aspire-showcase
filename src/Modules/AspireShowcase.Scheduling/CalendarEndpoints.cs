@@ -62,8 +62,9 @@ static class CalendarEndpoints
             var query = db.Bookings.AsNoTracking()
                 .Where(booking => booking.Status == BookingStatus.Confirmed &&
                                   booking.Start < range.To && booking.End > range.From);
-            if (staffMemberId is { } staffId)
+            if (staffMemberId is { } id)
             {
+                var staffId = new StaffMemberId(id);
                 query = query.Where(booking => booking.StaffMemberId == staffId);
             }
             var bookings = await query.OrderBy(booking => booking.Start).ToListAsync(cancellation);
@@ -79,17 +80,17 @@ static class CalendarEndpoints
                 Format(range.FirstDay),
                 Format(range.LastDay),
                 business.TimeZone,
-                staff.Select(member => new CalendarStaff(member.Id, member.Name)).ToList(),
+                staff.Select(member => new CalendarStaff(member.Id.Value, member.Name)).ToList(),
                 bookings.Select(booking =>
                 {
                     var start = TimeZoneInfo.ConvertTime(booking.Start, timeZone);
                     var end = TimeZoneInfo.ConvertTime(booking.End, timeZone);
                     return new CalendarBooking(
-                        booking.Id,
+                        booking.Id.Value,
                         Format(DateOnly.FromDateTime(start.DateTime)),
                         start.ToString("HH:mm", CultureInfo.InvariantCulture),
                         end.ToString("HH:mm", CultureInfo.InvariantCulture),
-                        booking.StaffMemberId,
+                        booking.StaffMemberId.Value,
                         staffNames.GetValueOrDefault(booking.StaffMemberId, "A former staff member"),
                         services.TryGetValue(booking.ServiceId, out var service) ? service.Name : "A removed service",
                         booking.Attendee.Name,

@@ -18,21 +18,21 @@ public interface IBusinessDirectory
     Task<IReadOnlyList<BusinessInfo>> ListAsync(CancellationToken cancellation);
 
     /// <summary>The business's staff, with the hours they actually work.</summary>
-    Task<IReadOnlyList<StaffInfo>> StaffAsync(Guid businessId, CancellationToken cancellation);
+    Task<IReadOnlyList<StaffInfo>> StaffAsync(BusinessId businessId, CancellationToken cancellation);
 
     /// <summary>The business's services, hidden ones included.</summary>
-    Task<IReadOnlyList<ServiceInfo>> ServicesAsync(Guid businessId, CancellationToken cancellation);
+    Task<IReadOnlyList<ServiceInfo>> ServicesAsync(BusinessId businessId, CancellationToken cancellation);
 }
 
 /// <param name="TimeZone">The IANA time zone its hours are in.</param>
-public sealed record BusinessInfo(Guid Id, string Name, string TimeZone);
+public sealed record BusinessInfo(BusinessId Id, string Name, string TimeZone);
 
 /// <param name="ServiceIds">The services they do; every service when <paramref name="DoesAllServices"/>.</param>
 /// <param name="WorkingHours">When they work: their own hours, or else the business's opening hours.</param>
 public sealed record StaffInfo(
-    Guid Id, string Name, bool DoesAllServices, IReadOnlyList<Guid> ServiceIds, IReadOnlyList<WorkingPeriod> WorkingHours);
+    StaffMemberId Id, string Name, bool DoesAllServices, IReadOnlyList<ServiceId> ServiceIds, IReadOnlyList<WorkingPeriod> WorkingHours);
 
 /// <summary>A stretch of a weekday, in the business's local time: [Start, End).</summary>
 public sealed record WorkingPeriod(DayOfWeek Day, TimeOnly Start, TimeOnly End);
 
-public sealed record ServiceInfo(Guid Id, string Name, TimeSpan Duration, bool IsHidden);
+public sealed record ServiceInfo(ServiceId Id, string Name, TimeSpan Duration, bool IsHidden);

@@ -1,3 +1,4 @@
+using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.SharedKernel;
 
 namespace AspireShowcase.BusinessSetup;
@@ -27,9 +28,9 @@ sealed class Service
     {
     }
 
-    public Guid Id { get; private set; }
+    public ServiceId Id { get; private set; }
 
-    public Guid BusinessId { get; private set; }
+    public BusinessId BusinessId { get; private set; }
 
     public string Name { get; private set; } = "";
 
@@ -51,9 +52,9 @@ sealed class Service
     /// <exception cref="DomainValidationException">The name, duration or price can't be used; every
     /// problem is reported at once.</exception>
     public static Service Add(
-        Guid businessId, string? name, int? durationMinutes, decimal? price, string? currency, DateTimeOffset now)
+        BusinessId businessId, string? name, int? durationMinutes, decimal? price, string? currency, DateTimeOffset now)
     {
-        var service = new Service { Id = Guid.CreateVersion7(), BusinessId = businessId, CreatedAt = now };
+        var service = new Service { Id = ServiceId.New(), BusinessId = businessId, CreatedAt = now };
         service.Change(name, durationMinutes, price, currency);
         return service;
     }

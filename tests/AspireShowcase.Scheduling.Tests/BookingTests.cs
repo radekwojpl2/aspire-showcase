@@ -1,3 +1,4 @@
+using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.Scheduling;
 using AspireShowcase.SharedKernel;
 
@@ -17,7 +18,7 @@ public class BookingTests
         var start = new DateTimeOffset(2026, 10, 6, 9, 0, 0, TimeSpan.FromHours(2));
 
         var booking = Booking.Book(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), start, TimeSpan.FromMinutes(45),
+            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(45),
             Attendee.Create(null, "Ola Nowak", "ola.nowak@example.com"), DateTimeOffset.UtcNow);
 
         Assert.Equal(new DateTimeOffset(2026, 10, 6, 7, 0, 0, TimeSpan.Zero), booking.Start);
@@ -30,7 +31,7 @@ public class BookingTests
     public void A_booking_needs_a_duration()
     {
         Assert.Throws<DomainValidationException>(() => Booking.Book(
-            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTimeOffset.UtcNow, TimeSpan.Zero,
+            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), DateTimeOffset.UtcNow, TimeSpan.Zero,
             Attendee.Create(null, "Ola Nowak", "ola.nowak@example.com"), DateTimeOffset.UtcNow));
     }
 

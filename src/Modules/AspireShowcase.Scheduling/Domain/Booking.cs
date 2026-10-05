@@ -1,6 +1,15 @@
+using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.SharedKernel;
 
 namespace AspireShowcase.Scheduling;
+
+/// <summary>The ID of a booking.</summary>
+readonly record struct BookingId(Guid Value)
+{
+    public static BookingId New() => new(Guid.CreateVersion7());
+
+    public override string ToString() => Value.ToString();
+}
 
 enum BookingStatus
 {
@@ -27,13 +36,13 @@ sealed class Booking
     {
     }
 
-    public Guid Id { get; private set; }
+    public BookingId Id { get; private set; }
 
-    public Guid BusinessId { get; private set; }
+    public BusinessId BusinessId { get; private set; }
 
-    public Guid StaffMemberId { get; private set; }
+    public StaffMemberId StaffMemberId { get; private set; }
 
-    public Guid ServiceId { get; private set; }
+    public ServiceId ServiceId { get; private set; }
 
     /// <summary>When it starts, as an instant (stored in UTC).</summary>
     public DateTimeOffset Start { get; private set; }
@@ -50,7 +59,7 @@ sealed class Booking
     /// <summary>Books a staff member for a service. Whether the time is free is the database's call.</summary>
     /// <exception cref="DomainValidationException">The duration isn't positive.</exception>
     public static Booking Book(
-        Guid businessId, Guid staffMemberId, Guid serviceId, DateTimeOffset start, TimeSpan duration,
+        BusinessId businessId, StaffMemberId staffMemberId, ServiceId serviceId, DateTimeOffset start, TimeSpan duration,
         Attendee attendee, DateTimeOffset now)
     {
         if (duration <= TimeSpan.Zero)
@@ -62,7 +71,7 @@ sealed class Booking
 
         return new Booking
         {
-            Id = Guid.CreateVersion7(),
+            Id = BookingId.New(),
             BusinessId = businessId,
             StaffMemberId = staffMemberId,
             ServiceId = serviceId,
