@@ -58,6 +58,8 @@ public static class Extensions
             {
                 // The app's own meter, named like its ActivitySource below.
                 metrics.AddMeter(builder.Environment.ApplicationName)
+                    // MassTransit's, where a service uses the bus.
+                    .AddMeter("MassTransit")
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation();
@@ -65,6 +67,7 @@ public static class Extensions
             .WithTracing(tracing =>
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
+                    .AddSource("MassTransit")
                     .AddAspNetCoreInstrumentation(tracing =>
                         // Exclude health check requests from tracing
                         tracing.Filter = context =>

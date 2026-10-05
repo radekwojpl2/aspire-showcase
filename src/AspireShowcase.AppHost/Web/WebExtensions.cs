@@ -54,7 +54,7 @@ static class WebExtensions
     // References only pass connection strings: the separate APP_DB_PASSWORD, APP_DB_URI...
     // variables would put the database password in the Container App itself, bypassing
     // Key Vault. This has to come before the WithReference calls to apply to them.
-    static IResourceBuilder<ProjectResource> WithoutConnectionProperties(this IResourceBuilder<ProjectResource> project) =>
+    internal static IResourceBuilder<ProjectResource> WithoutConnectionProperties(this IResourceBuilder<ProjectResource> project) =>
         project.WithReferenceEnvironment(
             ReferenceEnvironmentInjectionFlags.All & ~ReferenceEnvironmentInjectionFlags.ConnectionProperties);
 }

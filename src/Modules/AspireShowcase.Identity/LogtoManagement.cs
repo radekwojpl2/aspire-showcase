@@ -19,9 +19,10 @@ sealed class LogtoManagementSettings
 
 /// <summary>
 /// Calls Logto's Management API: gives users the "owner" role, which grants the
-/// manage:business permission of web's API resource.
+/// manage:business permission of web's API resource, and reads user profiles.
 /// </summary>
-sealed class LogtoManagement(HttpClient http, LogtoManagementSettings settings, TimeProvider time) : IOwnerRoles
+sealed class LogtoManagement(HttpClient http, LogtoManagementSettings settings, TimeProvider time)
+    : IOwnerRoles, IUserProfiles
 {
     /// <summary>The user role in Logto that owners get; it has to exist in the Logto console.</summary>
     public const string OwnerRole = "owner";
@@ -71,6 +72,33 @@ sealed class LogtoManagement(HttpClient http, LogtoManagementSettings settings, 
         var roles = await GetAsync<List<Role>>("api/roles?page=1&page_size=100", cancellation);
         return _ownerRoleId = roles?.FirstOrDefault(role => role is { Name: OwnerRole, Type: "User" })?.Id
             ?? throw new OwnerRoleUnavailableException($"Logto has no user role named \"{OwnerRole}\".");
+    }
+
+    public async Task<UserProfile?> FindAsync(string userId, CancellationToken cancellation)
+    {
+        if (!settings.IsConfigured)
+        {
+            throw new UserProfilesUnavailableException("The Logto machine-to-machine application isn't configured.");
+        }
+
+        try
+        {
+            var user = await GetAsync<User>($"api/users/{Uri.EscapeDataString(userId)}", cancellation);
+            return user is null
+                ? null
+                : new UserProfile(
+                    user.Id,
+                    new[] { user.Name, user.Username, user.PrimaryEmail, user.Id }.First(value => !string.IsNullOrEmpty(value))!,
+                    string.IsNullOrEmpty(user.PrimaryEmail) ? null : user.PrimaryEmail);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or JsonException)
+        {
+            throw new UserProfilesUnavailableException("Logto's Management API call failed.", exception);
+        }
     }
 
     async Task<T?> GetAsync<T>(string path, CancellationToken cancellation)
@@ -135,6 +163,8 @@ sealed class LogtoManagement(HttpClient http, LogtoManagementSettings settings, 
     }
 
     sealed record Role(string Id, string Name, string? Type);
+
+    sealed record User(string Id, string? Name, string? Username, string? PrimaryEmail);
 
     sealed record TokenResponse(
         [property: JsonPropertyName("access_token")] string AccessToken,

@@ -18,6 +18,8 @@ sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         booking.ToTable("Bookings");
         booking.Property(b => b.Status).HasConversion<string>().HasMaxLength(16);
         booking.Property(b => b.CancelledBy).HasConversion<string>().HasMaxLength(16);
+        // Events aren't stored with the booking: the context moves them to the outbox on save.
+        booking.Ignore(b => b.Events);
 
         // The attendee is a value object, stored as columns of the booking's row.
         booking.ComplexProperty(b => b.Attendee, attendee =>

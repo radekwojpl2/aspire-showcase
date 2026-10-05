@@ -9,24 +9,24 @@ sealed class BusinessDirectory(BusinessSetupDbContext db) : IBusinessDirectory
     public async Task<BusinessInfo?> FindOwnedAsync(string ownerId, CancellationToken cancellation) =>
         await db.Businesses.AsNoTracking()
             .Where(business => business.OwnerId == ownerId)
-            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone))
+            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId))
             .SingleOrDefaultAsync(cancellation);
 
     public async Task<BusinessInfo?> FindAsync(BusinessId businessId, CancellationToken cancellation) =>
         await db.Businesses.AsNoTracking()
             .Where(business => business.Id == businessId)
-            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone))
+            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId))
             .SingleOrDefaultAsync(cancellation);
 
     public async Task<BusinessInfo?> FindBySlugAsync(string slug, CancellationToken cancellation) =>
         await db.Businesses.AsNoTracking()
             .Where(business => business.Slug == slug)
-            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone))
+            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId))
             .SingleOrDefaultAsync(cancellation);
 
     public async Task<IReadOnlyList<BusinessInfo>> ListAsync(CancellationToken cancellation) =>
         await db.Businesses.AsNoTracking()
-            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone))
+            .Select(business => new BusinessInfo(business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId))
             .ToListAsync(cancellation);
 
     public async Task<IReadOnlyList<StaffInfo>> StaffAsync(BusinessId businessId, CancellationToken cancellation)

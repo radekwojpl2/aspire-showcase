@@ -76,6 +76,18 @@ static class PostgresExtensions
     }
 
     /// <summary>
+    /// Adds the notifications service's database, for MassTransit's inbox, and gives the service
+    /// its connection string (ConnectionStrings__notifications-db).
+    /// </summary>
+    public static IResourceBuilder<ProjectResource> WithNotificationsDatabase(
+        this IResourceBuilder<ProjectResource> notifications, PostgresServer postgres)
+    {
+        var database = postgres.Server.AddDatabase("notifications-db", databaseName: "notifications");
+
+        return notifications.WithReference(database).WaitFor(database);
+    }
+
+    /// <summary>
     /// Adds bff's own database, for sessions and data protection keys, and gives bff its
     /// connection string (ConnectionStrings__bff-db).
     /// </summary>

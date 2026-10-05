@@ -37,6 +37,9 @@ jobs:
       Parameters__logto-app-secret: ${{ secrets.LOGTO_APP_SECRET }}
       Parameters__logto-m2m-app-id: ${{ vars.LOGTO_M2M_APP_ID }}
       Parameters__logto-m2m-app-secret: ${{ secrets.LOGTO_M2M_APP_SECRET }}
+      # Booking emails through Resend; until they're set, emails are skipped and logged.
+      Parameters__resend-api-key: ${{ secrets.RESEND_API_KEY }}
+      Parameters__email-sender: ${{ vars.EMAIL_SENDER }}
     steps:
       - name: Check secrets
         env:

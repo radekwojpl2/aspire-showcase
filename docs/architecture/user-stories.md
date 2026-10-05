@@ -2,7 +2,7 @@
 
 User stories for the booking SaaS in [the proposed architecture](README.md), in three phases. Each phase is usable on its own: the MVP lets a small business and its staff take bookings, v1 makes it work for the day-to-day of a real shop, and v2 adds what keeps businesses on the platform.
 
-Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 8 of 14 MVP stories (MVP-1, 2, 4 and MVP-8 to 12) and parts of MVP-3, MVP-7 and MVP-14, none of v1 or v2.
+Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 12 of 14 MVP stories (all but MVP-3 and MVP-6) and part of MVP-3, none of v1 or v2.
 
 People in the stories:
 
@@ -37,7 +37,7 @@ As a client, I want to book a free slot for a service, so that I have an appoint
 - The booking is saved for me, with the service, the staff member, and the start and end time.
 - If someone else just took an overlapping time, I see "This time was just taken" and the updated free slots, not an error page.
 
-**MVP-5. Get a confirmation**
+**MVP-5. Get a confirmation** ✅
 As a client, I want a confirmation email when I book, so that I know the booking went through.
 - The email has the business, service, date and time, and a link to my bookings.
 - I get exactly one confirmation, even if sending is retried.
@@ -47,10 +47,10 @@ As a client, I want a reminder email 24 hours before my appointment, so that I d
 - Bookings made less than 24 hours ahead get no reminder.
 - A cancelled booking sends no reminder.
 
-**MVP-7. See and cancel my bookings** 🟡
+**MVP-7. See and cancel my bookings** ✅
 As a client, I want to see my upcoming bookings and cancel one, so that I can free a time I can't make.
-- ✅ **My bookings** lists my upcoming bookings across all businesses.
-- 🟡 Cancelling frees the slot straight away ✅ and sends me and the owner an email ❌. The emails need an email provider and the Notifications module (MVP-5).
+- **My bookings** lists my upcoming bookings across all businesses.
+- Cancelling frees the slot straight away and sends me and the owner an email.
 
 ### Owners
 
@@ -80,12 +80,12 @@ As an owner, I want to see my bookings by day and week, for everyone or one staf
 - Day and week views, with the client's name, email, service and staff member.
 - I only ever see my own business's bookings.
 
-**MVP-13. Hear about new bookings**
+**MVP-13. Hear about new bookings** ✅
 As an owner, I want an email when a client books or cancels, so that I don't have to keep checking.
 
-**MVP-14. Cancel a booking** 🟡
+**MVP-14. Cancel a booking** ✅
 As an owner, I want to cancel a client's booking, so that I can handle sickness or emergencies.
-- 🟡 The client gets an email ❌; the slot becomes free ✅. The email needs an email provider and the Notifications module (MVP-5).
+- The client gets an email; the slot becomes free.
 
 ### Done for every MVP story
 

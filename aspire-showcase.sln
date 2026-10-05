@@ -30,6 +30,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.BusinessSetu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Scheduling.Tests", "tests\AspireShowcase.Scheduling.Tests\AspireShowcase.Scheduling.Tests.csproj", "{D881E5E7-2495-44E6-82BA-8896C4FB74F0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Scheduling.PublicClient", "src\Modules\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj", "{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -184,6 +186,18 @@ Global
 		{D881E5E7-2495-44E6-82BA-8896C4FB74F0}.Release|x64.Build.0 = Release|Any CPU
 		{D881E5E7-2495-44E6-82BA-8896C4FB74F0}.Release|x86.ActiveCfg = Release|Any CPU
 		{D881E5E7-2495-44E6-82BA-8896C4FB74F0}.Release|x86.Build.0 = Release|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Debug|x64.Build.0 = Debug|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Debug|x86.Build.0 = Debug|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Release|x64.ActiveCfg = Release|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Release|x64.Build.0 = Release|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Release|x86.ActiveCfg = Release|Any CPU
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -202,5 +216,6 @@ Global
 		{0540E01D-E47E-4B8D-84F6-15C6F780A778} = {EC447DCF-ABFA-6E24-52A5-D7FD48A5C558}
 		{1D05DB24-2756-43EF-88E0-8DD269C467B9} = {EC447DCF-ABFA-6E24-52A5-D7FD48A5C558}
 		{D881E5E7-2495-44E6-82BA-8896C4FB74F0} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1} = {EC447DCF-ABFA-6E24-52A5-D7FD48A5C558}
 	EndGlobalSection
 EndGlobal

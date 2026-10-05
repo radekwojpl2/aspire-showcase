@@ -9,7 +9,7 @@ For general Aspire work (running, monitoring, deploying), Aspire's own skills ar
 
 - .NET 10 SDK (the version in `global.json`)
 - Node.js 22
-- Docker, running (PostgreSQL and Logto are containers)
+- Docker, running (PostgreSQL, RabbitMQ and Logto are containers)
 - Aspire CLI: `dotnet tool install --global Aspire.Cli`
 - Azure CLI (`az`) and GitHub CLI (`gh`), both signed in, for the Azure part
 
@@ -40,9 +40,10 @@ src/
 │   ├── AspireShowcase.BusinessSetup/  # business, booking link, hours, services, staff; own DbContext and migrations
 │   ├── AspireShowcase.BusinessSetup.PublicClient/  # contracts other modules use to talk to Business Setup
 │   ├── AspireShowcase.Scheduling/     # bookings and the owner's calendar; own DbContext and migrations
+│   ├── AspireShowcase.Scheduling.PublicClient/  # the messages Scheduling publishes on the bus
 │   ├── AspireShowcase.Identity/       # anti-corruption layer over Logto
 │   └── AspireShowcase.SharedKernel/   # what every module's domain may use
-├── AspireShowcase.Notifications/    # notifications service, with a Quartz.NET job
+├── AspireShowcase.Notifications/    # notifications service: booking emails (MassTransit consumer, Resend), with a Quartz.NET job
 └── AspireShowcase.Web/              # React + Vite (resource "frontend")
 tests/
 ├── AspireShowcase.BusinessSetup.Tests/  # xUnit tests of Business Setup's domain rules

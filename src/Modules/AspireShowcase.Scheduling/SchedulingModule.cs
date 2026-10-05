@@ -1,3 +1,4 @@
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using OpenTelemetry.Metrics;
@@ -35,6 +36,22 @@ public static class SchedulingModule
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing.AddSource(TelemetryName))
             .WithMetrics(metrics => metrics.AddMeter(TelemetryName));
+    }
+
+    /// <summary>
+    /// Scheduling's part of the host's MassTransit bus: the transactional outbox in Scheduling's
+    /// database, which booking events are published through, and the consumer that turns them
+    /// into notices for the notifications service. The host chooses the transport.
+    /// </summary>
+    public static void AddSchedulingMessaging(this IBusRegistrationConfigurator bus)
+    {
+        bus.AddEntityFrameworkOutbox<SchedulingDbContext>(outbox =>
+        {
+            outbox.UsePostgres();
+            // Publishing from a request writes to the outbox; a background service sends it.
+            outbox.UseBusOutbox();
+        });
+        bus.AddConsumer<BookingNoticeConsumer, BookingNoticeConsumerDefinition>();
     }
 
     /// <param name="includeDevelopmentTools">Also maps /dev/sample-bookings; only ever in Development.</param>

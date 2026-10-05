@@ -42,7 +42,7 @@ So something that works locally can still fail in Azure.
 
 ## Run locally
 
-Needs .NET 10, Node.js 22, Docker (for PostgreSQL and Logto) and the Aspire CLI (`dotnet tool install --global Aspire.Cli`).
+Needs .NET 10, Node.js 22, Docker (for PostgreSQL, RabbitMQ and Logto) and the Aspire CLI (`dotnet tool install --global Aspire.Cli`).
 
 ```
 aspire run
@@ -82,9 +82,10 @@ src/
 │   ├── AspireShowcase.BusinessSetup/  # business, booking link, hours, services, staff
 │   ├── AspireShowcase.BusinessSetup.PublicClient/  # how other modules talk to Business Setup
 │   ├── AspireShowcase.Scheduling/     # bookings and the owner's calendar
+│   ├── AspireShowcase.Scheduling.PublicClient/  # the messages Scheduling publishes
 │   ├── AspireShowcase.Identity/       # anti-corruption layer over Logto
 │   └── AspireShowcase.SharedKernel/   # what every module's domain may use
-├── AspireShowcase.Notifications/    # notifications service
+├── AspireShowcase.Notifications/    # notifications service: booking emails
 └── AspireShowcase.Web/              # React + Vite
 tests/
 ├── AspireShowcase.BusinessSetup.Tests/  # Business Setup's domain rules
@@ -121,11 +122,25 @@ dotnet tool restore
 dotnet ef migrations add <Name> --project src/Modules/AspireShowcase.BusinessSetup --startup-project src/AspireShowcase.Api --context BusinessSetupDbContext
 dotnet ef migrations add <Name> --project src/Modules/AspireShowcase.Scheduling --startup-project src/AspireShowcase.Api --context SchedulingDbContext
 dotnet ef migrations add <Name> --project src/AspireShowcase.Bff
+dotnet ef migrations add <Name> --project src/AspireShowcase.Notifications
 ```
 
 ## Notifications
 
-A second ASP.NET Core service (`notifications`). It records notifications posted to it and keeps the latest 50 in memory. Nothing posts to it yet: it's there for the booking emails of user story MVP-5. The API can call it as `http://notifications`, which service discovery resolves.
+A second ASP.NET Core service (`notifications`) that sends the booking emails (user stories MVP-5, MVP-7, MVP-13 and MVP-14) through [Resend](https://resend.com). It hears about bookings over a message bus, [MassTransit](https://masstransit.io) on RabbitMQ (`messaging`), never by being called:
+
+1. Booking or cancelling publishes `BookingConfirmed` or `BookingCancelled` through MassTransit's transactional outbox in Scheduling's schema: the message is saved in the same transaction as the booking and sent afterwards, so neither exists without the other.
+2. A consumer in `web` looks up what the emails need (names, local times, the owner's email from Logto) and publishes a `BookingNotice`. Keeping that out of the request means booking doesn't fail when Logto is slow.
+3. `notifications` consumes it through MassTransit's inbox in `notifications-db`, so a redelivered message sends nothing twice, and sends the emails with an idempotency key that Resend checks too. A failed message is retried with growing waits, then lands in an `_error` queue in RabbitMQ.
+
+The message contracts are in `AspireShowcase.Scheduling.PublicClient`. Locally the `messaging` resource links to RabbitMQ's management UI, to watch the queues. Emails need two settings, and until they're set, they're skipped and logged:
+
+```
+dotnet user-secrets set Parameters:resend-api-key <api-key> --project src/AspireShowcase.AppHost
+dotnet user-secrets set Parameters:email-sender "Bookings <bookings@yourdomain.com>" --project src/AspireShowcase.AppHost
+```
+
+The sender's domain must be verified in Resend. In Azure, set them on the `production` environment: the `RESEND_API_KEY` secret and the `EMAIL_SENDER` variable. The service also keeps the latest 50 notifications in memory.
 
 - Local: a process.
 - Azure: a Container App with no external endpoint.
@@ -231,6 +246,9 @@ The notifications service, in `src/AspireShowcase.Notifications/NotificationTele
 | `notifications.message.length` | Histogram | Characters in the messages received |
 | `notifications.stored` | Gauge | Notifications currently kept in memory |
 | `notifications.digested` | Counter | Notifications summed up by the scheduled digest |
+| `notifications.emails` | Counter | Booking emails (`kind` tag; `result` tag: `sent`, `skipped`) |
+
+MassTransit records its own spans and metrics too, so a booking's trace runs from the request through the outbox and RabbitMQ to the email being sent.
 
 ![Aspire dashboard: the notifications service's metrics](docs/images/dashboard-notifications-metrics.png)
 

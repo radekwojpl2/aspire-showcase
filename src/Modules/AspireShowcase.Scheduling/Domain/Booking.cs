@@ -38,6 +38,8 @@ enum CancelledBy
 /// </remarks>
 sealed class Booking
 {
+    readonly List<BookingEvent> _events = [];
+
     // For EF Core.
     Booking()
     {
@@ -72,6 +74,12 @@ sealed class Booking
 
     public DateTimeOffset CreatedAt { get; private set; }
 
+    /// <summary>What happened since it was loaded, until it's saved: see <see cref="BookingEvent"/>.</summary>
+    public IReadOnlyList<BookingEvent> Events => _events;
+
+    /// <summary>Once the events are in the outbox, or when nobody should hear about them.</summary>
+    public void ClearEvents() => _events.Clear();
+
     /// <summary>Books a staff member for a service. Whether the time is free is the database's call.</summary>
     /// <exception cref="DomainValidationException">The duration isn't positive.</exception>
     public static Booking Book(
@@ -85,7 +93,7 @@ sealed class Booking
             errors.ThrowIfAny();
         }
 
-        return new Booking
+        var booking = new Booking
         {
             Id = BookingId.New(),
             BusinessId = businessId,
@@ -97,6 +105,8 @@ sealed class Booking
             Status = BookingStatus.Confirmed,
             CreatedAt = now,
         };
+        booking._events.Add(new BookingConfirmed(booking.Id, now));
+        return booking;
     }
 
     /// <summary>
@@ -121,8 +131,22 @@ sealed class Booking
         Status = BookingStatus.Cancelled;
         CancelledAt = now;
         CancelledBy = by;
+        _events.Add(new BookingCancelled(Id, now, by));
     }
 }
+
+/// <summary>
+/// Something that happened to a booking, which others react to (the Notifications module sends
+/// emails). The aggregate records it; it's saved to the outbox in the same transaction.
+/// </summary>
+abstract record BookingEvent(BookingId BookingId, DateTimeOffset OccurredAt);
+
+/// <summary>A client booked (user story MVP-4).</summary>
+sealed record BookingConfirmed(BookingId BookingId, DateTimeOffset OccurredAt) : BookingEvent(BookingId, OccurredAt);
+
+/// <summary>The client (MVP-7) or the business (MVP-14) cancelled.</summary>
+sealed record BookingCancelled(BookingId BookingId, DateTimeOffset OccurredAt, CancelledBy By)
+    : BookingEvent(BookingId, OccurredAt);
 
 /// <summary>What became of an attempt to book.</summary>
 enum BookingResult

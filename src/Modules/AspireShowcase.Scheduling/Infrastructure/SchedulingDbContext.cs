@@ -1,4 +1,5 @@
 using AspireShowcase.BusinessSetup.PublicClient;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 namespace AspireShowcase.Scheduling;
@@ -45,5 +46,12 @@ sealed class SchedulingDbContext(DbContextOptions<SchedulingDbContext> options, 
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SchedulingDbContext).Assembly);
         modelBuilder.Entity<Booking>().HasQueryFilter(booking => booking.BusinessId == ScopedBusinessId);
+
+        // MassTransit's transactional outbox and inbox: messages published while saving a booking
+        // are written here in the same transaction and sent afterwards; messages consumed are
+        // recorded, so a redelivered one isn't handled twice.
+        modelBuilder.AddInboxStateEntity();
+        modelBuilder.AddOutboxMessageEntity();
+        modelBuilder.AddOutboxStateEntity();
     }
 }

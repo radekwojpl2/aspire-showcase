@@ -66,6 +66,29 @@ public class BookingTests
     }
 
     [Fact]
+    public void Booking_records_that_it_was_confirmed()
+    {
+        var booking = BookingAt(DateTimeOffset.UtcNow.AddDays(1));
+
+        var confirmed = Assert.IsType<BookingConfirmed>(Assert.Single(booking.Events));
+        Assert.Equal(booking.Id, confirmed.BookingId);
+    }
+
+    [Fact]
+    public void Cancelling_records_who_cancelled_once()
+    {
+        var start = DateTimeOffset.UtcNow.AddDays(1);
+        var booking = BookingAt(start);
+        booking.ClearEvents();
+
+        booking.Cancel(start.AddHours(-2), CancelledBy.Business);
+        booking.Cancel(start.AddHours(-1), CancelledBy.Business);
+
+        var cancelled = Assert.IsType<BookingCancelled>(Assert.Single(booking.Events));
+        Assert.Equal(CancelledBy.Business, cancelled.By);
+    }
+
+    [Fact]
     public void A_booking_that_has_started_cant_be_cancelled()
     {
         var start = DateTimeOffset.UtcNow.AddDays(1);

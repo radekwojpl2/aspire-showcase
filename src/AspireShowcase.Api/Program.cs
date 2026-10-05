@@ -1,6 +1,7 @@
 using AspireShowcase.BusinessSetup;
 using AspireShowcase.Identity;
 using AspireShowcase.Scheduling;
+using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,22 @@ builder.AddServiceDefaults();
 builder.AddIdentityAccess();
 builder.AddBusinessSetup("app-db");
 builder.AddScheduling("app-db");
+
+// The message bus: RabbitMQ, whose connection string the AppHost passes as "messaging". Modules
+// add their part (Scheduling: its outbox and consumers); failed messages are retried, waiting
+// longer each time, before they end up in an _error queue.
+builder.Services.AddMassTransit(bus =>
+{
+    bus.SetKebabCaseEndpointNameFormatter();
+    bus.AddSchedulingMessaging();
+    bus.UsingRabbitMq((context, rabbit) =>
+    {
+        rabbit.Host(new Uri(builder.Configuration.GetConnectionString("messaging")
+            ?? throw new InvalidOperationException("The messaging connection string is missing.")));
+        rabbit.UseMessageRetry(retry => retry.Exponential(5, TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(5)));
+        rabbit.ConfigureEndpoints(context);
+    });
+});
 
 builder.Services.AddProblemDetails();
 
