@@ -1,9 +1,10 @@
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace AspireShowcase.Api.Identity;
+namespace AspireShowcase.Identity;
 
 /// <summary>The machine-to-machine application web calls Logto's Management API as.</summary>
 sealed class LogtoManagementSettings
@@ -16,14 +17,11 @@ sealed class LogtoManagementSettings
         !string.IsNullOrEmpty(Endpoint) && !string.IsNullOrEmpty(M2mAppId) && !string.IsNullOrEmpty(M2mAppSecret);
 }
 
-/// <summary>Logto's Management API couldn't be reached, refused the call, or isn't configured.</summary>
-sealed class LogtoManagementException(string message, Exception? inner = null) : Exception(message, inner);
-
 /// <summary>
 /// Calls Logto's Management API: gives users the "owner" role, which grants the
 /// manage:business permission of web's API resource.
 /// </summary>
-sealed class LogtoManagement(HttpClient http, LogtoManagementSettings settings, TimeProvider time)
+sealed class LogtoManagement(HttpClient http, LogtoManagementSettings settings, TimeProvider time) : IOwnerRoles
 {
     /// <summary>The user role in Logto that owners get; it has to exist in the Logto console.</summary>
     public const string OwnerRole = "owner";
@@ -41,7 +39,7 @@ sealed class LogtoManagement(HttpClient http, LogtoManagementSettings settings, 
     {
         if (!settings.IsConfigured)
         {
-            throw new LogtoManagementException("The Logto machine-to-machine application isn't configured.");
+            throw new OwnerRoleUnavailableException("The Logto machine-to-machine application isn't configured.");
         }
 
         try
@@ -59,7 +57,7 @@ sealed class LogtoManagement(HttpClient http, LogtoManagementSettings settings, 
         }
         catch (Exception exception) when (exception is HttpRequestException or JsonException)
         {
-            throw new LogtoManagementException("Logto's Management API call failed.", exception);
+            throw new OwnerRoleUnavailableException("Logto's Management API call failed.", exception);
         }
     }
 
@@ -72,7 +70,7 @@ sealed class LogtoManagement(HttpClient http, LogtoManagementSettings settings, 
 
         var roles = await GetAsync<List<Role>>("api/roles?page=1&page_size=100", cancellation);
         return _ownerRoleId = roles?.FirstOrDefault(role => role is { Name: OwnerRole, Type: "User" })?.Id
-            ?? throw new LogtoManagementException($"Logto has no user role named \"{OwnerRole}\".");
+            ?? throw new OwnerRoleUnavailableException($"Logto has no user role named \"{OwnerRole}\".");
     }
 
     async Task<T?> GetAsync<T>(string path, CancellationToken cancellation)

@@ -1,7 +1,7 @@
-using AspireShowcase.Api.BusinessSetup;
-using AspireShowcase.Api.SharedKernel;
+using AspireShowcase.BusinessSetup;
+using AspireShowcase.SharedKernel;
 
-namespace AspireShowcase.Api.Tests;
+namespace AspireShowcase.BusinessSetup.Tests;
 
 /// <summary>The rules of user story MVP-9, on the OpeningHours value object and the Business aggregate.</summary>
 public class OpeningHoursTests

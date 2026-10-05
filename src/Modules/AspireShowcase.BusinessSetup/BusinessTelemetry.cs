@@ -1,19 +1,19 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
-namespace AspireShowcase.Api.BusinessSetup;
+namespace AspireShowcase.BusinessSetup;
 
 /// <summary>
 /// Custom telemetry for Business Setup: a span per operation, and counters for businesses
 /// started, attempts turned down, and opening hours changed.
 /// </summary>
 /// <remarks>
-/// The source and the meter are named after the application, which is the name the
-/// ServiceDefaults project subscribes to. Names and links are left out: they are user input.
+/// The source and the meter are named after the module; AddBusinessSetup subscribes to them.
+/// Names and links are left out: they are user input.
 /// </remarks>
 sealed class BusinessTelemetry
 {
-    const string Name = "AspireShowcase.Api";
+    const string Name = BusinessSetupModule.TelemetryName;
 
     static readonly ActivitySource Source = new(Name);
 

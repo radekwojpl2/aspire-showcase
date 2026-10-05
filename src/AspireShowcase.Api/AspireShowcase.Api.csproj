@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
+  <!-- The host: composes the modules in src/Modules and serves their endpoints as "web". -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -7,9 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.6.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
+    <!-- The startup project for `dotnet ef`, which needs this; the migrations live in the modules. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -20,11 +20,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AspireShowcase.ServiceDefaults\AspireShowcase.ServiceDefaults.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- The domain rules are tested directly; the API's types are internal. -->
-    <InternalsVisibleTo Include="AspireShowcase.Api.Tests" />
+    <ProjectReference Include="..\Modules\AspireShowcase.BusinessSetup\AspireShowcase.BusinessSetup.csproj" />
+    <ProjectReference Include="..\Modules\AspireShowcase.Identity\AspireShowcase.Identity.csproj" />
   </ItemGroup>
 
 </Project>

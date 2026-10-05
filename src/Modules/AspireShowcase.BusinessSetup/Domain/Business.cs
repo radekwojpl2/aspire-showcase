@@ -1,6 +1,6 @@
-using AspireShowcase.Api.SharedKernel;
+using AspireShowcase.SharedKernel;
 
-namespace AspireShowcase.Api.BusinessSetup;
+namespace AspireShowcase.BusinessSetup;
 
 /// <summary>
 /// A business on the platform, booked at /book/{Slug}: the aggregate root of Business Setup.

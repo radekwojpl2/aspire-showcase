@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace AspireShowcase.Api.Migrations
+namespace AspireShowcase.BusinessSetup.Migrations
 {
     /// <inheritdoc />
     public partial class AddOpeningHours : Migration

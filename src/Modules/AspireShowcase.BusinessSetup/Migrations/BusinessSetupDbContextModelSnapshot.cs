@@ -2,20 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace AspireShowcase.Api.Migrations
+namespace AspireShowcase.BusinessSetup.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
-    [Migration("20261005170508_ReplaceTodosWithBusinesses")]
-    partial class ReplaceTodosWithBusinesses
+    [DbContext(typeof(BusinessSetupDbContext))]
+    partial class BusinessSetupDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -24,7 +21,7 @@ namespace AspireShowcase.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Business", b =>
+            modelBuilder.Entity("AspireShowcase.BusinessSetup.Business", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -38,6 +35,10 @@ namespace AspireShowcase.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("OpeningHours")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<string>("OwnerId")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -47,6 +48,11 @@ namespace AspireShowcase.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
 
@@ -58,7 +64,7 @@ namespace AspireShowcase.Api.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_Businesses_Slug");
 
-                    b.ToTable("Businesses");
+                    b.ToTable("Businesses", (string)null);
                 });
 #pragma warning restore 612, 618
         }

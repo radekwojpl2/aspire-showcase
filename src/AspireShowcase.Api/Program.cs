@@ -1,20 +1,16 @@
-using AspireShowcase.Api.BusinessSetup;
-using AspireShowcase.Api.Identity;
-using Microsoft.EntityFrameworkCore;
+using AspireShowcase.BusinessSetup;
+using AspireShowcase.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Adds OpenTelemetry, health checks, service discovery and resilience defaults.
 builder.AddServiceDefaults();
 
-// The app's PostgreSQL database. The AppHost passes its connection string as "app-db";
-// this also adds a health check, retries, and traces and metrics for the queries.
-builder.AddNpgsqlDbContext<AppDbContext>("app-db");
-
-// The modules, as described in docs/architecture/ddd-modules.md. Identity & Access is the
-// anti-corruption layer over Logto: token validation, the owner policy, the Management API.
+// The modules, as described in docs/architecture/ddd-modules.md, each a project in src/Modules.
+// Identity & Access is the anti-corruption layer over Logto. Business Setup keeps its tables in
+// the app's PostgreSQL database, whose connection string the AppHost passes as "app-db".
 builder.AddIdentityAccess();
-builder.Services.AddSingleton<BusinessTelemetry>();
+builder.AddBusinessSetup("app-db");
 
 builder.Services.AddProblemDetails();
 
@@ -23,12 +19,8 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Creates or updates the tables on startup. Enough for a single instance; with several,
-// run migrations as a separate step so they don't race.
-using (var scope = app.Services.CreateScope())
-{
-    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
-}
+// Each module creates or updates its own tables on startup.
+await app.Services.MigrateBusinessSetupAsync();
 
 app.UseExceptionHandler();
 

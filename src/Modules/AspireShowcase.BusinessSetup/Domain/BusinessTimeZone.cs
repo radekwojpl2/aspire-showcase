@@ -1,4 +1,4 @@
-namespace AspireShowcase.Api.BusinessSetup;
+namespace AspireShowcase.BusinessSetup;
 
 /// <summary>
 /// The time zone a business's hours are in, as an IANA ID such as Europe/Warsaw. Opening hours are

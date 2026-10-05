@@ -8,9 +8,9 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace AspireShowcase.Api.Migrations
+namespace AspireShowcase.BusinessSetup.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    [DbContext(typeof(BusinessSetupDbContext))]
     [Migration("20261001215502_InitialCreate")]
     partial class InitialCreate
     {

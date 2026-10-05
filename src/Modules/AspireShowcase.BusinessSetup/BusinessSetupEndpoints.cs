@@ -1,11 +1,11 @@
 using System.Globalization;
 using System.Security.Claims;
-using AspireShowcase.Api.Identity;
-using AspireShowcase.Api.SharedKernel;
+using AspireShowcase.Identity;
+using AspireShowcase.SharedKernel;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
-namespace AspireShowcase.Api.BusinessSetup;
+namespace AspireShowcase.BusinessSetup;
 
 record StartBusiness(string? Name, string? Slug, string? TimeZone);
 
@@ -28,19 +28,19 @@ static class BusinessSetupEndpoints
     /// Only for signed-in users: every endpoint needs a Logto access token for this API, which bff
     /// adds (401 without one).
     /// </summary>
-    public static void MapBusinessSetup(this IEndpointRouteBuilder api)
+    public static void MapEndpoints(IEndpointRouteBuilder api)
     {
         var businesses = api.MapGroup("/businesses").RequireAuthorization();
 
         // The signed-in user's business, or 404 when they haven't started one.
-        businesses.MapGet("/mine", async (ClaimsPrincipal user, AppDbContext db, CancellationToken cancellation) =>
+        businesses.MapGet("/mine", async (ClaimsPrincipal user, BusinessSetupDbContext db, CancellationToken cancellation) =>
             await FindMineAsync(db.Businesses.AsNoTracking(), user, cancellation) is { } business
                 ? Results.Ok(ToResponse(business))
                 : Results.NotFound())
         .WithName("GetMyBusiness");
 
         // Checked while the user types, so they hear about a taken link before submitting.
-        businesses.MapGet("/slug-availability", async (string? slug, AppDbContext db, CancellationToken cancellation) =>
+        businesses.MapGet("/slug-availability", async (string? slug, BusinessSetupDbContext db, CancellationToken cancellation) =>
         {
             if (BookingSlug.Problem(slug) is { } problem)
             {
@@ -54,7 +54,7 @@ static class BusinessSetupEndpoints
 
         // User story MVP-8.
         businesses.MapPost("/", async (
-            StartBusiness request, ClaimsPrincipal user, AppDbContext db, LogtoManagement logto,
+            StartBusiness request, ClaimsPrincipal user, BusinessSetupDbContext db, IOwnerRoles ownerRoles,
             BusinessTelemetry telemetry, TimeProvider time, ILogger<Business> logger, CancellationToken cancellation) =>
         {
             using var activity = telemetry.StartActivity("businesses.create");
@@ -80,9 +80,9 @@ static class BusinessSetupEndpoints
                     await using var transaction = await db.Database.BeginTransactionAsync(cancellation);
                     db.Businesses.Add(business);
                     await db.SaveChangesAsync(cancellation);
-                    // Only once the business is saved, and before it's committed: if Logto
-                    // fails, the business is rolled back and the user can simply try again.
-                    await logto.AssignOwnerRoleAsync(business.OwnerId, cancellation);
+                    // Only once the business is saved, and before it's committed: if Identity
+                    // can't give the role, the business is rolled back and the user can try again.
+                    await ownerRoles.AssignOwnerRoleAsync(business.OwnerId, cancellation);
                     await transaction.CommitAsync(cancellation);
                 });
             }
@@ -102,7 +102,7 @@ static class BusinessSetupEndpoints
                     title: "You already have a business.",
                     statusCode: StatusCodes.Status409Conflict);
             }
-            catch (LogtoManagementException exception)
+            catch (OwnerRoleUnavailableException exception)
             {
                 telemetry.Rejected(activity, "logto_unavailable");
                 logger.LogError(exception, "Could not give the owner role; the business was not created");
@@ -121,7 +121,7 @@ static class BusinessSetupEndpoints
         var openingHours = businesses.MapGroup("/mine/opening-hours")
             .RequireAuthorization(IdentityAccess.OwnerPolicy);
 
-        openingHours.MapGet("/", async (ClaimsPrincipal user, AppDbContext db, CancellationToken cancellation) =>
+        openingHours.MapGet("/", async (ClaimsPrincipal user, BusinessSetupDbContext db, CancellationToken cancellation) =>
             await FindMineAsync(db.Businesses.AsNoTracking(), user, cancellation) is { } business
                 ? Results.Ok(ToBody(business))
                 : Results.NotFound())
@@ -129,7 +129,7 @@ static class BusinessSetupEndpoints
 
         // Replaces the whole week at once: the hours are one value object.
         openingHours.MapPut("/", async (
-            OpeningHoursBody request, ClaimsPrincipal user, AppDbContext db, BusinessTelemetry telemetry,
+            OpeningHoursBody request, ClaimsPrincipal user, BusinessSetupDbContext db, BusinessTelemetry telemetry,
             ILogger<Business> logger, CancellationToken cancellation) =>
         {
             using var activity = telemetry.StartActivity("businesses.opening_hours.set");

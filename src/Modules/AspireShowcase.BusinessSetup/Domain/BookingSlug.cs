@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace AspireShowcase.Api.BusinessSetup;
+namespace AspireShowcase.BusinessSetup;
 
 /// <summary>The business's part of its booking link, /book/{slug}.</summary>
 static partial class BookingSlug

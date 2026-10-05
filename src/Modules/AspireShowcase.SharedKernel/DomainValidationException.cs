@@ -1,17 +1,17 @@
-namespace AspireShowcase.Api.SharedKernel;
+namespace AspireShowcase.SharedKernel;
 
 /// <summary>
 /// A change was refused because it breaks a rule of the domain. <see cref="Errors"/> says what's
 /// wrong per field, in words meant for the user; the API passes them on as a validation problem.
 /// </summary>
-sealed class DomainValidationException(IReadOnlyDictionary<string, string[]> errors)
+public sealed class DomainValidationException(IReadOnlyDictionary<string, string[]> errors)
     : Exception("The change breaks a rule of the domain.")
 {
     public IReadOnlyDictionary<string, string[]> Errors { get; } = errors;
 }
 
 /// <summary>Collects everything wrong with a change, so the user hears about all of it at once.</summary>
-sealed class DomainErrors
+public sealed class DomainErrors
 {
     readonly Dictionary<string, List<string>> _errors = [];
 
