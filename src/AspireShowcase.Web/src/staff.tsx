@@ -274,7 +274,6 @@ export function StaffPage() {
                 Cancel
               </button>
             )}
-            <a href="/">Back to your business</a>
           </div>
         </form>
       </section>

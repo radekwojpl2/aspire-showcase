@@ -153,7 +153,6 @@ export function OpeningHoursPage() {
             {saving ? 'Saving...' : 'Save opening hours'}
           </button>
           <span className="field-hint" role="status">{saved ? 'Saved.' : ''}</span>
-          <a href="/">Back to your business</a>
         </div>
       </form>
     </section>
