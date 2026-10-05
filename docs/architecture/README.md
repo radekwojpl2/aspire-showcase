@@ -12,6 +12,8 @@ The model is in [`workspace.dsl`](workspace.dsl) ([Structurizr DSL](https://docs
 - **OwnerSignIn**: an owner signing in, and the first API call with the session cookie.
 - **AzureDeployment**: what `aspire deploy` would create.
 
+The [arc42](https://arc42.org) documentation is in [`arc42/`](arc42), one file per section, with the diagrams embedded; only sections 3, 5, 6 and 7 have content so far. The viewer shows it under Documentation.
+
 ## View it
 
 With Docker running, from the repository root:
