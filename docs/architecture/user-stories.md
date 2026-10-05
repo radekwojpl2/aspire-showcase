@@ -2,7 +2,7 @@
 
 User stories for the booking SaaS in [the proposed architecture](README.md), in three phases. Each phase is usable on its own: the MVP lets a small business and its staff take bookings, v1 makes it work for the day-to-day of a real shop, and v2 adds what keeps businesses on the platform.
 
-Stories marked ✅ are built. So far: 3 of 14 MVP stories (MVP-8, MVP-9, MVP-10), none of v1 or v2.
+Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 3 of 14 MVP stories (MVP-8, MVP-9, MVP-10) and part of MVP-11, none of v1 or v2.
 
 People in the stories:
 
@@ -69,11 +69,11 @@ As an owner, I want to add the services I offer with a duration and a price, so 
 - Name, duration (in 5-minute steps) and price shown to clients (no online payment).
 - A service can be hidden without deleting it.
 
-**MVP-11. Add staff**
+**MVP-11. Add staff** 🟡
 As an owner, I want to add staff members with the services they do and their own working hours, so that clients can be booked with them in parallel.
-- I'm a staff member of my own business from the start, so a one-person business needs no setup here.
-- Working hours stay within the opening hours.
-- Bookings for different staff can overlap in time; for the same staff member they can't.
+- ✅ I'm a staff member of my own business from the start, so a one-person business needs no setup here.
+- ✅ Working hours stay within the opening hours.
+- ❌ Bookings for different staff can overlap in time; for the same staff member they can't. Needs bookings: comes with MVP-4.
 
 **MVP-12. See my bookings**
 As an owner, I want to see my bookings by day and week, for everyone or one staff member, so that I can plan the work.
