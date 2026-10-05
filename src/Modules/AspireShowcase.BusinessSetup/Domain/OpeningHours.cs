@@ -1,6 +1,6 @@
-using AspireShowcase.Api.SharedKernel;
+using AspireShowcase.SharedKernel;
 
-namespace AspireShowcase.Api.BusinessSetup;
+namespace AspireShowcase.BusinessSetup;
 
 /// <summary>One stretch of a weekday when the business is open, in its local time: [Opens, Closes).</summary>
 sealed record OpeningPeriod(DayOfWeek Day, TimeOnly Opens, TimeOnly Closes);

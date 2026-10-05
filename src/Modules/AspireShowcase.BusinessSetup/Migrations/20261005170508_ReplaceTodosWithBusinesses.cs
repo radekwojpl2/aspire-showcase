@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace AspireShowcase.Api.Migrations
+namespace AspireShowcase.BusinessSetup.Migrations
 {
     /// <inheritdoc />
     public partial class ReplaceTodosWithBusinesses : Migration

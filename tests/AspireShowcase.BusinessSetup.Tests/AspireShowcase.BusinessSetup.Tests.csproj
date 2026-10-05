@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\AspireShowcase.Api\AspireShowcase.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\AspireShowcase.BusinessSetup\AspireShowcase.BusinessSetup.csproj" />
   </ItemGroup>
 
 </Project>

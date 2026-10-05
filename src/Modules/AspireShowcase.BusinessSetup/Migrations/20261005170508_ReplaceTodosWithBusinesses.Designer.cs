@@ -8,11 +8,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace AspireShowcase.Api.Migrations
+namespace AspireShowcase.BusinessSetup.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
-    [Migration("20261005191946_AddOpeningHours")]
-    partial class AddOpeningHours
+    [DbContext(typeof(BusinessSetupDbContext))]
+    [Migration("20261005170508_ReplaceTodosWithBusinesses")]
+    partial class ReplaceTodosWithBusinesses
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,7 +24,7 @@ namespace AspireShowcase.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("AspireShowcase.Api.BusinessSetup.Business", b =>
+            modelBuilder.Entity("Business", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -38,10 +38,6 @@ namespace AspireShowcase.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("OpeningHours")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
                     b.Property<string>("OwnerId")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -51,11 +47,6 @@ namespace AspireShowcase.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)");
-
-                    b.Property<string>("TimeZone")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
 
@@ -67,7 +58,7 @@ namespace AspireShowcase.Api.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_Businesses_Slug");
 
-                    b.ToTable("Businesses", (string)null);
+                    b.ToTable("Businesses");
                 });
 #pragma warning restore 612, 618
         }

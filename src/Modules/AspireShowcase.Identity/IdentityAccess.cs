@@ -1,12 +1,17 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-namespace AspireShowcase.Api.Identity;
+namespace AspireShowcase.Identity;
 
 /// <summary>
 /// Identity &amp; Access: the API's anti-corruption layer over Logto. Other modules see users as a
-/// subject ID and the owner policy; only this module knows about Logto's tokens, scopes and API.
+/// subject ID, the <see cref="OwnerPolicy"/> and <see cref="IOwnerRoles"/>; only this module knows
+/// about Logto's tokens, scopes and Management API.
 /// </summary>
-static class IdentityAccess
+public static class IdentityAccess
 {
     /// <summary>Authorization policy for owners: users with Logto's owner role.</summary>
     public const string OwnerPolicy = "owner";
@@ -14,7 +19,7 @@ static class IdentityAccess
     /// <summary>The permission of the API resource that Logto's owner role grants.</summary>
     const string ManageBusinessScope = "manage:business";
 
-    public static void AddIdentityAccess(this WebApplicationBuilder builder)
+    public static void AddIdentityAccess(this IHostApplicationBuilder builder)
     {
         // Accepts Logto access tokens issued for this API's resource, which bff adds to the requests
         // it forwards. Logto's issuer is its public URL + /oidc, and the signing keys come from its
@@ -43,7 +48,7 @@ static class IdentityAccess
         // application the AppHost passes in; Logto's public URL is its address.
         var management = builder.Configuration.GetSection("Logto").Get<LogtoManagementSettings>() ?? new();
         builder.Services.AddSingleton(management);
-        builder.Services.AddHttpClient<LogtoManagement>(client =>
+        builder.Services.AddHttpClient<IOwnerRoles, LogtoManagement>(client =>
         {
             if (!string.IsNullOrEmpty(management.Endpoint))
             {

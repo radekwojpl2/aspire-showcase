@@ -13,7 +13,13 @@ One AppHost describes the whole system: a React app, a backend for frontend (`bf
 
 The app is the start of an appointment booking SaaS for small businesses. So far, someone signs up and starts a business with a name and a booking link (user story MVP-8), and sets its weekly opening hours (MVP-9). The point is still the AppHost in `src/AspireShowcase.AppHost`.
 
-The API is a modular monolith, split into the modules of [`docs/architecture/ddd-modules.md`](docs/architecture/ddd-modules.md), each in its own folder under `src/AspireShowcase.Api/Modules` with its domain model. So far: Business Setup (the `Business` aggregate and its `OpeningHours` value object) and Identity & Access (everything that knows about Logto). The domain rules are tested in `tests/AspireShowcase.Api.Tests`.
+The API is a modular monolith, split into the modules of [`docs/architecture/ddd-modules.md`](docs/architecture/ddd-modules.md). Each module is its own project in `src/Modules`, so the compiler keeps the boundaries: a module's domain model is internal, and other projects only see its entry points. So far:
+
+- **Business Setup**: the `Business` aggregate and its `OpeningHours` value object, with its own `DbContext` and migrations. Public: `AddBusinessSetup`, `MapBusinessSetup`.
+- **Identity & Access**: the anti-corruption layer over Logto. Public: `AddIdentityAccess`, the owner policy and `IOwnerRoles`.
+- **Shared kernel**: what every domain may use (validation errors).
+
+`AspireShowcase.Api` is only the host that composes them. The domain rules are tested in `tests/AspireShowcase.BusinessSetup.Tests`.
 
 ## Local and Azure are not the same
 
@@ -69,11 +75,15 @@ src/
 ├── AspireShowcase.AppHost/          # orchestration + Azure target
 ├── AspireShowcase.ServiceDefaults/  # telemetry, health checks
 ├── AspireShowcase.Bff/              # backend for frontend: sign-in, sessions, proxy; serves the UI in Azure
-├── AspireShowcase.Api/              # API, reachable only from bff
+├── AspireShowcase.Api/              # API host (resource "web"), reachable only from bff
+├── Modules/
+│   ├── AspireShowcase.BusinessSetup/  # business, booking link, opening hours
+│   ├── AspireShowcase.Identity/       # anti-corruption layer over Logto
+│   └── AspireShowcase.SharedKernel/   # what every module's domain may use
 ├── AspireShowcase.Notifications/    # notifications service
 └── AspireShowcase.Web/              # React + Vite
 tests/
-└── AspireShowcase.Api.Tests/        # the API's domain rules
+└── AspireShowcase.BusinessSetup.Tests/  # Business Setup's domain rules
 ```
 
 ## Backend for frontend
@@ -94,16 +104,16 @@ Locally, Vite proxies these paths to `bff` and keeps the `Host` header, so Logto
 
 ## Database
 
-One PostgreSQL server (`postgres`) with three databases: `app-db` for the API's businesses, `bff-db` for `bff`'s sessions and data protection keys, and `logto-db` for Logto.
+One PostgreSQL server (`postgres`) with three databases: `app-db` for the API's modules, `bff-db` for `bff`'s sessions and data protection keys, and `logto-db` for Logto. In `app-db`, each module has its own `DbContext` and migrations and only maps its own tables.
 
 - Local: a container, with its data in a Docker volume.
 - Azure: a Flexible Server. The connection strings are in Key Vault, and the Container Apps read them with their managed identities.
 
-The API and `bff` apply their EF Core migrations on startup. To add one after changing a model:
+The API's modules and `bff` apply their EF Core migrations on startup. To add one after changing a model (a module's migrations are built through the API host):
 
 ```
 dotnet tool restore
-dotnet ef migrations add <Name> --project src/AspireShowcase.Api
+dotnet ef migrations add <Name> --project src/Modules/AspireShowcase.BusinessSetup --startup-project src/AspireShowcase.Api
 dotnet ef migrations add <Name> --project src/AspireShowcase.Bff
 ```
 
