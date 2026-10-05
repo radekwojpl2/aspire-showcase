@@ -35,6 +35,47 @@ public class BookingTests
             Attendee.Create(null, "Ola Nowak", "ola.nowak@example.com"), DateTimeOffset.UtcNow));
     }
 
+    static Booking BookingAt(DateTimeOffset start) => Booking.Book(
+        BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(30),
+        Attendee.Create("client-1", "Ola Nowak", "ola.nowak@example.com"), start.AddDays(-7));
+
+    [Fact]
+    public void Cancelling_an_upcoming_booking_frees_it()
+    {
+        var start = DateTimeOffset.UtcNow.AddDays(1);
+        var booking = BookingAt(start);
+
+        booking.Cancel(start.AddHours(-2));
+
+        // Only confirmed bookings count for the database's no-overlap rule, so the time is free.
+        Assert.Equal(BookingStatus.Cancelled, booking.Status);
+        Assert.Equal(start.AddHours(-2), booking.CancelledAt);
+    }
+
+    [Fact]
+    public void A_booking_that_has_started_cant_be_cancelled()
+    {
+        var start = DateTimeOffset.UtcNow.AddDays(1);
+        var booking = BookingAt(start);
+
+        var errors = Assert.Throws<DomainValidationException>(() => booking.Cancel(start.AddMinutes(5))).Errors;
+
+        Assert.True(errors.ContainsKey("booking"));
+        Assert.Equal(BookingStatus.Confirmed, booking.Status);
+    }
+
+    [Fact]
+    public void Cancelling_twice_changes_nothing()
+    {
+        var start = DateTimeOffset.UtcNow.AddDays(1);
+        var booking = BookingAt(start);
+        booking.Cancel(start.AddHours(-2));
+
+        booking.Cancel(start.AddHours(-1));
+
+        Assert.Equal(start.AddHours(-2), booking.CancelledAt);
+    }
+
     [Theory]
     [InlineData("", "ola.nowak@example.com", "clientName")]
     [InlineData("Ola Nowak", "not an email", "clientEmail")]

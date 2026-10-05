@@ -14,6 +14,9 @@ public interface IBusinessDirectory
     /// <summary>The business the user owns, or null when they have none.</summary>
     Task<BusinessInfo?> FindOwnedAsync(string ownerId, CancellationToken cancellation);
 
+    /// <summary>The business, or null when there's none with that ID.</summary>
+    Task<BusinessInfo?> FindAsync(BusinessId businessId, CancellationToken cancellation);
+
     /// <summary>The business booked at /book/{slug}, or null when there's none.</summary>
     Task<BusinessInfo?> FindBySlugAsync(string slug, CancellationToken cancellation);
 

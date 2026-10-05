@@ -17,6 +17,7 @@ export function Account() {
 
   return (
     <div className="account">
+      <a className="account-link" href="/my-bookings">My bookings</a>
       <span className="account-name">
         {user.name}
         {user.isOwner && <span className="badge">Owner</span>}
