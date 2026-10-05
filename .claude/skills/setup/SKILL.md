@@ -42,7 +42,7 @@ If `signInEnabled` is `true`, skip to step 6. It's only true once the app ID and
 
 ## 4. Logto setup (the user does this in a browser)
 
-Run `aspire wait logto-admin --status up`, then get the `Admin console` URL of the `logto-admin` resource from `aspire describe`. It must be the `http://127.0.0.1:<port>/console` one; the console doesn't work on `localhost`.
+Run `aspire wait logto-admin --status up`, then get the `Admin console` URL of the `logto-admin` resource from `aspire describe`. It must be the `http://127.0.0.1:3002/console` one; the console doesn't work on `localhost`.
 
 Give the user these steps, with the values filled in, and wait for the four values:
 

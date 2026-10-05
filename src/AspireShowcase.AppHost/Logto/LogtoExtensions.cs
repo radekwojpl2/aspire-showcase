@@ -92,7 +92,10 @@ static class LogtoExtensions
     static IResourceBuilder<ContainerResource> AddLogtoContainer(
         this IDistributedApplicationBuilder builder, string name, int port, LogtoDatabase db) =>
         builder.AddContainer(name, "svhd/logto", "1.44")
-            .WithHttpEndpoint(targetPort: port, name: "http")
+            // Locally on a fixed port, the same as inside the container. Logto's URL is the issuer
+            // of every token it hands out; with a new port on each run, tokens from the last run
+            // would be refused (401 from web, a failed sign-out) until they expired.
+            .WithHttpEndpoint(port: builder.ExecutionContext.IsRunMode ? port : null, targetPort: port, name: "http")
             .WithExternalHttpEndpoints()
             // TLS ends at the Container Apps ingress; trust its X-Forwarded-* headers.
             .WithEnvironment("TRUST_PROXY_HEADER", "1")
