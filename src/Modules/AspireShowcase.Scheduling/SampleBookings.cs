@@ -57,8 +57,11 @@ static class SampleBookings
                         foreach (var period in member.WorkingHours.Where(period => period.Day == day.DayOfWeek))
                         {
                             // Walk through the period, booking about two slots in three.
-                            var start = Instant(day, period.Start, timeZone);
-                            var end = Instant(day, period.End, timeZone);
+                            if (AvailabilityCalculator.Instant(day, period.Start, timeZone) is not { } start ||
+                                AvailabilityCalculator.Instant(day, period.End, timeZone) is not { } end)
+                            {
+                                continue;
+                            }
                             while (true)
                             {
                                 var service = theirs[random.Next(theirs.Count)];
@@ -95,11 +98,6 @@ static class SampleBookings
             return Results.Ok(new Result(booked, taken));
         });
 
-    static DateTimeOffset Instant(DateOnly day, TimeOnly localTime, TimeZoneInfo timeZone)
-    {
-        var local = day.ToDateTime(localTime, DateTimeKind.Unspecified);
-        return new DateTimeOffset(local, timeZone.GetUtcOffset(local));
-    }
 
     // "Zofia Wiśniewska" -> zofia.wisniewska@example.com
     static string Email(string name)

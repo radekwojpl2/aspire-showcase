@@ -7,8 +7,9 @@ using Microsoft.IdentityModel.JsonWebTokens;
 /// <summary>What the React app knows about the session: whether sign-in is set up, and who is signed in.</summary>
 record SessionInfo(bool SignInEnabled, SessionUser? User);
 
+/// <param name="Email">From the ID token, when the account has one: pre-fills booking forms.</param>
 /// <param name="IsOwner">Whether the access token has the owner role's permission.</param>
-record SessionUser(string Name, bool IsOwner);
+record SessionUser(string Name, string? Email, bool IsOwner);
 
 static class BffEndpoints
 {
@@ -54,6 +55,7 @@ static class BffEndpoints
 
             return new SessionInfo(true, new SessionUser(
                 DisplayName(result.Principal),
+                result.Principal.FindFirstValue("email"),
                 HasScope(result.Properties.GetTokenValue("access_token"), LogtoAuthentication.ManageBusinessScope)));
         });
 

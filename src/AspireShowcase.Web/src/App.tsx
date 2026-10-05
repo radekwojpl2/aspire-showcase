@@ -6,10 +6,15 @@ import { OpeningHoursPage } from './hours.tsx';
 import { ServicesPage } from './services.tsx';
 import { StaffPage } from './staff.tsx';
 import { BookingsPage } from './bookings.tsx';
+import { BookingPage } from './book.tsx';
 
 // A few pages, so no router: the path picks the page, and links reload. bff serves index.html
 // for every path that isn't /api or /bff.
 function Page() {
+  // The public booking page of a business: /book/{slug}.
+  const booking = window.location.pathname.match(/^\/book\/([^/]+)\/?$/);
+  if (booking) return <BookingPage slug={decodeURIComponent(booking[1])} />;
+
   switch (window.location.pathname) {
     case '/start':
       return <StartBusiness />;
