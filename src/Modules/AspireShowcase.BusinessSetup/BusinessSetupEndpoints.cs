@@ -82,7 +82,7 @@ static class BusinessSetupEndpoints
                     db.Businesses.Add(business);
                     // The owner is the business's first staff member, so a one-person business
                     // can be booked without setting anything else up (user story MVP-11).
-                    db.StaffMembers.Add(StaffMember.ForOwner(business, request.OwnerName, time.GetUtcNow()));
+                    db.StaffMembers.Add(StaffMember.ForOwner(business.Id, business.OwnerId, request.OwnerName, time.GetUtcNow()));
                     await db.SaveChangesAsync(cancellation);
                     // Only once the business is saved, and before it's committed: if Identity
                     // can't give the role, the business is rolled back and the user can try again.
@@ -145,8 +145,12 @@ static class BusinessSetupEndpoints
 
             try
             {
-                var staff = await db.StaffMembers.Where(member => member.BusinessId == business.Id).ToListAsync(cancellation);
-                business.SetOpeningHours(ParseWeeklyHours(request.Periods), request.TimeZone, staff);
+                // Only the hours of the staff who have their own, not the staff members themselves.
+                var staffHours = (await db.StaffMembers.AsNoTracking()
+                        .Where(member => member.BusinessId == business.Id && member.WorkingHours != null)
+                        .ToListAsync(cancellation))
+                    .Select(member => new StaffHours(member.Name, member.WorkingHours!));
+                business.SetOpeningHours(ParseWeeklyHours(request.Periods), request.TimeZone, staffHours);
             }
             catch (DomainValidationException exception)
             {
@@ -210,7 +214,7 @@ static class BusinessSetupEndpoints
         TimeOnly.TryParseExact(value, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out time);
 
     static BusinessResponse ToResponse(Business business) =>
-        new(business.Id, business.Name, business.Slug, business.TimeZone, business.CreatedAt);
+        new(business.Id.Value, business.Name, business.Slug, business.TimeZone, business.CreatedAt);
 
     static OpeningHoursBody ToBody(Business business) => new(business.TimeZone, ToPeriodBodies(business.OpeningHours));
 

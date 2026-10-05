@@ -1,3 +1,4 @@
+using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.SharedKernel;
 
 namespace AspireShowcase.BusinessSetup;
@@ -16,7 +17,7 @@ sealed class Business
     {
     }
 
-    public Guid Id { get; private set; }
+    public BusinessId Id { get; private set; }
 
     public string Name { get; private set; } = "";
 
@@ -53,7 +54,7 @@ sealed class Business
 
         return new Business
         {
-            Id = Guid.CreateVersion7(),
+            Id = BusinessId.New(),
             Name = trimmedName!,
             Slug = slug!,
             OwnerId = ownerId,
@@ -67,22 +68,23 @@ sealed class Business
     /// Existing bookings stay as they are: the hours only decide which new bookings are offered,
     /// so nothing here touches them.
     /// </summary>
-    /// <param name="staff">The business's staff, whose own working hours have to stay within the
-    /// new opening hours (user story MVP-11). Staff who work whenever the business is open follow
-    /// the change on their own.</param>
+    /// <param name="staffHours">The working hours of the staff who have their own, which have to
+    /// stay within the new opening hours (user story MVP-11). Staff who work whenever the business
+    /// is open follow the change on their own. Only the hours, not the staff members: an aggregate
+    /// is never handed another one.</param>
     /// <exception cref="DomainValidationException">The time zone isn't a known IANA time zone, or
     /// the new hours would leave someone's working hours outside them (under "staff").</exception>
-    public void SetOpeningHours(WeeklyHours hours, string? timeZone, IEnumerable<StaffMember> staff)
+    public void SetOpeningHours(WeeklyHours hours, string? timeZone, IEnumerable<StaffHours> staffHours)
     {
         var errors = new DomainErrors();
         CheckTimeZone(timeZone, errors);
-        foreach (var member in staff.Where(member => member.BusinessId == Id && member.WorkingHours is not null))
+        foreach (var (staffName, workingHours) in staffHours)
         {
-            var outside = member.WorkingHours!.OutsideOf(hours);
+            var outside = workingHours.OutsideOf(hours);
             if (outside.Count > 0)
             {
                 errors.Add("staff",
-                    $"{member.Name} works {string.Join(", ", outside.Select(WeeklyHours.Describe))}, outside these hours. " +
+                    $"{staffName} works {string.Join(", ", outside.Select(WeeklyHours.Describe))}, outside these hours. " +
                     "Change their working hours first.");
             }
         }

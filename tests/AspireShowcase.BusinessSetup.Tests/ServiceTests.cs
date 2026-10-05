@@ -1,4 +1,5 @@
 using AspireShowcase.BusinessSetup;
+using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.SharedKernel;
 
 namespace AspireShowcase.BusinessSetup.Tests;
@@ -6,7 +7,7 @@ namespace AspireShowcase.BusinessSetup.Tests;
 /// <summary>The rules of user story MVP-10, on the Service aggregate and the Money value object.</summary>
 public class ServiceTests
 {
-    static readonly Guid BusinessId = Guid.NewGuid();
+    static readonly BusinessId BusinessId = BusinessId.New();
 
     static Service Haircut() => Service.Add(BusinessId, "Haircut", 45, 120m, "PLN", DateTimeOffset.UtcNow);
 

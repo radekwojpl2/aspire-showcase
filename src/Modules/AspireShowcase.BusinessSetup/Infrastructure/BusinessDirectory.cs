@@ -17,7 +17,7 @@ sealed class BusinessDirectory(BusinessSetupDbContext db) : IBusinessDirectory
             .Select(business => new BusinessInfo(business.Id, business.Name, business.TimeZone))
             .ToListAsync(cancellation);
 
-    public async Task<IReadOnlyList<StaffInfo>> StaffAsync(Guid businessId, CancellationToken cancellation)
+    public async Task<IReadOnlyList<StaffInfo>> StaffAsync(BusinessId businessId, CancellationToken cancellation)
     {
         var business = await db.Businesses.AsNoTracking().SingleOrDefaultAsync(b => b.Id == businessId, cancellation);
         if (business is null)
@@ -38,7 +38,7 @@ sealed class BusinessDirectory(BusinessSetupDbContext db) : IBusinessDirectory
             .ToList();
     }
 
-    public async Task<IReadOnlyList<ServiceInfo>> ServicesAsync(Guid businessId, CancellationToken cancellation) =>
+    public async Task<IReadOnlyList<ServiceInfo>> ServicesAsync(BusinessId businessId, CancellationToken cancellation) =>
         await db.Services.AsNoTracking()
             .Where(service => service.BusinessId == businessId)
             .OrderBy(service => service.Name)

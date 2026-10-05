@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.SharedKernel;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -54,8 +55,9 @@ static class StaffEndpoints
             try
             {
                 member = StaffMember.Add(
-                    business, request.Name, request.DoesAllServices ?? true, request.ServiceIds,
-                    await ServiceIdsAsync(db, business, cancellation), ParseHours(request), time.GetUtcNow());
+                    business.Id, request.Name, request.DoesAllServices ?? true, ToServiceIds(request),
+                    await ServiceIdsAsync(db, business, cancellation), ParseHours(request), business.OpeningHours,
+                    time.GetUtcNow());
             }
             catch (DomainValidationException exception)
             {
@@ -83,7 +85,8 @@ static class StaffEndpoints
 
             if (await BusinessSetupEndpoints.FindMineAsync(db.Businesses.AsNoTracking(), user, cancellation) is not { } business ||
                 await db.StaffMembers.SingleOrDefaultAsync(
-                    member => member.Id == id && member.BusinessId == business.Id, cancellation) is not { } member)
+                    member => member.Id == new StaffMemberId(id) && member.BusinessId == business.Id, cancellation)
+                    is not { } member)
             {
                 return Results.NotFound();
             }
@@ -91,8 +94,8 @@ static class StaffEndpoints
             try
             {
                 member.Change(
-                    business, request.Name, request.DoesAllServices ?? true, request.ServiceIds,
-                    await ServiceIdsAsync(db, business, cancellation), ParseHours(request));
+                    request.Name, request.DoesAllServices ?? true, ToServiceIds(request),
+                    await ServiceIdsAsync(db, business, cancellation), ParseHours(request), business.OpeningHours);
             }
             catch (DomainValidationException exception)
             {
@@ -113,11 +116,13 @@ static class StaffEndpoints
     }
 
     // Every service of the business, hidden ones too: a staff member can keep a hidden service.
-    static async Task<IReadOnlyCollection<Guid>> ServiceIdsAsync(
+    static async Task<IReadOnlyCollection<ServiceId>> ServiceIdsAsync(
         BusinessSetupDbContext db, Business business, CancellationToken cancellation) =>
         await db.Services.Where(service => service.BusinessId == business.Id)
             .Select(service => service.Id)
             .ToListAsync(cancellation);
+
+    static IEnumerable<ServiceId>? ToServiceIds(StaffBody request) => request.ServiceIds?.Select(id => new ServiceId(id));
 
     static WeeklyHours? ParseHours(StaffBody request) =>
         request.WorkingHours is null ? null : BusinessSetupEndpoints.ParseWeeklyHours(request.WorkingHours);
@@ -143,6 +148,7 @@ static class StaffEndpoints
     }
 
     static StaffResponse ToResponse(StaffMember member, Business business) => new(
-        member.Id, member.Name, member.UserId == business.OwnerId, member.DoesAllServices, member.ServiceIds,
+        member.Id.Value, member.Name, member.UserId == business.OwnerId, member.DoesAllServices,
+        member.ServiceIds.Select(id => id.Value).ToList(),
         member.WorkingHours is null ? null : BusinessSetupEndpoints.ToPeriodBodies(member.WorkingHours));
 }

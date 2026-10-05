@@ -1,3 +1,4 @@
+using AspireShowcase.BusinessSetup.PublicClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace AspireShowcase.Scheduling;
@@ -8,7 +9,7 @@ namespace AspireShowcase.Scheduling;
 /// </summary>
 sealed class BusinessScope
 {
-    public Guid? BusinessId { get; set; }
+    public BusinessId? BusinessId { get; set; }
 }
 
 /// <summary>
@@ -28,7 +29,16 @@ sealed class SchedulingDbContext(DbContextOptions<SchedulingDbContext> options, 
     public DbSet<Booking> Bookings => Set<Booking>();
 
     // A property of the context, so EF Core reads it anew for every query.
-    Guid? ScopedBusinessId => scope.BusinessId;
+    BusinessId? ScopedBusinessId => scope.BusinessId;
+
+    // Typed IDs are stored as the uuid they wrap, wherever they appear.
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<BookingId>().HaveConversion<TypedIdConverter<BookingId>>();
+        configurationBuilder.Properties<BusinessId>().HaveConversion<TypedIdConverter<BusinessId>>();
+        configurationBuilder.Properties<ServiceId>().HaveConversion<TypedIdConverter<ServiceId>>();
+        configurationBuilder.Properties<StaffMemberId>().HaveConversion<TypedIdConverter<StaffMemberId>>();
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

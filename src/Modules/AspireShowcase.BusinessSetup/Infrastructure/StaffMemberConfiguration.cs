@@ -1,3 +1,4 @@
+using AspireShowcase.BusinessSetup.PublicClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -22,7 +23,8 @@ sealed class StaffMemberConfiguration : IEntityTypeConfiguration<StaffMember>
         // ever read and replaced with the staff member.
         staff.PrimitiveCollection(s => s.ServiceIds)
             .HasField("_serviceIds")
-            .UsePropertyAccessMode(PropertyAccessMode.Field);
+            .UsePropertyAccessMode(PropertyAccessMode.Field)
+            .ElementType(element => element.HasConversion<TypedIdConverter<ServiceId>>());
 
         staff.HasOne<Business>().WithMany().HasForeignKey(s => s.BusinessId).OnDelete(DeleteBehavior.Restrict);
 

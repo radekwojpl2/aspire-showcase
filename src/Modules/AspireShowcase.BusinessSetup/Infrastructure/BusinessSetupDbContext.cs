@@ -1,3 +1,4 @@
+using AspireShowcase.BusinessSetup.PublicClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace AspireShowcase.BusinessSetup;
@@ -24,6 +25,14 @@ sealed class BusinessSetupDbContext(DbContextOptions<BusinessSetupDbContext> opt
     /// <summary>Provider settings that go with the model, for AddNpgsqlDbContext.</summary>
     public static void Configure(DbContextOptionsBuilder options) =>
         options.UseNpgsql(npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "public"));
+
+    // Typed IDs are stored as the uuid they wrap, wherever they appear.
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<BusinessId>().HaveConversion<TypedIdConverter<BusinessId>>();
+        configurationBuilder.Properties<ServiceId>().HaveConversion<TypedIdConverter<ServiceId>>();
+        configurationBuilder.Properties<StaffMemberId>().HaveConversion<TypedIdConverter<StaffMemberId>>();
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.SharedKernel;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -144,10 +145,11 @@ static class ServiceEndpoints
     static async Task<Service?> FindAsync(
         BusinessSetupDbContext db, ClaimsPrincipal user, Guid id, CancellationToken cancellation)
     {
+        var serviceId = new ServiceId(id);
         var ownerId = BusinessSetupEndpoints.UserId(user);
         var businessIds = db.Businesses.Where(business => business.OwnerId == ownerId).Select(business => business.Id);
         return await db.Services.SingleOrDefaultAsync(
-            service => service.Id == id && businessIds.Contains(service.BusinessId), cancellation);
+            service => service.Id == serviceId && businessIds.Contains(service.BusinessId), cancellation);
     }
 
     // Saves, or answers 409 when another service of the business already has the name.
@@ -171,6 +173,6 @@ static class ServiceEndpoints
     }
 
     static ServiceResponse ToResponse(Service service) => new(
-        service.Id, service.Name, (int)service.Duration.TotalMinutes, service.Price.Amount, service.Price.Currency,
+        service.Id.Value, service.Name, (int)service.Duration.TotalMinutes, service.Price.Amount, service.Price.Currency,
         service.IsHidden);
 }
