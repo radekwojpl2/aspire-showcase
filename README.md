@@ -147,7 +147,7 @@ Two containers, because a Container App has only one HTTP ingress port.
 
 Its database is `logto-db` (see [Database](#database)). Logto wants a `postgresql://` URL rather than a .NET connection string, so in Azure the URL is stored in Key Vault as its own secret, `logto-db-url`.
 
-Locally the console is served on `http://127.0.0.1:<port>/console`, not `localhost`: Logto runs in production mode, which blocks the console's API calls from a `localhost` address. Use the link from the dashboard.
+Locally both run on those ports, so Logto's address, the issuer of every token, stays the same between runs. The console is served on `http://127.0.0.1:3002/console`, not `localhost`: Logto runs in production mode, which blocks the console's API calls from a `localhost` address. The dashboard links to it.
 
 ### Set up sign-in
 
