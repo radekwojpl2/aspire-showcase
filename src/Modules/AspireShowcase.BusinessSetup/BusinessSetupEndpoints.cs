@@ -155,15 +155,19 @@ static class BusinessSetupEndpoints
             return Results.Ok(ToBody(business));
         })
         .WithName("SetOpeningHours");
+
+        // User story MVP-10.
+        ServiceEndpoints.Map(businesses.MapGroup("/mine/services").RequireAuthorization(IdentityAccess.OwnerPolicy));
     }
 
-    static Task<Business?> FindMineAsync(IQueryable<Business> businesses, ClaimsPrincipal user, CancellationToken cancellation)
+    /// <summary>The signed-in user's business: everything under /businesses/mine is scoped to it.</summary>
+    internal static Task<Business?> FindMineAsync(IQueryable<Business> businesses, ClaimsPrincipal user, CancellationToken cancellation)
     {
         var userId = UserId(user);
         return businesses.SingleOrDefaultAsync(b => b.OwnerId == userId, cancellation);
     }
 
-    static string UserId(ClaimsPrincipal user) =>
+    internal static string UserId(ClaimsPrincipal user) =>
         user.FindFirstValue("sub") ?? throw new InvalidOperationException("The access token has no sub claim.");
 
     /// <summary>
