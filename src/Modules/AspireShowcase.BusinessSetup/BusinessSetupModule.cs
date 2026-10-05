@@ -18,7 +18,8 @@ public static class BusinessSetupModule
     public static void AddBusinessSetup(this IHostApplicationBuilder builder, string connectionName)
     {
         // This adds a health check, retries, and traces and metrics for the queries.
-        builder.AddNpgsqlDbContext<BusinessSetupDbContext>(connectionName);
+        builder.AddNpgsqlDbContext<BusinessSetupDbContext>(
+            connectionName, configureDbContextOptions: BusinessSetupDbContext.Configure);
 
         builder.Services.AddSingleton<BusinessTelemetry>();
         builder.Services.AddOpenTelemetry()

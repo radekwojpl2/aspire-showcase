@@ -42,3 +42,17 @@ Authorization: Bearer {{AccessToken}}
 }
 
 ###
+
+# Services also need the owner role.
+GET {{AspireShowcase.Api_HostAddress}}/api/businesses/mine/services
+Authorization: Bearer {{AccessToken}}
+
+###
+
+POST {{AspireShowcase.Api_HostAddress}}/api/businesses/mine/services
+Content-Type: application/json
+Authorization: Bearer {{AccessToken}}
+
+{ "name": "Haircut", "durationMinutes": 45, "price": 120, "currency": "PLN" }
+
+###
