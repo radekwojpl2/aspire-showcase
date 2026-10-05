@@ -2,11 +2,19 @@ import aspireLogo from '/Aspire.png';
 import './App.css';
 import { Account } from './account.tsx';
 import { Home, StartBusiness } from './business.tsx';
+import { OpeningHoursPage } from './hours.tsx';
 
-// Two pages, so no router: the path picks the page, and links reload. bff serves index.html
+// A few pages, so no router: the path picks the page, and links reload. bff serves index.html
 // for every path that isn't /api or /bff.
 function Page() {
-  return window.location.pathname === '/start' ? <StartBusiness /> : <Home />;
+  switch (window.location.pathname) {
+    case '/start':
+      return <StartBusiness />;
+    case '/hours':
+      return <OpeningHoursPage />;
+    default:
+      return <Home />;
+  }
 }
 
 function App() {

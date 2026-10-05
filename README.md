@@ -11,7 +11,9 @@ One AppHost describes the whole system: a React app, a backend for frontend (`bf
 - **Locally**, `aspire run` starts everything on your machine (`bff`, the API and the notifications service as processes, Vite with hot reload, Logto and PostgreSQL as containers) and sends logs, traces and metrics to the Aspire dashboard.
 - **In Azure**, `aspire deploy` turns it into Container Apps, a PostgreSQL Flexible Server, Key Vault and Application Insights, from a GitHub Actions workflow.
 
-The app is the start of an appointment booking SaaS for small businesses. So far it does one thing: someone signs up and starts a business with a name and a booking link (user story MVP-8). The point is still the AppHost in `src/AspireShowcase.AppHost`.
+The app is the start of an appointment booking SaaS for small businesses. So far, someone signs up and starts a business with a name and a booking link (user story MVP-8), and sets its weekly opening hours (MVP-9). The point is still the AppHost in `src/AspireShowcase.AppHost`.
+
+The API is a modular monolith, split into the modules of [`docs/architecture/ddd-modules.md`](docs/architecture/ddd-modules.md), each in its own folder under `src/AspireShowcase.Api/Modules` with its domain model. So far: Business Setup (the `Business` aggregate and its `OpeningHours` value object) and Identity & Access (everything that knows about Logto). The domain rules are tested in `tests/AspireShowcase.Api.Tests`.
 
 ## Local and Azure are not the same
 
@@ -70,6 +72,8 @@ src/
 ├── AspireShowcase.Api/              # API, reachable only from bff
 ├── AspireShowcase.Notifications/    # notifications service
 └── AspireShowcase.Web/              # React + Vite
+tests/
+└── AspireShowcase.Api.Tests/        # the API's domain rules
 ```
 
 ## Backend for frontend
@@ -187,8 +191,9 @@ The API, in `src/AspireShowcase.Api/Businesses/BusinessTelemetry.cs`:
 |---|---|---|
 | `businesses.created` | Counter | Businesses started |
 | `businesses.rejected` | Counter | Attempts turned down (`reason` tag: `invalid`, `slug_taken`, `already_owner`, `logto_unavailable`) |
+| `businesses.opening_hours.changes` | Counter | Opening hours saved (`result` tag: `saved`, `invalid`) |
 
-Its `businesses.create` span carries a `business.created` or `business.rejected` event.
+Its `businesses.create` span carries a `business.created` or `business.rejected` event, and `businesses.opening_hours.set` an `opening_hours.saved` or `opening_hours.invalid` one.
 
 The notifications service, in `src/AspireShowcase.Notifications/NotificationTelemetry.cs`:
 

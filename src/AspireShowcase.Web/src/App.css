@@ -318,6 +318,58 @@
   color: var(--error-text);
 }
 
+/* Opening hours: one row per weekday */
+.day {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.75rem 0 0;
+  border: none;
+  border-top: 1px solid var(--surface-border);
+}
+
+.day-name {
+  float: left;
+  padding: 0.6rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.day-periods {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.day-periods > .hint {
+  padding-top: 0.6rem;
+}
+
+.period {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-tertiary);
+}
+
+.period .input {
+  width: auto;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.form-actions a {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
 /* Error message */
 .error-message {
   display: flex;
@@ -457,6 +509,14 @@
     max-width: 40%;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .day {
+    grid-template-columns: 1fr;
+  }
+
+  .period {
+    flex-wrap: wrap;
   }
 
   .app-footer > * {

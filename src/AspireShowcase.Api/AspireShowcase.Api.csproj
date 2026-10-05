@@ -22,4 +22,9 @@
     <ProjectReference Include="..\AspireShowcase.ServiceDefaults\AspireShowcase.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The domain rules are tested directly; the API's types are internal. -->
+    <InternalsVisibleTo Include="AspireShowcase.Api.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -18,6 +18,27 @@ POST {{AspireShowcase.Api_HostAddress}}/api/businesses
 Content-Type: application/json
 Authorization: Bearer {{AccessToken}}
 
-{ "name": "Anna's Hair", "slug": "anna-hair" }
+{ "name": "Anna's Hair", "slug": "anna-hair", "timeZone": "Europe/Warsaw" }
+
+###
+
+# Opening hours need the owner role (the manage:business permission).
+GET {{AspireShowcase.Api_HostAddress}}/api/businesses/mine/opening-hours
+Authorization: Bearer {{AccessToken}}
+
+###
+
+PUT {{AspireShowcase.Api_HostAddress}}/api/businesses/mine/opening-hours
+Content-Type: application/json
+Authorization: Bearer {{AccessToken}}
+
+{
+  "timeZone": "Europe/Warsaw",
+  "periods": [
+    { "day": "monday", "opens": "09:00", "closes": "12:00" },
+    { "day": "monday", "opens": "13:00", "closes": "17:00" },
+    { "day": "saturday", "opens": "10:00", "closes": "14:00" }
+  ]
+}
 
 ###

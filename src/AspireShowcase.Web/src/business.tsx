@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { apiFetch, readProblem } from './api.ts';
 import { signInUrl, useSession } from './session.ts';
+import { ErrorMessage } from './ui.tsx';
 
 type Business = {
   id: string;
   name: string;
   slug: string;
+  timeZone: string;
   createdAt: string;
 };
 
@@ -54,20 +56,17 @@ function useMyBusiness(enabled: boolean) {
   return { business, error };
 }
 
-function ErrorMessage({ message }: { message: string }) {
-  return (
-    <div className="error-message" role="alert">
-      <span>{message}</span>
-    </div>
-  );
-}
-
 function BusinessCard({ business }: { business: Business }) {
   return (
     <section className="card" aria-labelledby="business-heading">
       <h2 id="business-heading" className="section-title">{business.name}</h2>
       <p className="hint">Share this link, and clients can book with you:</p>
       <p className="booking-link">{bookingLink(business.slug)}</p>
+      <div>
+        <a className="button button-secondary" href="/hours">
+          Opening hours
+        </a>
+      </div>
     </section>
   );
 }
@@ -183,7 +182,9 @@ export function StartBusiness() {
     try {
       const response = await apiFetch('/api/businesses', {
         method: 'POST',
-        body: JSON.stringify({ name, slug }),
+        // Opening hours are in the business's time zone; the browser's is the likely one, and
+        // the owner can change it with the hours.
+        body: JSON.stringify({ name, slug, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
       });
       if (response.ok) {
         // Sign in again, so the new owner role is in the access token. Logto still has the
