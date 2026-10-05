@@ -11,15 +11,17 @@ One AppHost describes the whole system: a React app, a backend for frontend (`bf
 - **Locally**, `aspire run` starts everything on your machine (`bff`, the API and the notifications service as processes, Vite with hot reload, Logto and PostgreSQL as containers) and sends logs, traces and metrics to the Aspire dashboard.
 - **In Azure**, `aspire deploy` turns it into Container Apps, a PostgreSQL Flexible Server, Key Vault and Application Insights, from a GitHub Actions workflow.
 
-The app is the start of an appointment booking SaaS for small businesses. So far, someone signs up and starts a business with a name and a booking link (user story MVP-8), sets its weekly opening hours (MVP-9), adds the services clients can book (MVP-10), and adds staff with their services and working hours (MVP-11). The point is still the AppHost in `src/AspireShowcase.AppHost`.
+The app is the start of an appointment booking SaaS for small businesses. So far, someone signs up and starts a business with a name and a booking link (user story MVP-8), sets its weekly opening hours (MVP-9), adds the services clients can book (MVP-10), adds staff with their services and working hours (MVP-11), and sees the bookings by day and week (MVP-12). Clients can't book yet, so on a local run the `web` resource has an **Add sample bookings** command in the dashboard. The point is still the AppHost in `src/AspireShowcase.AppHost`.
 
 The API is a modular monolith, split into the modules of [`docs/architecture/ddd-modules.md`](docs/architecture/ddd-modules.md). Each module is its own project in `src/Modules`, so the compiler keeps the boundaries: a module's domain model is internal, and other projects only see its entry points. So far:
 
 - **Business Setup**: the `Business`, `Service` and `StaffMember` aggregates, with `WeeklyHours` (opening and working hours) and `Money` as value objects, with its own `DbContext`, migrations and `business_setup` schema. Public: `AddBusinessSetup`, `MapBusinessSetup`.
+- **Business Setup public client** (`AspireShowcase.BusinessSetup.PublicClient`): the only way other modules talk to Business Setup. `IBusinessDirectory` reads businesses, staff and services as plain records; Business Setup implements it, and other modules reference only this project.
+- **Scheduling**: the `Booking` aggregate with its `Attendee`, in the `scheduling` schema. A PostgreSQL exclusion constraint keeps one staff member's bookings from overlapping, while different staff can be booked at the same time, and a query filter keeps every query to one business. Public: `AddScheduling`, `MapScheduling`.
 - **Identity & Access**: the anti-corruption layer over Logto. Public: `AddIdentityAccess`, the owner policy and `IOwnerRoles`.
 - **Shared kernel**: what every domain may use (validation errors).
 
-`AspireShowcase.Api` is only the host that composes them. The domain rules are tested in `tests/AspireShowcase.BusinessSetup.Tests`.
+`AspireShowcase.Api` is only the host that composes them. The domain rules are tested in `tests/AspireShowcase.BusinessSetup.Tests` and `tests/AspireShowcase.Scheduling.Tests`.
 
 ## Local and Azure are not the same
 
@@ -77,13 +79,16 @@ src/
 ├── AspireShowcase.Bff/              # backend for frontend: sign-in, sessions, proxy; serves the UI in Azure
 ├── AspireShowcase.Api/              # API host (resource "web"), reachable only from bff
 ├── Modules/
-│   ├── AspireShowcase.BusinessSetup/  # business, booking link, opening hours
+│   ├── AspireShowcase.BusinessSetup/  # business, booking link, hours, services, staff
+│   ├── AspireShowcase.BusinessSetup.PublicClient/  # how other modules talk to Business Setup
+│   ├── AspireShowcase.Scheduling/     # bookings and the owner's calendar
 │   ├── AspireShowcase.Identity/       # anti-corruption layer over Logto
 │   └── AspireShowcase.SharedKernel/   # what every module's domain may use
 ├── AspireShowcase.Notifications/    # notifications service
 └── AspireShowcase.Web/              # React + Vite
 tests/
-└── AspireShowcase.BusinessSetup.Tests/  # Business Setup's domain rules
+├── AspireShowcase.BusinessSetup.Tests/  # Business Setup's domain rules
+└── AspireShowcase.Scheduling.Tests/     # Scheduling's domain rules
 ```
 
 ## Backend for frontend
@@ -104,7 +109,7 @@ Locally, Vite proxies these paths to `bff` and keeps the `Host` header, so Logto
 
 ## Database
 
-One PostgreSQL server (`postgres`) with three databases: `app-db` for the API's modules, `bff-db` for `bff`'s sessions and data protection keys, and `logto-db` for Logto. In `app-db`, each module has its own schema (`business_setup` so far), `DbContext` and migrations, and only maps its own tables. Business Setup's migration history stays in `public.__EFMigrationsHistory`, where it was before the modules had schemas.
+One PostgreSQL server (`postgres`) with three databases: `app-db` for the API's modules, `bff-db` for `bff`'s sessions and data protection keys, and `logto-db` for Logto. In `app-db`, each module has its own schema (`business_setup`, `scheduling`), `DbContext` and migrations, and only maps its own tables. Scheduling keeps its migration history in its schema; Business Setup's stays in `public.__EFMigrationsHistory`, where it was before the modules had schemas. Scheduling's no-overlap constraint needs the `btree_gist` extension, which the AppHost allows on the Flexible Server in Azure.
 
 - Local: a container, with its data in a Docker volume.
 - Azure: a Flexible Server. The connection strings are in Key Vault, and the Container Apps read them with their managed identities.
@@ -113,7 +118,8 @@ The API's modules and `bff` apply their EF Core migrations on startup. To add on
 
 ```
 dotnet tool restore
-dotnet ef migrations add <Name> --project src/Modules/AspireShowcase.BusinessSetup --startup-project src/AspireShowcase.Api
+dotnet ef migrations add <Name> --project src/Modules/AspireShowcase.BusinessSetup --startup-project src/AspireShowcase.Api --context BusinessSetupDbContext
+dotnet ef migrations add <Name> --project src/Modules/AspireShowcase.Scheduling --startup-project src/AspireShowcase.Api --context SchedulingDbContext
 dotnet ef migrations add <Name> --project src/AspireShowcase.Bff
 ```
 
@@ -206,6 +212,14 @@ The API's Business Setup module, `AspireShowcase.BusinessSetup`, in `src/Modules
 | `businesses.staff.changes` | Counter | Staff members added and changed (`result` tag: `added`, `changed`, `invalid`, `name_taken`) |
 
 Its `businesses.create` span carries a `business.created` or `business.rejected` event, `businesses.opening_hours.set` an `opening_hours.saved` or `opening_hours.invalid` one, the `businesses.services.*` spans a `service.<result>` one, and the `businesses.staff.*` spans a `staff_member.<result>` one.
+
+The Scheduling module, `AspireShowcase.Scheduling`, in `src/Modules/AspireShowcase.Scheduling/SchedulingTelemetry.cs`:
+
+| Metric | Kind | Measures |
+|---|---|---|
+| `bookings.attempts` | Counter | Attempts to book (`result` tag: `booked`, `slot_taken`; `source` tag: `sample` so far) |
+
+Its `bookings.calendar` span says which view was read and how many bookings it had; `bookings.sample` how many sample bookings were made and refused. Client names and emails are never recorded.
 
 The notifications service, in `src/AspireShowcase.Notifications/NotificationTelemetry.cs`:
 

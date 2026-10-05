@@ -1,3 +1,4 @@
+using AspireShowcase.BusinessSetup.PublicClient;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
@@ -5,9 +6,9 @@ using OpenTelemetry.Trace;
 namespace AspireShowcase.BusinessSetup;
 
 /// <summary>
-/// Business Setup, what an owner configures: the business, its booking link and its opening
-/// hours (user stories MVP-8 and MVP-9). This is the module's whole public surface; the domain
-/// model and its storage are internal to the project.
+/// Business Setup, what an owner configures: the business, its booking link, opening hours,
+/// services and staff (user stories MVP-8 to MVP-11). This class is the module's whole public
+/// surface; other modules talk to it only through AspireShowcase.BusinessSetup.PublicClient.
 /// </summary>
 public static class BusinessSetupModule
 {
@@ -22,6 +23,7 @@ public static class BusinessSetupModule
             connectionName, configureDbContextOptions: BusinessSetupDbContext.Configure);
 
         builder.Services.AddSingleton<BusinessTelemetry>();
+        builder.Services.AddScoped<IBusinessDirectory, BusinessDirectory>();
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing.AddSource(TelemetryName))
             .WithMetrics(metrics => metrics.AddMeter(TelemetryName));

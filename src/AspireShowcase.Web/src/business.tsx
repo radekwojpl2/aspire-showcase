@@ -63,6 +63,9 @@ function BusinessCard({ business }: { business: Business }) {
       <p className="hint">Share this link, and clients can book with you:</p>
       <p className="booking-link">{bookingLink(business.slug)}</p>
       <div className="form-actions">
+        <a className="button" href="/bookings">
+          Bookings
+        </a>
         <a className="button button-secondary" href="/hours">
           Opening hours
         </a>
