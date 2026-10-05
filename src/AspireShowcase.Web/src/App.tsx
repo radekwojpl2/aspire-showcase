@@ -2,15 +2,12 @@ import aspireLogo from '/Aspire.png';
 import './App.css';
 import { Account } from './account.tsx';
 import { Home, StartBusiness } from './business.tsx';
-import { OpeningHoursPage } from './hours.tsx';
-import { ServicesPage } from './services.tsx';
-import { StaffPage } from './staff.tsx';
-import { BookingsPage } from './bookings.tsx';
 import { BookingPage } from './book.tsx';
 import { MyBookingsPage } from './my-bookings.tsx';
 
-// A few pages, so no router: the path picks the page, and links reload. bff serves index.html
-// for every path that isn't /api or /bff.
+// A few pages, so no router: the path picks the page. bff serves index.html for every path that
+// isn't /api or /bff. The owner's pages (/, /bookings, /services, /staff, /hours) are tabs of one
+// dashboard, which switches between them without reloading.
 function Page() {
   // The public booking page of a business: /book/{slug}.
   const booking = window.location.pathname.match(/^\/book\/([^/]+)\/?$/);
@@ -19,14 +16,6 @@ function Page() {
   switch (window.location.pathname) {
     case '/start':
       return <StartBusiness />;
-    case '/hours':
-      return <OpeningHoursPage />;
-    case '/services':
-      return <ServicesPage />;
-    case '/staff':
-      return <StaffPage />;
-    case '/bookings':
-      return <BookingsPage />;
     case '/my-bookings':
       return <MyBookingsPage />;
     default:

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { apiFetch, readProblem } from './api.ts';
 import { signInUrl, useSession } from './session.ts';
+import { OwnerDashboard } from './dashboard.tsx';
 import { ErrorMessage } from './ui.tsx';
 
 type Business = {
@@ -98,7 +99,8 @@ function StartCard() {
   );
 }
 
-// The home page: the owner's business, or the way to start one.
+// The home page, and the owner's tabs (/bookings, /services, /staff, /hours): the owner's
+// dashboard, or the way to start a business.
 export function Home() {
   const { signInEnabled, user } = useSession();
   const { business, error } = useMyBusiness(user !== null);
@@ -112,7 +114,7 @@ export function Home() {
   }
   if (error) return <ErrorMessage message={error} />;
   if (user && business === undefined) return <p className="status" role="status">Loading...</p>;
-  return business ? <BusinessCard business={business} /> : <StartCard />;
+  return business ? <OwnerDashboard business={business} /> : <StartCard />;
 }
 
 // User story MVP-8: sign up (or in), then create the business with a name and a booking link.

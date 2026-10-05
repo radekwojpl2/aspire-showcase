@@ -284,7 +284,6 @@ export function ServicesPage() {
                 Cancel
               </button>
             )}
-            <a href="/">Back to your business</a>
           </div>
         </form>
       </section>

@@ -1,34 +1,16 @@
 import { useEffect, useState } from 'react';
-import { apiFetch, readProblem } from './api.ts';
+import {
+  cancelBooking,
+  confirmCancel,
+  fetchCalendar,
+  type Calendar,
+  type CalendarBooking,
+  type CalendarView as View,
+} from './calendar-api.ts';
 import { signInUrl, useSession } from './session.ts';
 import { ErrorMessage } from './ui.tsx';
 
-type View = 'day' | 'week';
-
-// Days and times are already in the business's time zone: "2026-10-06", "09:00".
-type CalendarBooking = {
-  id: string;
-  day: string;
-  start: string;
-  end: string;
-  staffMemberId: string;
-  staffName: string;
-  serviceName: string;
-  clientName: string;
-  clientEmail: string;
-};
-
-type Calendar = {
-  view: View;
-  date: string;
-  firstDay: string;
-  lastDay: string;
-  timeZone: string;
-  staff: { id: string; name: string }[];
-  bookings: CalendarBooking[];
-};
-
-type Load = 'loading' | 'loaded' | 'no-business' | 'not-owner';
+type Load = 'loading' | 'loaded' | 'not-owner';
 
 // Calendar dates are plain dates, so the arithmetic is done in UTC, where no day is skipped.
 const parse = (day: string) => new Date(`${day}T00:00:00Z`);
@@ -69,16 +51,10 @@ export function BookingsPage() {
   useEffect(() => {
     if (!user) return;
     let current = true;
-    const query = new URLSearchParams({ view });
-    if (date) query.set('date', date);
-    if (staffMemberId) query.set('staffMemberId', staffMemberId);
-    apiFetch(`/api/businesses/mine/bookings?${query}`)
-      .then(async (response) => {
+    fetchCalendar(view, date, staffMemberId || undefined)
+      .then((body) => {
         if (!current) return;
-        if (response.status === 404) return setLoad('no-business');
-        if (response.status === 403) return setLoad('not-owner');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const body = (await response.json()) as Calendar;
+        if (!body) return setLoad('not-owner');
         setCalendar(body);
         setError(undefined);
         setLoad('loaded');
@@ -97,12 +73,11 @@ export function BookingsPage() {
     );
   }
   if (!user) return <p className="status" role="status">Taking you to sign-in...</p>;
-  if (load === 'no-business' || load === 'not-owner') {
+  if (load === 'not-owner') {
     return (
       <section className="card">
         <p className="hint">
-          {load === 'no-business' ? "You haven't started a business yet." : 'Only owners can see bookings.'}{' '}
-          <a href="/start">Start your business</a>
+          Bookings are for owners of a business. <a href="/start">Start your business</a>
         </p>
       </section>
     );
@@ -111,13 +86,12 @@ export function BookingsPage() {
 
   // User story MVP-14: the owner cancels for sickness or emergencies; the time is free again.
   const cancel = async (booking: CalendarBooking) => {
-    if (!window.confirm(`Cancel ${booking.clientName}'s ${booking.serviceName} on ${booking.day}, ${booking.start}?`)) return;
+    if (!confirmCancel(booking)) return;
     setCancelling(booking.id);
     setError(undefined);
     setCancelled(undefined);
     try {
-      const response = await apiFetch(`/api/businesses/mine/bookings/${booking.id}/cancel`, { method: 'POST' });
-      if (!response.ok) throw new Error((await readProblem(response)).title ?? `HTTP error! status: ${response.status}`);
+      await cancelBooking(booking);
       setCancelled(`${booking.clientName}'s booking at ${booking.start} is cancelled, and the time is free again.`);
       setReload((count) => count + 1);
     } catch (err) {
