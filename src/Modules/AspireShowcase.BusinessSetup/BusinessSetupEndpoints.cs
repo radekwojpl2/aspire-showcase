@@ -7,7 +7,8 @@ using Npgsql;
 
 namespace AspireShowcase.BusinessSetup;
 
-record StartBusiness(string? Name, string? Slug, string? TimeZone);
+/// <param name="OwnerName">The owner's name as their staff member, as clients will see it.</param>
+record StartBusiness(string? Name, string? Slug, string? TimeZone, string? OwnerName);
 
 record BusinessResponse(Guid Id, string Name, string Slug, string TimeZone, DateTimeOffset CreatedAt);
 
@@ -79,6 +80,9 @@ static class BusinessSetupEndpoints
                     db.ChangeTracker.Clear();
                     await using var transaction = await db.Database.BeginTransactionAsync(cancellation);
                     db.Businesses.Add(business);
+                    // The owner is the business's first staff member, so a one-person business
+                    // can be booked without setting anything else up (user story MVP-11).
+                    db.StaffMembers.Add(StaffMember.ForOwner(business, request.OwnerName, time.GetUtcNow()));
                     await db.SaveChangesAsync(cancellation);
                     // Only once the business is saved, and before it's committed: if Identity
                     // can't give the role, the business is rolled back and the user can try again.
@@ -141,7 +145,8 @@ static class BusinessSetupEndpoints
 
             try
             {
-                business.SetOpeningHours(ParseOpeningHours(request.Periods), request.TimeZone);
+                var staff = await db.StaffMembers.Where(member => member.BusinessId == business.Id).ToListAsync(cancellation);
+                business.SetOpeningHours(ParseWeeklyHours(request.Periods), request.TimeZone, staff);
             }
             catch (DomainValidationException exception)
             {
@@ -158,6 +163,9 @@ static class BusinessSetupEndpoints
 
         // User story MVP-10.
         ServiceEndpoints.Map(businesses.MapGroup("/mine/services").RequireAuthorization(IdentityAccess.OwnerPolicy));
+
+        // User story MVP-11.
+        StaffEndpoints.Map(businesses.MapGroup("/mine/staff").RequireAuthorization(IdentityAccess.OwnerPolicy));
     }
 
     /// <summary>The signed-in user's business: everything under /businesses/mine is scoped to it.</summary>
@@ -171,31 +179,31 @@ static class BusinessSetupEndpoints
         user.FindFirstValue("sub") ?? throw new InvalidOperationException("The access token has no sub claim.");
 
     /// <summary>
-    /// Turns the request into opening hours. Malformed days and times are reported the same way as
+    /// Turns the request into weekly hours, for opening hours and working hours alike. Malformed days and times are reported the same way as
     /// the domain's own rules, under the day they belong to.
     /// </summary>
-    static OpeningHours ParseOpeningHours(List<OpeningPeriodBody>? periods)
+    internal static WeeklyHours ParseWeeklyHours(List<OpeningPeriodBody>? periods)
     {
         var errors = new DomainErrors();
-        var parsed = new List<OpeningPeriod>();
+        var parsed = new List<WeeklyPeriod>();
         foreach (var period in periods ?? [])
         {
             // Exact names only: Enum.TryParse would also take "1" or "monday,tuesday".
             if (Enum.GetValues<DayOfWeek>().Cast<DayOfWeek?>()
-                    .FirstOrDefault(weekday => OpeningHours.FieldName(weekday!.Value) == period.Day) is not { } day)
+                    .FirstOrDefault(weekday => WeeklyHours.FieldName(weekday!.Value) == period.Day) is not { } day)
             {
                 errors.Add("periods", $"\"{period.Day}\" isn't a weekday.");
                 continue;
             }
             if (!TryParseTime(period.Opens, out var opens) || !TryParseTime(period.Closes, out var closes))
             {
-                errors.Add(OpeningHours.FieldName(day), "Enter both times as HH:mm.");
+                errors.Add(WeeklyHours.FieldName(day), "Enter both times as HH:mm.");
                 continue;
             }
-            parsed.Add(new OpeningPeriod(day, opens, closes));
+            parsed.Add(new WeeklyPeriod(day, opens, closes));
         }
         errors.ThrowIfAny();
-        return OpeningHours.Create(parsed);
+        return WeeklyHours.Create(parsed);
     }
 
     static bool TryParseTime(string? value, out TimeOnly time) =>
@@ -204,11 +212,13 @@ static class BusinessSetupEndpoints
     static BusinessResponse ToResponse(Business business) =>
         new(business.Id, business.Name, business.Slug, business.TimeZone, business.CreatedAt);
 
-    static OpeningHoursBody ToBody(Business business) =>
-        new(business.TimeZone, business.OpeningHours.Periods
+    static OpeningHoursBody ToBody(Business business) => new(business.TimeZone, ToPeriodBodies(business.OpeningHours));
+
+    internal static List<OpeningPeriodBody> ToPeriodBodies(WeeklyHours hours) =>
+        hours.Periods
             .Select(period => new OpeningPeriodBody(
-                OpeningHours.FieldName(period.Day),
+                WeeklyHours.FieldName(period.Day),
                 period.Opens.ToString("HH:mm", CultureInfo.InvariantCulture),
                 period.Closes.ToString("HH:mm", CultureInfo.InvariantCulture)))
-            .ToList());
+            .ToList();
 }

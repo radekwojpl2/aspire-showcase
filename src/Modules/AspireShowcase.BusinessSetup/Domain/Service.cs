@@ -18,7 +18,7 @@ sealed class Service
     public const int MaxNameLength = 80;
 
     /// <summary>Durations come in 5-minute steps, like opening hours.</summary>
-    public const int DurationStepMinutes = OpeningHours.StepMinutes;
+    public const int DurationStepMinutes = WeeklyHours.StepMinutes;
 
     public const int MaxDurationMinutes = 8 * 60;
 
