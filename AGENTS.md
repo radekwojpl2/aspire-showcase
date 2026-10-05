@@ -24,7 +24,7 @@ Run from the repository root.
 | Resources, their state and URLs | `aspire describe` |
 | Wait for a resource to be healthy | `aspire wait web` |
 | Logs and traces | `aspire logs <resource>`, `aspire otel traces <resource>` |
-| Build and test the .NET projects | `dotnet build`, `dotnet test` |
+| Build and test the .NET projects | `dotnet build`, `dotnet test` (the integration tests need Docker running) |
 | Lint and build the React app | `npm run lint`, `npm run build` in `src/AspireShowcase.Web` |
 | Add an EF Core migration | `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/<Module> --startup-project src/AspireShowcase.Api --context <Module>DbContext` (or `--project src/AspireShowcase.Bff` alone) |
 
@@ -46,6 +46,7 @@ src/
 ├── AspireShowcase.Notifications/    # notifications service: booking emails (MassTransit consumer, Resend), with a Quartz.NET job
 └── AspireShowcase.Web/              # React + Vite (resource "frontend")
 tests/
+├── AspireShowcase.Api.IntegrationTests/ # the API over HTTP against PostgreSQL in a container (Testcontainers)
 ├── AspireShowcase.BusinessSetup.Tests/  # xUnit tests of Business Setup's domain rules
 └── AspireShowcase.Scheduling.Tests/     # xUnit tests of Scheduling's domain rules
 ```
