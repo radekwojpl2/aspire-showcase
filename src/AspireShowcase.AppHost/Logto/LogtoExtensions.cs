@@ -83,12 +83,6 @@ static class LogtoExtensions
             .WithEnvironment("Logto__M2mAppSecret", m2mAppSecret);
     }
 
-    // Empty until set in user secrets (locally) or by the Deploy workflow (Azure).
-    static IResourceBuilder<ParameterResource> AddOptionalParameter(
-        this IDistributedApplicationBuilder builder, string name, string description, bool secret = false) =>
-        builder.AddParameter(name, () => builder.Configuration[$"Parameters:{name}"] ?? "", secret: secret)
-            .WithDescription(description);
-
     static IResourceBuilder<ContainerResource> AddLogtoContainer(
         this IDistributedApplicationBuilder builder, string name, int port, LogtoDatabase db) =>
         builder.AddContainer(name, "svhd/logto", "1.44")

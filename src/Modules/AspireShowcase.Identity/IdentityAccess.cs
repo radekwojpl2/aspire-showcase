@@ -8,7 +8,7 @@ namespace AspireShowcase.Identity;
 
 /// <summary>
 /// Identity &amp; Access: the API's anti-corruption layer over Logto. Other modules see users as a
-/// subject ID, the <see cref="OwnerPolicy"/> and <see cref="IOwnerRoles"/>; only this module knows
+/// subject ID, the <see cref="OwnerPolicy"/>, <see cref="IOwnerRoles"/> and <see cref="IUserProfiles"/>; only this module knows
 /// about Logto's tokens, scopes and Management API.
 /// </summary>
 public static class IdentityAccess
@@ -48,12 +48,14 @@ public static class IdentityAccess
         // application the AppHost passes in; Logto's public URL is its address.
         var management = builder.Configuration.GetSection("Logto").Get<LogtoManagementSettings>() ?? new();
         builder.Services.AddSingleton(management);
-        builder.Services.AddHttpClient<IOwnerRoles, LogtoManagement>(client =>
+        builder.Services.AddHttpClient<LogtoManagement>(client =>
         {
             if (!string.IsNullOrEmpty(management.Endpoint))
             {
                 client.BaseAddress = new Uri($"{management.Endpoint}/");
             }
         });
+        builder.Services.AddTransient<IOwnerRoles>(services => services.GetRequiredService<LogtoManagement>());
+        builder.Services.AddTransient<IUserProfiles>(services => services.GetRequiredService<LogtoManagement>());
     }
 }

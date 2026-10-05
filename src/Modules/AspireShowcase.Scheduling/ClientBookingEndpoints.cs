@@ -66,8 +66,8 @@ static class ClientBookingEndpoints
 
         // Frees the time at once; another client's booking answers 404, as if it didn't exist.
         mine.MapPost("/{id:guid}/cancel", async (
-            Guid id, ClaimsPrincipal user, SchedulingDbContext db, SchedulingTelemetry telemetry, TimeProvider time,
-            CancellationToken cancellation) =>
+            Guid id, ClaimsPrincipal user, SchedulingDbContext db, Bookings bookings, SchedulingTelemetry telemetry,
+            TimeProvider time, CancellationToken cancellation) =>
         {
             using var activity = telemetry.StartActivity("bookings.cancel");
 
@@ -88,7 +88,7 @@ static class ClientBookingEndpoints
                     title: exception.Errors.Values.First()[0], statusCode: StatusCodes.Status409Conflict);
             }
 
-            await db.SaveChangesAsync(cancellation);
+            await bookings.SaveAsync(booking, cancellation);
             telemetry.Cancelled(activity, booking, "client");
             return Results.NoContent();
         })

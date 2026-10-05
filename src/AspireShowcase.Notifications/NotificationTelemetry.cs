@@ -19,6 +19,7 @@ sealed class NotificationTelemetry
     readonly Counter<long> _received;
     readonly Counter<long> _rejected;
     readonly Counter<long> _digested;
+    readonly Counter<long> _emails;
     readonly Histogram<int> _messageLength;
 
     public NotificationTelemetry(IMeterFactory meterFactory, NotificationStore store)
@@ -31,6 +32,8 @@ sealed class NotificationTelemetry
             "notifications.rejected", "{notification}", "Notifications refused because they were invalid.");
         _digested = meter.CreateCounter<long>(
             "notifications.digested", "{notification}", "Notifications summed up by the scheduled digest.");
+        _emails = meter.CreateCounter<long>(
+            "notifications.emails", "{email}", "Booking emails, by kind and result (sent, skipped).");
 
         // The default buckets are meant for milliseconds; these fit a message of up to 300 characters.
         _messageLength = meter.CreateHistogram(
@@ -59,6 +62,14 @@ sealed class NotificationTelemetry
             activity?.AddEvent(new ActivityEvent(
                 "notification.evicted", tags: new ActivityTagsCollection { ["count"] = evicted }));
         }
+    }
+
+    /// <param name="kind">confirmation, new-booking, cancelled-by-client or cancelled-by-business.</param>
+    /// <param name="result">sent, or skipped when email isn't set up.</param>
+    public void Email(Activity? activity, string kind, string result)
+    {
+        _emails.Add(1, new KeyValuePair<string, object?>("kind", kind), new KeyValuePair<string, object?>("result", result));
+        activity?.AddEvent(new ActivityEvent($"email.{result}", tags: new ActivityTagsCollection { ["email.kind"] = kind }));
     }
 
     public void Rejected(Activity? activity, string reason)

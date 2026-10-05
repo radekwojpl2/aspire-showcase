@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.11" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
     <!-- The startup project for `dotnet ef`, which needs this; the migrations live in the modules. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">

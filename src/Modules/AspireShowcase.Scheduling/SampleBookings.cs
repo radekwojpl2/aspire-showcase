@@ -75,6 +75,8 @@ static class SampleBookings
                                     var booking = Booking.Book(
                                         business.Id, member.Id, service.Id, start, service.Duration,
                                         Attendee.Create(null, client, Email(client)), now);
+                                    // Made-up clients at example.com: nobody gets emails about them.
+                                    booking.ClearEvents();
                                     var result = await bookings.AddAsync(booking, cancellation);
                                     telemetry.Booking(result, "sample");
                                     if (result == BookingResult.Booked)

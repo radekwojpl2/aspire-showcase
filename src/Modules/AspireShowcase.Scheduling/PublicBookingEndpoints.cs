@@ -84,7 +84,7 @@ static class PublicBookingEndpoints
         // MVP-4: booking needs a signed-in client, whose account the booking is tied to (MVP-3).
         business.MapPost("/bookings", async (
             string slug, BookSlot request, ClaimsPrincipal user, IBusinessDirectory directory, Availability availability,
-            Bookings bookings, SchedulingTelemetry telemetry, TimeProvider time, CancellationToken cancellation) =>
+            IServiceScopeFactory scopes, SchedulingTelemetry telemetry, TimeProvider time, CancellationToken cancellation) =>
         {
             using var activity = telemetry.StartActivity("bookings.book");
 
@@ -117,12 +117,15 @@ static class PublicBookingEndpoints
                 .SingleOrDefault(free => free.Start == startsAt.ToUniversalTime());
 
             // "Anyone" takes whoever is free; if the database refuses one (someone booked them a
-            // moment ago), the next one is tried.
+            // moment ago), the next one is tried. Each attempt gets a scope of its own, so a refused
+            // one leaves no outbox message behind for the next to send.
             foreach (var staffMemberId in slot?.FreeStaff ?? [])
             {
+                await using var attempt = scopes.CreateAsyncScope();
+                attempt.ServiceProvider.GetRequiredService<BusinessScope>().BusinessId = found.Id;
                 var booking = Booking.Book(
                     found.Id, staffMemberId, offer.Service.Id, startsAt, offer.Service.Duration, attendee, time.GetUtcNow());
-                var result = await bookings.AddAsync(booking, cancellation);
+                var result = await attempt.ServiceProvider.GetRequiredService<Bookings>().AddAsync(booking, cancellation);
                 telemetry.Booking(result, "client");
                 if (result == BookingResult.Booked)
                 {

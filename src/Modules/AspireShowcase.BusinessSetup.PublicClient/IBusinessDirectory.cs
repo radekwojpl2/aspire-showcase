@@ -31,7 +31,8 @@ public interface IBusinessDirectory
 }
 
 /// <param name="TimeZone">The IANA time zone its hours are in.</param>
-public sealed record BusinessInfo(BusinessId Id, string Name, string Slug, string TimeZone);
+/// <param name="OwnerId">The owner's user ID (sub), for anything that has to reach them.</param>
+public sealed record BusinessInfo(BusinessId Id, string Name, string Slug, string TimeZone, string OwnerId);
 
 /// <param name="ServiceIds">The services they do; every service when <paramref name="DoesAllServices"/>.</param>
 /// <param name="WorkingHours">When they work: their own hours, or else the business's opening hours.</param>

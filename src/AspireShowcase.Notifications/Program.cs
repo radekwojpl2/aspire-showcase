@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
 using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +20,37 @@ builder.Services.AddQuartz(quartz => quartz.ScheduleJob<NotificationDigestJob>(
     trigger => trigger.WithCronSchedule(NotificationDigestJob.Schedule)));
 builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
+// Booking emails (user stories MVP-5, MVP-7, MVP-13 and MVP-14): Scheduling publishes a
+// BookingNotice on the message bus, and BookingEmailsConsumer sends the emails through Resend.
+// notifications-db holds MassTransit's inbox, so each message's emails go out once.
+builder.AddNpgsqlDbContext<NotificationsDbContext>("notifications-db");
+var email = builder.Configuration.GetSection("Email").Get<EmailSettings>() ?? new();
+builder.Services.AddSingleton(email);
+builder.Services.AddHttpClient<ResendEmailSender>(client => client.BaseAddress = new Uri("https://api.resend.com/"));
+
+builder.Services.AddMassTransit(bus =>
+{
+    bus.SetKebabCaseEndpointNameFormatter();
+    bus.AddEntityFrameworkOutbox<NotificationsDbContext>(outbox => outbox.UsePostgres());
+    bus.AddConsumer<BookingEmailsConsumer, BookingEmailsConsumerDefinition>();
+    bus.UsingRabbitMq((context, rabbit) =>
+    {
+        rabbit.Host(new Uri(builder.Configuration.GetConnectionString("messaging")
+            ?? throw new InvalidOperationException("The messaging connection string is missing.")));
+        // A failed send is tried again, waiting longer each time, before the message goes to the
+        // _error queue, where it can be moved back once the problem is fixed.
+        rabbit.UseMessageRetry(retry => retry.Exponential(5, TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(5)));
+        rabbit.ConfigureEndpoints(context);
+    });
+});
+
 var app = builder.Build();
+
+// Creates or updates notifications-db's tables on startup. Enough for a single instance.
+using (var scope = app.Services.CreateScope())
+{
+    await scope.ServiceProvider.GetRequiredService<NotificationsDbContext>().Database.MigrateAsync();
+}
 
 app.UseExceptionHandler();
 

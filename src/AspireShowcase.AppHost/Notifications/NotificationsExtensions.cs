@@ -7,7 +7,8 @@ static class NotificationsExtensions
     /// </summary>
     public static IResourceBuilder<ProjectResource> AddNotifications(this IDistributedApplicationBuilder builder) =>
         builder.AddProject<Projects.AspireShowcase_Notifications>("notifications")
-            .WithHttpHealthCheck("/health");
+            .WithHttpHealthCheck("/health")
+            .WithoutConnectionProperties();
 
     /// <summary>
     /// Lets the API call the service as http://notifications: the reference passes its

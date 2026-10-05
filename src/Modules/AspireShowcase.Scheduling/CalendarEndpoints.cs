@@ -107,7 +107,7 @@ static class CalendarEndpoints
         // booking answers 404: the query filter doesn't see it.
         api.MapPost("/businesses/mine/bookings/{id:guid}/cancel", async (
             Guid id, ClaimsPrincipal user, IBusinessDirectory directory, SchedulingDbContext db, BusinessScope scope,
-            SchedulingTelemetry telemetry, TimeProvider time, CancellationToken cancellation) =>
+            Bookings bookings, SchedulingTelemetry telemetry, TimeProvider time, CancellationToken cancellation) =>
         {
             using var activity = telemetry.StartActivity("bookings.cancel");
 
@@ -134,7 +134,7 @@ static class CalendarEndpoints
                     title: exception.Errors.Values.First()[0], statusCode: StatusCodes.Status409Conflict);
             }
 
-            await db.SaveChangesAsync(cancellation);
+            await bookings.SaveAsync(booking, cancellation);
             telemetry.Cancelled(activity, booking, "business");
             return Results.NoContent();
         })
