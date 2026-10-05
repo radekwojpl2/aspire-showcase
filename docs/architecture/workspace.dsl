@@ -8,26 +8,24 @@ workspace "Booking SaaS" "Proposed: appointment booking for small businesses, bu
     !identifiers hierarchical
 
     model {
-        owner = person "Business owner" "Runs a small business (hairdresser, tutor, physio). Sets up services and hours, manages bookings. The paying customer."
+        owner = person "Business owner" "Runs a small business (hairdresser, tutor, physio). Sets up services and hours, manages bookings. The customer of the SaaS."
         client = person "Client" "Books an appointment from the business's public page. No account."
 
         booking = softwareSystem "Booking SaaS" "Owner dashboard and public booking pages." {
-            frontend = container "frontend" "Owner dashboard (calendar, services, hours, plan) and the public booking page /book/{slug}." "React + Vite" "Web Browser"
-            web = container "web" "Businesses, services, hours, free slots, bookings and plan limits. Multi-tenant: every row belongs to a business. In Azure it also serves the built React app." "ASP.NET Core"
+            frontend = container "frontend" "Owner dashboard (calendar, services, hours) and the public booking page /book/{slug}." "React + Vite" "Web Browser"
+            web = container "web" "Businesses, services, hours, free slots and bookings. Multi-tenant: every row belongs to a business. In Azure it also serves the built React app." "ASP.NET Core"
             notifications = container "notifications" "Booking confirmations and cancellations, and a Quartz.NET job that sends reminders 24 h before each appointment." "ASP.NET Core + Quartz.NET"
-            appDb = container "app-db" "Businesses, services, opening hours, bookings, subscriptions. Quartz job store." "PostgreSQL" "Database"
+            appDb = container "app-db" "Businesses, services, opening hours, bookings. Quartz job store." "PostgreSQL" "Database"
             cache = container "cache" "Free slots per business and day (invalidated on booking), and a short lock per slot so two clients can't book the same one." "Redis" "Database"
             logto = container "logto" "Sign-in for business owners. Clients never sign in." "Logto"
         }
 
-        stripe = softwareSystem "Stripe" "Subscriptions for the paid plan: checkout, customer portal, webhooks." "External"
         email = softwareSystem "Email service" "Sends transactional email (e.g. Azure Communication Services Email)." "External"
 
         # People
         owner -> booking.frontend "Manages services, hours and bookings" "HTTPS"
         client -> booking.frontend "Picks a free slot and books" "HTTPS"
         owner -> booking.logto "Signs in" "OIDC"
-        owner -> stripe "Pays for the subscription" "Stripe Checkout"
         email -> client "Confirmation and reminder"
         email -> owner "New booking"
 
@@ -40,8 +38,6 @@ workspace "Booking SaaS" "Proposed: appointment booking for small businesses, bu
         booking.web -> booking.notifications "Booking created or cancelled" "JSON/HTTPS"
         booking.notifications -> booking.appDb "Reads upcoming bookings, stores Quartz jobs" "Npgsql"
         booking.notifications -> email "Sends email" "HTTPS"
-        booking.web -> stripe "Creates checkout and portal sessions" "HTTPS"
-        stripe -> booking.web "Subscription changed" "Webhook"
 
         production = deploymentEnvironment "Azure" {
             deploymentNode "Azure" "" "Microsoft Azure" {
@@ -63,7 +59,7 @@ workspace "Booking SaaS" "Proposed: appointment booking for small businesses, bu
                 deploymentNode "PostgreSQL" "" "Azure Database for PostgreSQL Flexible Server" {
                     containerInstance booking.appDb
                 }
-                keyVault = infrastructureNode "Key Vault" "Connection strings and secrets (Stripe, email), read with managed identities." "Azure Key Vault"
+                keyVault = infrastructureNode "Key Vault" "Connection strings and secrets (email), read with managed identities." "Azure Key Vault"
                 appInsights = infrastructureNode "Application Insights" "Logs, traces and metrics from the services." "Azure Monitor"
             }
         }
