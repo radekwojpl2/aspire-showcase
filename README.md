@@ -21,7 +21,7 @@ The API is a modular monolith, split into the modules of [`docs/architecture/ddd
 - **Identity & Access**: the anti-corruption layer over Logto. Public: `AddIdentityAccess`, the owner policy and `IOwnerRoles`.
 - **Shared kernel**: what every domain may use (validation errors).
 
-`AspireShowcase.Api` is only the host that composes them. The domain rules are tested in `tests/AspireShowcase.BusinessSetup.Tests` and `tests/AspireShowcase.Scheduling.Tests`.
+`AspireShowcase.Api` is only the host that composes them. The domain rules are tested in `tests/AspireShowcase.BusinessSetup.Tests` and `tests/AspireShowcase.Scheduling.Tests`, and the API with the database (double bookings, the outbox, migrations) in `tests/AspireShowcase.Api.IntegrationTests`, against PostgreSQL in a container started by Testcontainers.
 
 ## Local and Azure are not the same
 
@@ -88,6 +88,7 @@ src/
 ├── AspireShowcase.Notifications/    # notifications service: booking emails
 └── AspireShowcase.Web/              # React + Vite
 tests/
+├── AspireShowcase.Api.IntegrationTests/ # the API against PostgreSQL in a container
 ├── AspireShowcase.BusinessSetup.Tests/  # Business Setup's domain rules
 └── AspireShowcase.Scheduling.Tests/     # Scheduling's domain rules
 ```
