@@ -4,6 +4,8 @@ A proposal for review: turning the showcase into an appointment booking SaaS for
 
 The React app talks only to a backend for frontend (`bff`), so no token ever reaches the browser: `bff` signs users in with the self-hosted Logto, keeps their tokens server-side, gives the browser an HttpOnly session cookie, and forwards `/api` calls to `web` with the user's access token. `web` is no longer public.
 
+What gets built when: [`user-stories.md`](user-stories.md), in three phases (MVP, v1, v2).
+
 ## Design decisions
 
 - **No overlapping bookings, guaranteed by the database.** Each booking is for a staff member, and an exclusion constraint on (staff, time range) in `app-db` rejects any overlap; `web` answers 409. This also lets a business with several staff take bookings at the same time.
