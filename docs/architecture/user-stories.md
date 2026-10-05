@@ -2,7 +2,7 @@
 
 User stories for the booking SaaS in [the proposed architecture](README.md), in three phases. Each phase is usable on its own: the MVP lets a small business and its staff take bookings, v1 makes it work for the day-to-day of a real shop, and v2 adds what keeps businesses on the platform.
 
-Stories marked ✅ are built. So far: 2 of 14 MVP stories (MVP-8, MVP-9), none of v1 or v2.
+Stories marked ✅ are built. So far: 3 of 14 MVP stories (MVP-8, MVP-9, MVP-10), none of v1 or v2.
 
 People in the stories:
 
@@ -64,7 +64,7 @@ As an owner, I want to set my business's weekly opening hours, so that clients c
 - Hours per weekday, with more than one range per day (e.g. 9–12 and 13–17).
 - Changing hours doesn't cancel existing bookings.
 
-**MVP-10. Add services**
+**MVP-10. Add services** ✅
 As an owner, I want to add the services I offer with a duration and a price, so that clients book the right length of time.
 - Name, duration (in 5-minute steps) and price shown to clients (no online payment).
 - A service can be hidden without deleting it.
