@@ -9,7 +9,7 @@ namespace AspireShowcase.Scheduling;
 /// <summary>
 /// Scheduling, the core of the booking SaaS: availability and bookings. Clients see free slots
 /// and book them (user stories MVP-1 to MVP-4) and see and cancel their own (MVP-7), owners see
-/// their calendar (MVP-12), block time off (V1-1) and set a cancellation policy (V1-3). This class
+/// their calendar (MVP-12), block time off (V1-1) and set a cancellation policy (V1-3); clients and owners move bookings (V1-4). This class
 /// is the module's whole public surface; it reads businesses, staff and services only through
 /// Business Setup's public client.
 /// </summary>
@@ -60,6 +60,7 @@ public static class SchedulingModule
         CalendarEndpoints.Map(api);
         TimeOffEndpoints.Map(api);
         CancellationPolicyEndpoints.Map(api);
+        RescheduleEndpoints.Map(api);
         PublicBookingEndpoints.Map(api);
         ClientBookingEndpoints.Map(api);
         if (includeDevelopmentTools)

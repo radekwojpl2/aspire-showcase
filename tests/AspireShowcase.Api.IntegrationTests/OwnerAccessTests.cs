@@ -30,6 +30,8 @@ public sealed class OwnerAccessTests(ApiFactory api)
             { "PUT", $"/api/businesses/mine/staff/{id}" },
             { "GET", "/api/businesses/mine/bookings" },
             { "POST", $"/api/businesses/mine/bookings/{id}/cancel" },
+            { "GET", $"/api/businesses/mine/bookings/{id}/slots" },
+            { "POST", $"/api/businesses/mine/bookings/{id}/reschedule" },
             { "GET", "/api/businesses/mine/cancellation-policy" },
             { "PUT", "/api/businesses/mine/cancellation-policy" },
             { "GET", "/api/businesses/mine/time-off" },

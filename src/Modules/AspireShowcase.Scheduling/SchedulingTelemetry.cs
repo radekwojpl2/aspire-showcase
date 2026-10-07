@@ -17,6 +17,7 @@ sealed class SchedulingTelemetry
     readonly Counter<long> _booked;
     readonly Counter<long> _cancelled;
     readonly Counter<long> _timeOff;
+    readonly Counter<long> _rescheduled;
 
     public SchedulingTelemetry(IMeterFactory meterFactory)
     {
@@ -25,6 +26,9 @@ sealed class SchedulingTelemetry
             "bookings.attempts", "{booking}", "Attempts to book, by result (booked, slot_taken) and source (client, sample).");
         _cancelled = meter.CreateCounter<long>(
             "bookings.cancellations", "{booking}", "Bookings cancelled, by who cancelled them.");
+        _rescheduled = meter.CreateCounter<long>(
+            "bookings.reschedules", "{booking}",
+            "Attempts to move a booking, by result (rescheduled, slot_taken, too_late) and who moved it (client, business).");
         _timeOff = meter.CreateCounter<long>(
             "time_off.changes", "{time_off}", "Time off added and removed, by result (added, removed, invalid).");
     }
@@ -60,6 +64,17 @@ sealed class SchedulingTelemetry
             tags["time_off.bookings_inside"] = bookingsInside;
         }
         activity?.AddEvent(new ActivityEvent($"time_off.{result}", tags: tags));
+    }
+
+    /// <param name="result">rescheduled, slot_taken or too_late.</param>
+    /// <param name="by">client or business.</param>
+    public void Rescheduled(Activity? activity, Booking booking, string result, string by)
+    {
+        _rescheduled.Add(1,
+            new KeyValuePair<string, object?>("result", result),
+            new KeyValuePair<string, object?>("by", by));
+        activity?.SetTag("booking.id", booking.Id.Value);
+        activity?.AddEvent(new ActivityEvent($"booking.{result}"));
     }
 
     /// <param name="result">saved or invalid.</param>
