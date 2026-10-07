@@ -216,7 +216,7 @@ Then open the app and click **Start your business**: it takes you to Logto's sig
 
 ## Custom telemetry
 
-On top of what ASP.NET Core, the HTTP clients and Npgsql record by themselves, the API's modules, the notifications service and `bff` record their own spans, span events and metrics. The notifications service and `bff` use their application name for the source and the meter, which is what the ServiceDefaults project subscribes to; an API module uses its own name and subscribes to it when the host adds the module. Names, links and messages that users type are never recorded.
+On top of what ASP.NET Core, the HTTP clients and Npgsql record by themselves, the API's modules and the notifications service record their own spans, span events and metrics, and `bff` a metric of its own. The notifications service and `bff` name theirs after the application, which is what the ServiceDefaults project subscribes to; an API module uses its own name and subscribes to it when the host adds the module. Names, links and messages that users type are never recorded.
 
 The API's Business Setup module, `AspireShowcase.BusinessSetup`, in `src/Modules/AspireShowcase.BusinessSetup/BusinessTelemetry.cs`:
 
