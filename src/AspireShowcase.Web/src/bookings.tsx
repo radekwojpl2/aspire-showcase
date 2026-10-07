@@ -171,7 +171,9 @@ export function BookingsPage() {
           onClose={() => setMoving(undefined)}
           onMoved={(moved) => {
             setMoving(undefined);
-            setCancelled(`${moving.clientName}'s booking is moved to ${moved.date}, ${moved.start} with ${moved.staffName}; they get an email.`);
+            setCancelled(
+              `${moving.clientName}'s booking is moved to ${label(moved.date, { weekday: 'short', day: 'numeric', month: 'short' })}, ${moved.start} with ${moved.staffName}; they get an email.`,
+            );
             setReload((count) => count + 1);
           }}
         />
