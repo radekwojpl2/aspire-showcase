@@ -18,6 +18,7 @@ builder.Services.AddDataProtection()
 
 builder.AddLogtoAuthentication();
 builder.AddApiProxy();
+builder.AddProxySpanNames();
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
