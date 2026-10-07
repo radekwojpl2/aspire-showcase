@@ -16,6 +16,7 @@ sealed class SchedulingTelemetry
 
     readonly Counter<long> _booked;
     readonly Counter<long> _cancelled;
+    readonly Counter<long> _timeOff;
 
     public SchedulingTelemetry(IMeterFactory meterFactory)
     {
@@ -24,6 +25,8 @@ sealed class SchedulingTelemetry
             "bookings.attempts", "{booking}", "Attempts to book, by result (booked, slot_taken) and source (client, sample).");
         _cancelled = meter.CreateCounter<long>(
             "bookings.cancellations", "{booking}", "Bookings cancelled, by who cancelled them.");
+        _timeOff = meter.CreateCounter<long>(
+            "time_off.changes", "{time_off}", "Time off added and removed, by result (added, removed, invalid).");
     }
 
     /// <summary>Starts a span for one operation, under the request's span.</summary>
@@ -39,6 +42,24 @@ sealed class SchedulingTelemetry
     {
         _cancelled.Add(1, new KeyValuePair<string, object?>("by", by));
         activity?.SetTag("booking.id", booking.Id.Value);
+    }
+
+    /// <param name="result">added, removed or invalid.</param>
+    /// <param name="bookingsInside">For added: the confirmed bookings already in that time.</param>
+    public void TimeOffChanged(Activity? activity, TimeOff? timeOff, string result, int bookingsInside = 0)
+    {
+        _timeOff.Add(1, new KeyValuePair<string, object?>("result", result));
+        if (timeOff is not null)
+        {
+            activity?.SetTag("time_off.id", timeOff.Id.Value);
+            activity?.SetTag("time_off.business_wide", timeOff.StaffMemberId is null);
+        }
+        var tags = new ActivityTagsCollection();
+        if (result == "added")
+        {
+            tags["time_off.bookings_inside"] = bookingsInside;
+        }
+        activity?.AddEvent(new ActivityEvent($"time_off.{result}", tags: tags));
     }
 
     public void CalendarRead(Activity? activity, CalendarView view, int bookings)

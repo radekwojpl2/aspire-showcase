@@ -15,16 +15,22 @@ record CalendarBooking(
 
 record CalendarStaff(Guid Id, string Name);
 
+/// <summary>The part of a time off (V1-1) that falls on one day of the calendar.</summary>
+/// <param name="End">HH:mm, or 24:00 when it lasts to the end of the day.</param>
+/// <param name="StaffMemberId">Null for the whole business.</param>
+record CalendarTimeOff(
+    Guid Id, string Day, string Start, string End, Guid? StaffMemberId, string? StaffName, string? Note);
+
 /// <param name="Date">The date asked for; <paramref name="FirstDay"/> to <paramref name="LastDay"/> is what's shown.</param>
 record CalendarResponse(
     string View, string Date, string FirstDay, string LastDay, string TimeZone, IReadOnlyList<CalendarStaff> Staff,
-    IReadOnlyList<CalendarBooking> Bookings);
+    IReadOnlyList<CalendarBooking> Bookings, IReadOnlyList<CalendarTimeOff> TimeOff);
 
 static class CalendarEndpoints
 {
     /// <summary>
-    /// The owner's calendar (user story MVP-12): bookings by day or week, for everyone or one staff
-    /// member, in the business's time zone, and cancelling one (MVP-14). Only the owner's own
+    /// The owner's calendar (user story MVP-12): bookings and time off (V1-1) by day or week, for
+    /// everyone or one staff member, in the business's time zone, and cancelling a booking (MVP-14). Only the owner's own
     /// business, by the query filter.
     /// </summary>
     public static void Map(IEndpointRouteBuilder api)
@@ -72,6 +78,16 @@ static class CalendarEndpoints
             }
             var bookings = await query.OrderBy(booking => booking.Start).ToListAsync(cancellation);
 
+            // The whole business's time off, and the staff member's own when the calendar is theirs.
+            var blocks = await db.TimeOff.AsNoTracking()
+                .Where(t => t.Start < range.To && t.End > range.From)
+                .OrderBy(t => t.Start)
+                .ToListAsync(cancellation);
+            if (staffMemberId is { } shownId)
+            {
+                blocks = blocks.Where(t => t.Covers(new StaffMemberId(shownId))).ToList();
+            }
+
             var staff = await directory.StaffAsync(business.Id, cancellation);
             var services = (await directory.ServicesAsync(business.Id, cancellation)).ToDictionary(service => service.Id);
             var staffNames = staff.ToDictionary(member => member.Id, member => member.Name);
@@ -98,7 +114,8 @@ static class CalendarEndpoints
                         services.TryGetValue(booking.ServiceId, out var service) ? service.Name : "A removed service",
                         booking.Attendee.Name,
                         booking.Attendee.Email);
-                }).ToList()));
+                }).ToList(),
+                TimeOffByDay(blocks, range, timeZone, staffNames)));
         })
         .RequireAuthorization(IdentityAccess.OwnerPolicy)
         .WithName("GetCalendar");
@@ -140,6 +157,32 @@ static class CalendarEndpoints
         })
         .RequireAuthorization(IdentityAccess.OwnerPolicy)
         .WithName("CancelBooking");
+    }
+
+    // Each time off, cut into the days it covers: a week's holiday shows on every day of it.
+    static List<CalendarTimeOff> TimeOffByDay(
+        List<TimeOff> blocks, CalendarRange range, TimeZoneInfo timeZone, Dictionary<StaffMemberId, string> staffNames)
+    {
+        List<CalendarTimeOff> pieces = [];
+        for (var day = range.FirstDay; day <= range.LastDay; day = day.AddDays(1))
+        {
+            var dayRange = CalendarRange.For(day, CalendarView.Day, timeZone);
+            foreach (var block in blocks.Where(t => t.Overlaps(dayRange.From, dayRange.To)))
+            {
+                var start = block.Start > dayRange.From ? block.Start : dayRange.From;
+                pieces.Add(new CalendarTimeOff(
+                    block.Id.Value,
+                    Format(day),
+                    TimeZoneInfo.ConvertTime(start, timeZone).ToString("HH:mm", CultureInfo.InvariantCulture),
+                    block.End >= dayRange.To
+                        ? "24:00"
+                        : TimeZoneInfo.ConvertTime(block.End, timeZone).ToString("HH:mm", CultureInfo.InvariantCulture),
+                    block.StaffMemberId?.Value,
+                    block.StaffMemberId is { } id ? staffNames.GetValueOrDefault(id, "A former staff member") : null,
+                    block.Note));
+            }
+        }
+        return pieces;
     }
 
     static string Format(DateOnly day) => day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
