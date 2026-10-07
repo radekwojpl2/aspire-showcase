@@ -111,6 +111,8 @@ static class PublicBookingEndpoints
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["startsAt"] = ["Choose a time."] });
             }
 
+            activity?.SetTag("service.buffer_minutes", (int)offer.Service.Buffer.TotalMinutes);
+
             // Only a slot that's free right now, on the grid and within someone's hours, can be booked.
             var day = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(startsAt, offer.TimeZone).DateTime);
             var slot = (await availability.FreeSlotsAsync(offer, day, 1, cancellation))
@@ -124,7 +126,8 @@ static class PublicBookingEndpoints
                 await using var attempt = scopes.CreateAsyncScope();
                 attempt.ServiceProvider.GetRequiredService<BusinessScope>().BusinessId = found.Id;
                 var booking = Booking.Book(
-                    found.Id, staffMemberId, offer.Service.Id, startsAt, offer.Service.Duration, attendee, time.GetUtcNow());
+                    found.Id, staffMemberId, offer.Service.Id, startsAt, offer.Service.Duration, offer.Service.Buffer, attendee,
+                    time.GetUtcNow());
                 var result = await attempt.ServiceProvider.GetRequiredService<Bookings>().AddAsync(booking, cancellation);
                 telemetry.Booking(result, "client");
                 if (result == BookingResult.Booked)

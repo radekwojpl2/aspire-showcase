@@ -59,6 +59,13 @@ sealed class Booking
     /// <summary>When it ends: the start plus the service's duration at the time of booking.</summary>
     public DateTimeOffset End { get; private set; }
 
+    /// <summary>
+    /// Until when the staff member can't be booked again: the end plus the service's buffer at the
+    /// time of booking (user story V1-2). Clients see only the start and end; the no-overlap
+    /// constraint uses this.
+    /// </summary>
+    public DateTimeOffset OccupiedUntil { get; private set; }
+
     public Attendee Attendee { get; private set; } = null!; // Set by Book, or by EF Core when loaded.
 
     public BookingStatus Status { get; private set; }
@@ -81,17 +88,22 @@ sealed class Booking
     public void ClearEvents() => _events.Clear();
 
     /// <summary>Books a staff member for a service. Whether the time is free is the database's call.</summary>
-    /// <exception cref="DomainValidationException">The duration isn't positive.</exception>
+    /// <param name="buffer">The service's time kept free after it; zero for none.</param>
+    /// <exception cref="DomainValidationException">The duration isn't positive, or the buffer is negative.</exception>
     public static Booking Book(
         BusinessId businessId, StaffMemberId staffMemberId, ServiceId serviceId, DateTimeOffset start, TimeSpan duration,
-        Attendee attendee, DateTimeOffset now)
+        TimeSpan buffer, Attendee attendee, DateTimeOffset now)
     {
+        var errors = new DomainErrors();
         if (duration <= TimeSpan.Zero)
         {
-            var errors = new DomainErrors();
             errors.Add("serviceId", "The service has no duration.");
-            errors.ThrowIfAny();
         }
+        if (buffer < TimeSpan.Zero)
+        {
+            errors.Add("serviceId", "The service's buffer is negative.");
+        }
+        errors.ThrowIfAny();
 
         var booking = new Booking
         {
@@ -101,6 +113,7 @@ sealed class Booking
             ServiceId = serviceId,
             Start = start.ToUniversalTime(),
             End = (start + duration).ToUniversalTime(),
+            OccupiedUntil = (start + duration + buffer).ToUniversalTime(),
             Attendee = attendee,
             Status = BookingStatus.Confirmed,
             CreatedAt = now,
