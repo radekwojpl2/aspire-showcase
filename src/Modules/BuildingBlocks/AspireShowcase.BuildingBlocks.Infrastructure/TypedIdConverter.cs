@@ -1,14 +1,14 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BuildingBlocks.Infrastructure;
 
 /// <summary>
 /// Stores a typed ID, such as <c>BusinessId</c>, as the <see cref="Guid"/> it wraps: the column
 /// stays a plain uuid. Works for any record struct with a <c>Value</c> property and a constructor
 /// that takes the Guid.
 /// </summary>
-sealed class TypedIdConverter<TId>() : ValueConverter<TId, Guid>(ToGuid(), FromGuid())
+public sealed class TypedIdConverter<TId>() : ValueConverter<TId, Guid>(ToGuid(), FromGuid())
     where TId : struct
 {
     // Built as expressions, so EF Core can also translate them into SQL parameters.
