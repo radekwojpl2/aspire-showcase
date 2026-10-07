@@ -66,6 +66,15 @@ sealed class Booking
     /// </summary>
     public DateTimeOffset OccupiedUntil { get; private set; }
 
+    /// <summary>
+    /// How long before the start the client can still cancel or move it themselves: the
+    /// business's cancellation policy when it was booked (user story V1-3). Zero for none.
+    /// </summary>
+    public TimeSpan ChangeNotice { get; private set; }
+
+    /// <summary>Until when the client can still cancel or move it themselves.</summary>
+    public DateTimeOffset ClientCanChangeUntil => Start - ChangeNotice;
+
     public Attendee Attendee { get; private set; } = null!; // Set by Book, or by EF Core when loaded.
 
     public BookingStatus Status { get; private set; }
@@ -84,15 +93,27 @@ sealed class Booking
     /// <summary>What happened since it was loaded, until it's saved: see <see cref="BookingEvent"/>.</summary>
     public IReadOnlyList<BookingEvent> Events => _events;
 
+    /// <exception cref="DomainValidationException">The client's notice period has begun.</exception>
+    void ThrowIfTooLateForClient(DateTimeOffset now, string change)
+    {
+        if (now > ClientCanChangeUntil)
+        {
+            var errors = new DomainErrors();
+            errors.Add("booking", $"It's too late to {change} online: contact the business.");
+            errors.ThrowIfAny();
+        }
+    }
+
     /// <summary>Once the events are in the outbox, or when nobody should hear about them.</summary>
     public void ClearEvents() => _events.Clear();
 
     /// <summary>Books a staff member for a service. Whether the time is free is the database's call.</summary>
     /// <param name="buffer">The service's time kept free after it; zero for none.</param>
+    /// <param name="changeNotice">The business's cancellation notice, kept with the booking.</param>
     /// <exception cref="DomainValidationException">The duration isn't positive, or the buffer is negative.</exception>
     public static Booking Book(
         BusinessId businessId, StaffMemberId staffMemberId, ServiceId serviceId, DateTimeOffset start, TimeSpan duration,
-        TimeSpan buffer, Attendee attendee, DateTimeOffset now)
+        TimeSpan buffer, TimeSpan changeNotice, Attendee attendee, DateTimeOffset now)
     {
         var errors = new DomainErrors();
         if (duration <= TimeSpan.Zero)
@@ -114,6 +135,7 @@ sealed class Booking
             Start = start.ToUniversalTime(),
             End = (start + duration).ToUniversalTime(),
             OccupiedUntil = (start + duration + buffer).ToUniversalTime(),
+            ChangeNotice = changeNotice,
             Attendee = attendee,
             Status = BookingStatus.Confirmed,
             CreatedAt = now,
@@ -127,7 +149,8 @@ sealed class Booking
     /// (MVP-14). Its time is free again at once: the no-overlap constraint only counts confirmed
     /// bookings. Cancelling twice changes nothing.
     /// </summary>
-    /// <exception cref="DomainValidationException">It has already started.</exception>
+    /// <exception cref="DomainValidationException">It has already started, or a client is too late
+    /// under the cancellation policy (V1-3); the business can still cancel it.</exception>
     public void Cancel(DateTimeOffset now, CancelledBy by)
     {
         if (Status == BookingStatus.Cancelled)
@@ -139,6 +162,10 @@ sealed class Booking
             var errors = new DomainErrors();
             errors.Add("booking", "It has already started, so it can't be cancelled.");
             errors.ThrowIfAny();
+        }
+        if (by == Scheduling.CancelledBy.Client)
+        {
+            ThrowIfTooLateForClient(now, "cancel");
         }
 
         Status = BookingStatus.Cancelled;

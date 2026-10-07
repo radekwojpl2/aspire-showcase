@@ -36,6 +36,7 @@ static class SampleBookings
             foreach (var business in await directory.ListAsync(cancellation))
             {
                 scope.BusinessId = business.Id;
+                var policy = await db.PolicyOfAsync(business.Id, cancellation);
                 var timeZone = TimeZoneInfo.FindSystemTimeZoneById(business.TimeZone);
                 var services = (await directory.ServicesAsync(business.Id, cancellation))
                     .Where(service => !service.IsHidden)
@@ -73,7 +74,7 @@ static class SampleBookings
                                 {
                                     var client = Clients[random.Next(Clients.Length)];
                                     var booking = Booking.Book(
-                                        business.Id, member.Id, service.Id, start, service.Duration, service.Buffer,
+                                        business.Id, member.Id, service.Id, start, service.Duration, service.Buffer, policy.Notice,
                                         Attendee.Create(null, client, Email(client)), now);
                                     // Made-up clients at example.com: nobody gets emails about them.
                                     booking.ClearEvents();
