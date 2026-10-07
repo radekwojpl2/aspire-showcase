@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -60,7 +61,11 @@ sealed class AccessTokens(
             {
                 if (!await RefreshAsync(ticket.Properties, context.RequestAborted))
                 {
-                    return null;
+                    // Another replica may have just used the same refresh token, and saved the result.
+                    ticket = await sessions.RetrieveAsync(sessionId);
+                    return ticket is not null && IsFresh(ticket.Properties)
+                        ? ticket.Properties.GetTokenValue("access_token")
+                        : null;
                 }
                 await sessions.RenewAsync(sessionId, ticket);
             }
@@ -97,12 +102,14 @@ sealed class AccessTokens(
                 ["client_secret"] = options.ClientSecret!,
                 ["resource"] = logto.ApiResource!,
             }), cancellation);
-        if (!response.IsSuccessStatusCode)
+        if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized)
         {
             // Typically an expired or revoked refresh token: the user has to sign in again.
             logger.LogWarning("Refreshing the access token failed with {StatusCode}", (int)response.StatusCode);
             return false;
         }
+        // Any other failure is Logto's, not the session's: this request fails, the session stays.
+        response.EnsureSuccessStatusCode();
 
         var refreshed = await response.Content.ReadFromJsonAsync<TokenResponse>(cancellation);
         if (refreshed?.AccessToken is null)
