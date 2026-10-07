@@ -177,6 +177,59 @@ public sealed class BookingTests(ApiFactory api)
         Assert.Equal((booked.Id, stylist.Id, "09:00"), (kept.Id, kept.StaffMemberId, kept.Start));
     }
 
+    [Fact]
+    public async Task Changing_a_service_keeps_the_time_its_bookings_were_made_for()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        await TestBusiness.ReadAsync<BookingConfirmation>(await business.BookAsync(api, TestUser.Client(), TestBusiness.FirstSlot));
+
+        // Longer, and with a buffer, from now on.
+        await TestBusiness.ReadAsync<object>(await api.CreateClient(business.Owner).PutAsJsonAsync(
+            $"/api/businesses/mine/services/{business.ServiceId}",
+            new { name = "Haircut", durationMinutes = 90, bufferMinutes = 15, price = 50m, currency = "PLN" }));
+
+        // The booking still ends at 10:00 with no buffer, so 10:00 is free for the longer service.
+        Assert.Equal("09:00", Assert.Single((await GetCalendarAsync(business)).Bookings).Start);
+        Assert.Equal("10:00", (await GetSlotsAsync(business)).Days[0].Slots[0].Start);
+    }
+
+    [Fact]
+    public async Task A_hidden_service_has_no_free_slots_and_cannot_be_booked()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        await TestBusiness.ReadAsync<object>(
+            await api.CreateClient(business.Owner).PostAsync($"/api/businesses/mine/services/{business.ServiceId}/hide", null));
+
+        var slots = await api.CreateClient()
+            .GetAsync($"/api/public/businesses/{business.Slug}/slots?serviceId={business.ServiceId}");
+        var booked = await business.BookAsync(api, TestUser.Client(), TestBusiness.FirstSlot);
+
+        Assert.Equal(HttpStatusCode.NotFound, slots.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, booked.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_staff_member_who_does_not_do_the_service_is_not_offered_for_it()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        var owner = api.CreateClient(business.Owner);
+        var colouring = await TestBusiness.ReadAsync<IdResponse>(await owner.PostAsJsonAsync("/api/businesses/mine/services",
+            new { name = "Colouring", durationMinutes = 90, price = 120m, currency = "PLN" }));
+        var colourist = await TestBusiness.ReadAsync<IdResponse>(await owner.PostAsJsonAsync("/api/businesses/mine/staff",
+            new { name = "Cora Colourist", doesAllServices = false, serviceIds = new[] { colouring.Id } }));
+
+        var slots = await api.CreateClient().GetAsync(
+            $"/api/public/businesses/{business.Slug}/slots?serviceId={business.ServiceId}&staffMemberId={colourist.Id}");
+        var booked = await business.BookAsync(api, TestUser.Client(), TestBusiness.FirstSlot, colourist.Id);
+        var page = await TestBusiness.ReadAsync<PublicBusiness>(
+            await api.CreateClient().GetAsync($"/api/public/businesses/{business.Slug}"));
+
+        Assert.Equal(HttpStatusCode.NotFound, slots.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, booked.StatusCode);
+        Assert.DoesNotContain(page.Services.Single(service => service.Id == business.ServiceId).Staff,
+            member => member.Id == colourist.Id);
+    }
+
     async Task<PublicSlots> GetSlotsAsync(TestBusiness business) =>
         await TestBusiness.ReadAsync<PublicSlots>(await api.CreateClient()
             .GetAsync($"/api/public/businesses/{business.Slug}/slots?serviceId={business.ServiceId}"));
