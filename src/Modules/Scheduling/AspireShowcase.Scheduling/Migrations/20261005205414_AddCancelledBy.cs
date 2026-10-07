@@ -5,7 +5,7 @@
 namespace AspireShowcase.Scheduling.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCancelledBy : Migration
+    internal partial class AddCancelledBy : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -5,7 +5,7 @@
 namespace AspireShowcase.BusinessSetup.Migrations
 {
     /// <inheritdoc />
-    public partial class MoveToBusinessSetupSchema : Migration
+    internal partial class MoveToBusinessSetupSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
