@@ -19,7 +19,7 @@ sealed class BusinessScope
 /// </summary>
 /// <remarks>
 /// Owner and staff queries are scoped to one business by a global query filter on BusinessId, so
-/// a forgotten Where can't leak another business's bookings: with no business in scope, nothing
+/// a forgotten Where can't leak another business's bookings or time off: with no business in scope, nothing
 /// is found. "My bookings across all businesses" (MVP-7) crosses businesses on purpose; it will
 /// get its own query path instead of switching the filter off.
 /// </remarks>
@@ -28,6 +28,8 @@ sealed class SchedulingDbContext(DbContextOptions<SchedulingDbContext> options, 
     public const string Schema = "scheduling";
 
     public DbSet<Booking> Bookings => Set<Booking>();
+
+    public DbSet<TimeOff> TimeOff => Set<TimeOff>();
 
     // A property of the context, so EF Core reads it anew for every query.
     BusinessId? ScopedBusinessId => scope.BusinessId;
@@ -39,6 +41,7 @@ sealed class SchedulingDbContext(DbContextOptions<SchedulingDbContext> options, 
         configurationBuilder.Properties<BusinessId>().HaveConversion<TypedIdConverter<BusinessId>>();
         configurationBuilder.Properties<ServiceId>().HaveConversion<TypedIdConverter<ServiceId>>();
         configurationBuilder.Properties<StaffMemberId>().HaveConversion<TypedIdConverter<StaffMemberId>>();
+        configurationBuilder.Properties<TimeOffId>().HaveConversion<TypedIdConverter<TimeOffId>>();
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -46,6 +49,7 @@ sealed class SchedulingDbContext(DbContextOptions<SchedulingDbContext> options, 
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SchedulingDbContext).Assembly);
         modelBuilder.Entity<Booking>().HasQueryFilter(booking => booking.BusinessId == ScopedBusinessId);
+        modelBuilder.Entity<TimeOff>().HasQueryFilter(timeOff => timeOff.BusinessId == ScopedBusinessId);
 
         // MassTransit's transactional outbox and inbox: messages published while saving a booking
         // are written here in the same transaction and sent afterwards; messages consumed are
