@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch, readProblem } from './api.ts';
+import { MoveBooking } from './reschedule.tsx';
 import { signInUrl, useSession } from './session.ts';
 import { ErrorMessage } from './ui.tsx';
 
@@ -27,14 +28,16 @@ const dayLabel = (day: string) =>
     timeZone: 'UTC',
   });
 
-// User story MVP-7: a client's upcoming bookings at every business, and cancelling one. Inside
-// the business's cancellation notice (V1-3), its contact details take the place of Cancel.
+// User story MVP-7: a client's upcoming bookings at every business, and cancelling one, or moving
+// it to another time (V1-4). Inside the business's cancellation notice (V1-3), its contact details
+// take the place of both.
 export function MyBookingsPage() {
   const { signInEnabled, user } = useSession();
   const [bookings, setBookings] = useState<ClientBooking[]>();
   const [error, setError] = useState<string>();
   const [cancelling, setCancelling] = useState<string>();
   const [cancelled, setCancelled] = useState<string>();
+  const [moving, setMoving] = useState<ClientBooking>();
 
   useEffect(() => {
     if (signInEnabled && !user) window.location.replace(signInUrl('/my-bookings'));
@@ -80,57 +83,76 @@ export function MyBookingsPage() {
   };
 
   return (
-    <section className="card" aria-labelledby="my-bookings-heading">
-      <h2 id="my-bookings-heading" className="section-title">My bookings</h2>
-      <p className="field-hint" role="status">{cancelled ?? ''}</p>
-      {error && <ErrorMessage message={error} />}
-      {bookings.length === 0 ? (
-        <p className="hint">You have no upcoming bookings.</p>
-      ) : (
-        <ul className="service-list">
-          {bookings.map((booking) => (
-            <li key={booking.id} className="service-item">
-              <div className="service-summary">
-                <span className="service-name">
-                  {dayLabel(booking.date)}, {booking.start}–{booking.end}
-                </span>
-                <span>
-                  {booking.serviceName} with {booking.staffName}
-                </span>
-                <span className="hint">
-                  <a href={`/book/${booking.businessSlug}`}>{booking.businessName}</a> · times in{' '}
-                  {booking.timeZone.replace(/_/g, ' ')}
-                </span>
-              </div>
-              {Date.parse(booking.canChangeUntil) < Date.now() ? (
-                <p className="hint booking-contact">
-                  Too late to cancel online.{' '}
-                  {booking.businessContactEmail ? (
-                    <>
-                      Contact {booking.businessName}:{' '}
-                      <a href={`mailto:${booking.businessContactEmail}`}>{booking.businessContactEmail}</a>
-                    </>
-                  ) : (
-                    `Contact ${booking.businessName}.`
-                  )}
-                </p>
-              ) : (
-                <div className="service-actions">
-                  <button
-                    type="button"
-                    className="button button-secondary"
-                    disabled={cancelling === booking.id}
-                    onClick={() => void cancel(booking)}
-                  >
-                    {cancelling === booking.id ? 'Cancelling...' : 'Cancel'}
-                    <span className="visually-hidden"> {booking.serviceName} on {dayLabel(booking.date)}</span>
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+    <>
+      {moving && (
+        <MoveBooking
+          what={`${moving.serviceName} on ${dayLabel(moving.date)}, ${moving.start}`}
+          basePath={`/api/me/bookings/${moving.id}`}
+          onClose={() => setMoving(undefined)}
+          onMoved={(moved) => {
+            setMoving(undefined);
+            setCancelled(
+              `${moved.serviceName} is moved to ${dayLabel(moved.date)}, ${moved.start}. You and ${moving.businessName} get an email.`,
+            );
+            void load();
+          }}
+        />
       )}
-    </section>
+      <section className="card" aria-labelledby="my-bookings-heading">
+        <h2 id="my-bookings-heading" className="section-title">My bookings</h2>
+        <p className="field-hint" role="status">{cancelled ?? ''}</p>
+        {error && <ErrorMessage message={error} />}
+        {bookings.length === 0 ? (
+          <p className="hint">You have no upcoming bookings.</p>
+        ) : (
+          <ul className="service-list">
+            {bookings.map((booking) => (
+              <li key={booking.id} className="service-item">
+                <div className="service-summary">
+                  <span className="service-name">
+                    {dayLabel(booking.date)}, {booking.start}–{booking.end}
+                  </span>
+                  <span>
+                    {booking.serviceName} with {booking.staffName}
+                  </span>
+                  <span className="hint">
+                    <a href={`/book/${booking.businessSlug}`}>{booking.businessName}</a> · times in{' '}
+                    {booking.timeZone.replace(/_/g, ' ')}
+                  </span>
+                </div>
+                {Date.parse(booking.canChangeUntil) < Date.now() ? (
+                  <p className="hint booking-contact">
+                    Too late to cancel or move online.{' '}
+                    {booking.businessContactEmail ? (
+                      <>
+                        Contact {booking.businessName}:{' '}
+                        <a href={`mailto:${booking.businessContactEmail}`}>{booking.businessContactEmail}</a>
+                      </>
+                    ) : (
+                      `Contact ${booking.businessName}.`
+                    )}
+                  </p>
+                ) : (
+                  <div className="service-actions">
+                    <button type="button" className="button button-secondary" onClick={() => setMoving(booking)}>
+                      Change time<span className="visually-hidden"> of {booking.serviceName} on {dayLabel(booking.date)}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      disabled={cancelling === booking.id}
+                      onClick={() => void cancel(booking)}
+                    >
+                      {cancelling === booking.id ? 'Cancelling...' : 'Cancel'}
+                      <span className="visually-hidden"> {booking.serviceName} on {dayLabel(booking.date)}</span>
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </>
   );
 }
