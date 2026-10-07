@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using OpenTelemetry.Trace;
 using Testcontainers.PostgreSql;
 using Yarp.ReverseProxy.Forwarder;
 
@@ -25,6 +27,9 @@ public sealed class BffFactory : WebApplicationFactory<Program>, IAsyncLifetime
     readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17").Build();
 
     public StubWeb Web { get; } = new();
+
+    /// <summary>The spans bff exported, as its exporters would get them.</summary>
+    public ExportedSpans Spans { get; } = new();
 
     public Task InitializeAsync() => _postgres.StartAsync();
 
@@ -70,7 +75,10 @@ public sealed class BffFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("services:web:http:0", "http://web.test");
 
         builder.ConfigureTestServices(services =>
-            services.AddSingleton<IForwarderHttpClientFactory>(new StubWebClientFactory(Web)));
+        {
+            services.AddSingleton<IForwarderHttpClientFactory>(new StubWebClientFactory(Web));
+            services.AddOpenTelemetry().WithTracing(tracing => tracing.AddInMemoryExporter(Spans));
+        });
     }
 
     sealed class StubWebClientFactory(StubWeb web) : IForwarderHttpClientFactory
@@ -94,4 +102,35 @@ public sealed class StubWeb : HttpMessageHandler
         _authorization[request.RequestUri!.AbsolutePath] = request.Headers.Authorization?.ToString();
         return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
     }
+}
+
+/// <summary>Spans as they're exported, which happens when each one ends.</summary>
+public sealed class ExportedSpans : ICollection<Activity>
+{
+    readonly ConcurrentQueue<Activity> _spans = new();
+
+    /// <summary>The first exported span that matches, waiting for it to end if need be.</summary>
+    public async Task<Activity> WaitForAsync(Func<Activity, bool> match)
+    {
+        // A request's span ends after its response is sent, so it may not be here yet.
+        for (var attempt = 0; attempt < 50; attempt++)
+        {
+            if (_spans.FirstOrDefault(match) is { } span)
+            {
+                return span;
+            }
+            await Task.Delay(100);
+        }
+        throw new TimeoutException("No exported span matched.");
+    }
+
+    public IEnumerator<Activity> GetEnumerator() => _spans.GetEnumerator();
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    public void Add(Activity item) => _spans.Enqueue(item);
+    public int Count => _spans.Count;
+    public bool IsReadOnly => false;
+    public void Clear() => _spans.Clear();
+    public bool Contains(Activity item) => _spans.Contains(item);
+    public void CopyTo(Activity[] array, int arrayIndex) => _spans.CopyTo(array, arrayIndex);
+    public bool Remove(Activity item) => throw new NotSupportedException();
 }
