@@ -300,7 +300,7 @@ The script lets the Deploy workflow sign in to Azure with OIDC, so no Azure secr
 
 A managed identity is an identity in Entra ID that Azure creates for a resource and keeps the credentials of. The app asks Azure for a token at run time, so there is no password or key to store or rotate. The deployment creates one for each Container App, which uses it to pull its image from the container registry (AcrPull) and to read its connection strings from Key Vault (Key Vault Secrets User).
 
-Then start the Deploy workflow by hand: **Actions** → **Deploy** → **Run workflow** on GitHub, or `gh workflow run Deploy`. It deploys `main`; merging to `main` does not deploy by itself. After the first deploy, [set up sign-in](#set-up-sign-in).
+Then start the Deploy workflow by hand: **Actions** → **Deploy** → **Run workflow** on GitHub, or `gh workflow run Deploy`. It deploys `main`; merging to `main` does not deploy by itself. After the first deploy, and after every Deprovision, follow [Set up a clean Azure deployment](docs/azure-setup.md): the Logto setup, the GitHub settings, emails and a check that it all works.
 
 To try a branch in Azure before merging it, pick the branch and tick **Deploy the selected branch even though it isn't main**, or:
 
