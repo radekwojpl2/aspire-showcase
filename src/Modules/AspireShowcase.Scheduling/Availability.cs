@@ -9,7 +9,7 @@ sealed record Offer(BusinessInfo Business, ServiceInfo Service, IReadOnlyList<St
 
 /// <summary>
 /// Gathers what <see cref="AvailabilityCalculator"/> needs: hours from Business Setup, through its
-/// public client, and bookings from Scheduling's own tables.
+/// public client, and bookings and time off from Scheduling's own tables.
 /// </summary>
 /// <remarks>
 /// Asks Business Setup on every request for now. ddd-modules.md has Scheduling keep its own copy
@@ -64,6 +64,16 @@ sealed class Availability(IBusinessDirectory directory, SchedulingDbContext db, 
                               booking.Start < new DateTimeOffset(to) && booking.OccupiedUntil > new DateTimeOffset(from))
             .Select(booking => new BusyTime(booking.StaffMemberId, booking.Start, booking.OccupiedUntil))
             .ToListAsync(cancellation);
+
+        // Time off (V1-1) is busy time too, for everyone it covers.
+        var timeOff = await db.TimeOff.AsNoTracking()
+            .Where(t => t.Start < new DateTimeOffset(to) && t.End > new DateTimeOffset(from))
+            .ToListAsync(cancellation);
+        busy.AddRange(
+            from t in timeOff
+            from member in offer.Staff
+            where t.Covers(member.Id)
+            select new BusyTime(member.Id, t.Start, t.End));
 
         return AvailabilityCalculator.FreeSlots(
             offer.Staff.Select(member => new StaffSchedule(member.Id, member.WorkingHours)),
