@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Business Setup's domain: the business, its hours, services and staff, and their rules.
+       No EF Core, no ASP.NET Core. Internal: only the module's own projects and tests see it. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Domain\AspireShowcase.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\AspireShowcase.BusinessSetup.PublicClient\AspireShowcase.BusinessSetup.PublicClient.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="AspireShowcase.BusinessSetup" />
+    <InternalsVisibleTo Include="AspireShowcase.BusinessSetup.Tests" />
+  </ItemGroup>
+
+</Project>

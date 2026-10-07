@@ -1,7 +1,7 @@
 using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.BuildingBlocks.Domain;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Domain;
 
 /// <summary>
 /// Something a business offers, such as "Haircut, 45 min, 120 PLN": an aggregate of Business

@@ -1,6 +1,6 @@
 using AspireShowcase.BuildingBlocks.Domain;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Domain;
 
 /// <summary>One stretch of a weekday, in the business's local time: [Opens, Closes).</summary>
 sealed record WeeklyPeriod(DayOfWeek Day, TimeOnly Opens, TimeOnly Closes);

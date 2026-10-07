@@ -1,7 +1,7 @@
 using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.BuildingBlocks.Domain;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Domain;
 
 /// <summary>
 /// A business on the platform, booked at /book/{Slug}: the aggregate root of Business Setup.
@@ -31,7 +31,7 @@ sealed class Business
     public string TimeZone { get; private set; } = BusinessTimeZone.Default;
 
     /// <summary>
-    /// Where clients can reach the business; see <see cref="BusinessSetup.ContactEmail"/>. Required
+    /// Where clients can reach the business; see <see cref="Domain.ContactEmail"/>. Required
     /// for a new business, so null only for one started before it was.
     /// </summary>
     public string? ContactEmail { get; private set; }
@@ -116,7 +116,7 @@ sealed class Business
 
     static void CheckContactEmail(string? contactEmail, DomainErrors errors)
     {
-        if (BusinessSetup.ContactEmail.Problem(contactEmail) is { } problem)
+        if (Domain.ContactEmail.Problem(contactEmail) is { } problem)
         {
             errors.Add("contactEmail", problem);
         }
