@@ -7,6 +7,7 @@ import {
   type CalendarBooking,
   type CalendarView as View,
 } from './calendar-api.ts';
+import { MoveBooking } from './reschedule.tsx';
 import { signInUrl, useSession } from './session.ts';
 import { ErrorMessage } from './ui.tsx';
 
@@ -44,6 +45,7 @@ export function BookingsPage() {
   const [reload, setReload] = useState(0);
   const [cancelling, setCancelling] = useState<string>();
   const [cancelled, setCancelled] = useState<string>();
+  const [moving, setMoving] = useState<CalendarBooking>();
 
   useEffect(() => {
     if (signInEnabled && !user) window.location.replace(signInUrl('/bookings'));
@@ -160,6 +162,20 @@ export function BookingsPage() {
       </p>
       <p className="field-hint" role="status">{cancelled ?? ''}</p>
       {error && <ErrorMessage message={error} />}
+      {moving && (
+        // V1-4: the owner moves a booking, with whoever is free or someone else; the client gets an email.
+        <MoveBooking
+          what={`${moving.clientName}'s ${moving.serviceName}, ${label(moving.day, { weekday: 'short', day: 'numeric', month: 'short' })} ${moving.start}`}
+          basePath={`/api/businesses/mine/bookings/${moving.id}`}
+          staff={calendar.staff}
+          onClose={() => setMoving(undefined)}
+          onMoved={(moved) => {
+            setMoving(undefined);
+            setCancelled(`${moving.clientName}'s booking is moved to ${moved.date}, ${moved.start} with ${moved.staffName}; they get an email.`);
+            setReload((count) => count + 1);
+          }}
+        />
+      )}
 
       <div className={`calendar calendar-${view}`}>
         {days.map((day) => {
@@ -193,6 +209,13 @@ export function BookingsPage() {
                       <span className="calendar-client">{booking.clientName}</span>
                       <span className="hint">{booking.serviceName} · {booking.staffName}</span>
                       <a className="calendar-email" href={`mailto:${booking.clientEmail}`}>{booking.clientEmail}</a>
+                      <button
+                        type="button"
+                        className="button button-secondary calendar-cancel"
+                        onClick={() => setMoving(booking)}
+                      >
+                        Move<span className="visually-hidden"> {booking.clientName}, {booking.start}</span>
+                      </button>
                       <button
                         type="button"
                         className="button button-secondary calendar-cancel"

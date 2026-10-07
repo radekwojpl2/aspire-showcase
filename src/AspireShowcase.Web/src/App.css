@@ -516,6 +516,15 @@
   overflow-wrap: anywhere;
 }
 
+/* Moving a booking to another time (V1-4) */
+.move-booking {
+  border: 2px solid var(--accent-gradient-start);
+}
+
+.move-booking .slot-days {
+  margin-top: 0.5rem;
+}
+
 /* Time off (V1-1): nobody can book it */
 .calendar-time-off {
   border-left-color: var(--text-tertiary);

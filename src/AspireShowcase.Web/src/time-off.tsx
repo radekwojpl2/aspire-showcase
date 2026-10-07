@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { apiFetch, readProblem } from './api.ts';
 import { cancelBooking, confirmCancel } from './calendar-api.ts';
+import { MoveBooking } from './reschedule.tsx';
 import { signInUrl, useSession } from './session.ts';
 import { ErrorMessage } from './ui.tsx';
 
@@ -82,7 +83,7 @@ const emptyDraft = (): Draft => ({
 });
 
 // User story V1-1: the owner blocks holidays and breaks, for the business or one staff member.
-// Bookings already in a blocked time stay, listed here for the owner to cancel.
+// Bookings already in a blocked time stay, listed here for the owner to cancel or move (V1-4).
 export function TimeOffPage() {
   const { signInEnabled, user } = useSession();
   const [load, setLoad] = useState<Load>('loading');
@@ -96,6 +97,7 @@ export function TimeOffPage() {
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string>();
   const [status, setStatus] = useState('');
+  const [moving, setMoving] = useState<TimeOffBooking>();
   // Bumped to load the list again, after a cancellation.
   const [reload, setReload] = useState(0);
 
@@ -222,6 +224,19 @@ export function TimeOffPage() {
 
   return (
     <>
+      {moving && (
+        <MoveBooking
+          what={`${moving.clientName}'s ${moving.serviceName}, ${dayLabel(moving.day)} ${moving.start}`}
+          basePath={`/api/businesses/mine/bookings/${moving.id}`}
+          staff={staff}
+          onClose={() => setMoving(undefined)}
+          onMoved={(moved) => {
+            setMoving(undefined);
+            setStatus(`${moving.clientName}'s booking is moved to ${dayLabel(moved.date)}, ${moved.start}; they get an email.`);
+            setReload((count) => count + 1);
+          }}
+        />
+      )}
       <section className="card" aria-labelledby="time-off-heading">
         <h2 id="time-off-heading" className="section-title">Time off</h2>
         {timeOff.length === 0 ? (
@@ -238,9 +253,7 @@ export function TimeOffPage() {
                   </span>
                   {block.bookings.length > 0 && (
                     <div className="time-off-bookings">
-                      <p className="field-error">
-                        Still booked in this time: cancel these, or contact the clients to move them.
-                      </p>
+                      <p className="field-error">Still booked in this time: move or cancel these.</p>
                       <ul className="calendar-bookings">
                         {block.bookings.map((booking) => (
                           <li key={booking.id} className="calendar-booking">
@@ -249,6 +262,13 @@ export function TimeOffPage() {
                             </span>
                             <span className="calendar-client">{booking.clientName}</span>
                             <span className="hint">{booking.serviceName} · {booking.staffName}</span>
+                            <button
+                              type="button"
+                              className="button button-secondary calendar-cancel"
+                              onClick={() => setMoving(booking)}
+                            >
+                              Move<span className="visually-hidden"> {booking.clientName}, {booking.start}</span>
+                            </button>
                             <button
                               type="button"
                               className="button button-secondary calendar-cancel"
