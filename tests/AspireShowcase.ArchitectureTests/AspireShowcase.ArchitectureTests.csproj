@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Checks the modules' boundaries on the compiled assemblies: who references whom, and what
-       each one makes public. Referencing the API host brings in every module's assemblies. -->
+       each one makes public. Every project under src/Modules is referenced, so each one is checked
+       even before the API host uses it. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -23,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\AspireShowcase.Api\AspireShowcase.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\**\*.csproj" />
   </ItemGroup>
 
   <ItemGroup>
