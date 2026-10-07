@@ -49,6 +49,7 @@ tests/
 ├── AspireShowcase.Api.IntegrationTests/ # the API over HTTP against PostgreSQL in a container (Testcontainers)
 ├── AspireShowcase.Bff.IntegrationTests/ # bff over HTTP, with web replaced by a stub (Testcontainers)
 ├── AspireShowcase.BusinessSetup.Tests/  # xUnit tests of Business Setup's domain rules
+├── AspireShowcase.Notifications.Tests/  # xUnit tests of which emails a booking notice sends
 └── AspireShowcase.Scheduling.Tests/     # xUnit tests of Scheduling's domain rules
 ```
 
