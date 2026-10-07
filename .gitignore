@@ -50,3 +50,7 @@ appsettings.*.local.json
 logs/
 .DS_Store
 Thumbs.db
+
+# Structurizr Lite's local state and its JSON export of docs/architecture/workspace.dsl
+docs/architecture/.structurizr/
+docs/architecture/workspace.json
