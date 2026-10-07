@@ -216,7 +216,7 @@ Then open the app and click **Start your business**: it takes you to Logto's sig
 
 ## Custom telemetry
 
-On top of what ASP.NET Core, the HTTP clients and Npgsql record by themselves, the API's modules and the notifications service record their own spans, span events and metrics. The notifications service uses its application name for the source and the meter, which is what the ServiceDefaults project subscribes to; an API module uses its own name and subscribes to it when the host adds the module. Names, links and messages that users type are never recorded.
+On top of what ASP.NET Core, the HTTP clients and Npgsql record by themselves, the API's modules, the notifications service and `bff` record their own spans, span events and metrics. The notifications service and `bff` use their application name for the source and the meter, which is what the ServiceDefaults project subscribes to; an API module uses its own name and subscribes to it when the host adds the module. Names, links and messages that users type are never recorded.
 
 The API's Business Setup module, `AspireShowcase.BusinessSetup`, in `src/Modules/AspireShowcase.BusinessSetup/BusinessTelemetry.cs`:
 
@@ -249,6 +249,12 @@ The notifications service, in `src/AspireShowcase.Notifications/NotificationTele
 | `notifications.stored` | Gauge | Notifications currently kept in memory |
 | `notifications.digested` | Counter | Notifications summed up by the scheduled digest |
 | `notifications.emails` | Counter | Booking emails (`kind` tag; `result` tag: `sent`, `skipped`) |
+
+`bff`, in `src/AspireShowcase.Bff/Sessions/SessionTelemetry.cs`:
+
+| Metric | Kind | Measures |
+|---|---|---|
+| `sessions.ended` | Counter | Sessions ended because `bff` couldn't get an access token for them (`reason` tag: `refresh_failed`, `session_not_found`) |
 
 MassTransit records its own spans and metrics too, so a booking's trace runs from the request through the outbox and RabbitMQ to the email being sent.
 
