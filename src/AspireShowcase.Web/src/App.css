@@ -384,6 +384,14 @@
   border: 1px solid var(--surface-border);
 }
 
+/* My bookings: the business's contact, where Cancel was (V1-3) */
+.booking-contact {
+  margin: 0;
+  max-width: 18rem;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 .hidden-service .service-name {
   color: var(--text-tertiary);
 }

@@ -14,6 +14,9 @@ type ClientBooking = {
   start: string;
   end: string;
   timeZone: string;
+  // V1-3: after this instant, only the business can change it.
+  canChangeUntil: string;
+  businessContactEmail: string | null;
 };
 
 const dayLabel = (day: string) =>
@@ -24,7 +27,8 @@ const dayLabel = (day: string) =>
     timeZone: 'UTC',
   });
 
-// User story MVP-7: a client's upcoming bookings at every business, and cancelling one.
+// User story MVP-7: a client's upcoming bookings at every business, and cancelling one. Inside
+// the business's cancellation notice (V1-3), its contact details take the place of Cancel.
 export function MyBookingsPage() {
   const { signInEnabled, user } = useSession();
   const [bookings, setBookings] = useState<ClientBooking[]>();
@@ -98,17 +102,31 @@ export function MyBookingsPage() {
                   {booking.timeZone.replace(/_/g, ' ')}
                 </span>
               </div>
-              <div className="service-actions">
-                <button
-                  type="button"
-                  className="button button-secondary"
-                  disabled={cancelling === booking.id}
-                  onClick={() => void cancel(booking)}
-                >
-                  {cancelling === booking.id ? 'Cancelling...' : 'Cancel'}
-                  <span className="visually-hidden"> {booking.serviceName} on {dayLabel(booking.date)}</span>
-                </button>
-              </div>
+              {Date.parse(booking.canChangeUntil) < Date.now() ? (
+                <p className="hint booking-contact">
+                  Too late to cancel online.{' '}
+                  {booking.businessContactEmail ? (
+                    <>
+                      Contact {booking.businessName}:{' '}
+                      <a href={`mailto:${booking.businessContactEmail}`}>{booking.businessContactEmail}</a>
+                    </>
+                  ) : (
+                    `Contact ${booking.businessName}.`
+                  )}
+                </p>
+              ) : (
+                <div className="service-actions">
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    disabled={cancelling === booking.id}
+                    onClick={() => void cancel(booking)}
+                  >
+                    {cancelling === booking.id ? 'Cancelling...' : 'Cancel'}
+                    <span className="visually-hidden"> {booking.serviceName} on {dayLabel(booking.date)}</span>
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
