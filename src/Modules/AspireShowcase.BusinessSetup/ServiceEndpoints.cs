@@ -6,10 +6,14 @@ using Npgsql;
 
 namespace AspireShowcase.BusinessSetup;
 
-/// <summary>A service as the API takes it: the duration in minutes, the price as an amount and an ISO currency.</summary>
-record ServiceBody(string? Name, int? DurationMinutes, decimal? Price, string? Currency);
+/// <summary>
+/// A service as the API takes it: the duration and buffer in minutes (no buffer when left out),
+/// the price as an amount and an ISO currency.
+/// </summary>
+record ServiceBody(string? Name, int? DurationMinutes, int? BufferMinutes, decimal? Price, string? Currency);
 
-record ServiceResponse(Guid Id, string Name, int DurationMinutes, decimal Price, string Currency, bool IsHidden);
+record ServiceResponse(
+    Guid Id, string Name, int DurationMinutes, int BufferMinutes, decimal Price, string Currency, bool IsHidden);
 
 /// <summary>
 /// The owner's services (user story MVP-10), under /businesses/mine/services. Every request is
@@ -52,7 +56,8 @@ static class ServiceEndpoints
             try
             {
                 service = Service.Add(
-                    business.Id, request.Name, request.DurationMinutes, request.Price, request.Currency, time.GetUtcNow());
+                    business.Id, request.Name, request.DurationMinutes, request.BufferMinutes, request.Price, request.Currency,
+                    time.GetUtcNow());
             }
             catch (DomainValidationException exception)
             {
@@ -85,7 +90,7 @@ static class ServiceEndpoints
 
             try
             {
-                service.Change(request.Name, request.DurationMinutes, request.Price, request.Currency);
+                service.Change(request.Name, request.DurationMinutes, request.BufferMinutes, request.Price, request.Currency);
             }
             catch (DomainValidationException exception)
             {
@@ -173,6 +178,6 @@ static class ServiceEndpoints
     }
 
     static ServiceResponse ToResponse(Service service) => new(
-        service.Id.Value, service.Name, (int)service.Duration.TotalMinutes, service.Price.Amount, service.Price.Currency,
-        service.IsHidden);
+        service.Id.Value, service.Name, (int)service.Duration.TotalMinutes, (int)service.Buffer.TotalMinutes, service.Price.Amount,
+        service.Price.Currency, service.IsHidden);
 }

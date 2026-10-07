@@ -55,6 +55,6 @@ sealed class BusinessDirectory(BusinessSetupDbContext db) : IBusinessDirectory
             .Where(service => service.BusinessId == businessId)
             .OrderBy(service => service.Name)
             .Select(service => new ServiceInfo(
-                service.Id, service.Name, service.Duration, service.Price.Amount, service.Price.Currency, service.IsHidden))
+                service.Id, service.Name, service.Duration, service.Buffer, service.Price.Amount, service.Price.Currency, service.IsHidden))
             .ToListAsync(cancellation);
 }
