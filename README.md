@@ -341,6 +341,7 @@ Deploy publishes two workbooks to `insights` → Workbooks.
 | Overview | Requests, latency, slowest endpoints |
 | Failures | 5xx, exceptions, error logs |
 | Database | PostgreSQL queries, duration, failures |
-| Notifications | Received notifications, the digest job and its span links |
+| Bookings | Bookings made and refused, cancellations, businesses started and turned down, setup changes |
+| Notifications | Booking emails sent and skipped, messages on the bus and failed ones, received notifications, the digest job and its span links |
 | Runtime | Memory, thread pool, instances, restarts |
 | Trace lookup | Everything for one pasted trace ID or span ID |
