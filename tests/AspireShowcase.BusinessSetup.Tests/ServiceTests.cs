@@ -9,7 +9,7 @@ public class ServiceTests
 {
     static readonly BusinessId BusinessId = BusinessId.New();
 
-    static Service Haircut() => Service.Add(BusinessId, "Haircut", 45, 120m, "PLN", DateTimeOffset.UtcNow);
+    static Service Haircut() => Service.Add(BusinessId, "Haircut", 45, null, 120m, "PLN", DateTimeOffset.UtcNow);
 
     static IReadOnlyDictionary<string, string[]> ErrorsOf(Action change) =>
         Assert.Throws<DomainValidationException>(change).Errors;
@@ -17,7 +17,7 @@ public class ServiceTests
     [Fact]
     public void A_new_service_has_its_name_duration_and_price_and_is_offered()
     {
-        var service = Service.Add(BusinessId, "  Haircut ", 45, 120m, "PLN", DateTimeOffset.UtcNow);
+        var service = Service.Add(BusinessId, "  Haircut ", 45, null, 120m, "PLN", DateTimeOffset.UtcNow);
 
         Assert.Equal("Haircut", service.Name);
         Assert.Equal(TimeSpan.FromMinutes(45), service.Duration);
@@ -32,7 +32,7 @@ public class ServiceTests
     [InlineData(8 * 60 + 5)]
     public void Durations_come_in_5_minute_steps_up_to_8_hours(int minutes)
     {
-        var errors = ErrorsOf(() => Service.Add(BusinessId, "Haircut", minutes, 120m, "PLN", DateTimeOffset.UtcNow));
+        var errors = ErrorsOf(() => Service.Add(BusinessId, "Haircut", minutes, null, 120m, "PLN", DateTimeOffset.UtcNow));
 
         Assert.True(errors.ContainsKey("durationMinutes"));
     }
@@ -43,15 +43,43 @@ public class ServiceTests
     [InlineData(8 * 60)]
     public void Durations_on_the_steps_are_accepted(int minutes)
     {
-        var service = Service.Add(BusinessId, "Haircut", minutes, 120m, "PLN", DateTimeOffset.UtcNow);
+        var service = Service.Add(BusinessId, "Haircut", minutes, null, 120m, "PLN", DateTimeOffset.UtcNow);
 
         Assert.Equal(TimeSpan.FromMinutes(minutes), service.Duration);
     }
 
     [Fact]
+    public void A_service_has_no_buffer_unless_given_one()
+    {
+        Assert.Equal(TimeSpan.Zero, Haircut().Buffer);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(10)]
+    [InlineData(2 * 60)]
+    public void Buffers_come_in_5_minute_steps_up_to_2_hours(int minutes)
+    {
+        var service = Service.Add(BusinessId, "Haircut", 45, minutes, 120m, "PLN", DateTimeOffset.UtcNow);
+
+        Assert.Equal(TimeSpan.FromMinutes(minutes), service.Buffer);
+    }
+
+    [Theory]
+    [InlineData(-5)]
+    [InlineData(7)]
+    [InlineData(2 * 60 + 5)]
+    public void Other_buffers_are_refused(int minutes)
+    {
+        var errors = ErrorsOf(() => Service.Add(BusinessId, "Haircut", 45, minutes, 120m, "PLN", DateTimeOffset.UtcNow));
+
+        Assert.True(errors.ContainsKey("bufferMinutes"));
+    }
+
+    [Fact]
     public void A_free_service_costs_0()
     {
-        var service = Service.Add(BusinessId, "Consultation", 15, 0m, "EUR", DateTimeOffset.UtcNow);
+        var service = Service.Add(BusinessId, "Consultation", 15, null, 0m, "EUR", DateTimeOffset.UtcNow);
 
         Assert.Equal(0m, service.Price.Amount);
     }
@@ -62,7 +90,7 @@ public class ServiceTests
     [InlineData(100_000.01)]
     public void A_price_is_from_0_with_at_most_two_decimals(double amount)
     {
-        var errors = ErrorsOf(() => Service.Add(BusinessId, "Haircut", 45, (decimal)amount, "PLN", DateTimeOffset.UtcNow));
+        var errors = ErrorsOf(() => Service.Add(BusinessId, "Haircut", 45, null, (decimal)amount, "PLN", DateTimeOffset.UtcNow));
 
         Assert.True(errors.ContainsKey("price"));
     }
@@ -73,7 +101,7 @@ public class ServiceTests
     [InlineData("XYZ")]
     public void The_currency_has_to_be_an_ISO_4217_code(string? currency)
     {
-        var errors = ErrorsOf(() => Service.Add(BusinessId, "Haircut", 45, 120m, currency, DateTimeOffset.UtcNow));
+        var errors = ErrorsOf(() => Service.Add(BusinessId, "Haircut", 45, null, 120m, currency, DateTimeOffset.UtcNow));
 
         Assert.True(errors.ContainsKey("currency"));
     }
@@ -81,7 +109,7 @@ public class ServiceTests
     [Fact]
     public void Every_problem_is_reported_at_once()
     {
-        var errors = ErrorsOf(() => Service.Add(BusinessId, "", 7, null, "XYZ", DateTimeOffset.UtcNow));
+        var errors = ErrorsOf(() => Service.Add(BusinessId, "", 7, null, null, "XYZ", DateTimeOffset.UtcNow));
 
         Assert.Equal(["currency", "durationMinutes", "name", "price"], errors.Keys.Order());
     }
@@ -91,7 +119,7 @@ public class ServiceTests
     {
         var service = Haircut();
 
-        service.Change("Long haircut", 60, 150m, "PLN");
+        service.Change("Long haircut", 60, null, 150m, "PLN");
 
         Assert.Equal("Long haircut", service.Name);
         Assert.Equal(TimeSpan.FromMinutes(60), service.Duration);
@@ -103,7 +131,7 @@ public class ServiceTests
     {
         var service = Haircut();
 
-        ErrorsOf(() => service.Change("Long haircut", 61, 150m, "PLN"));
+        ErrorsOf(() => service.Change("Long haircut", 61, null, 150m, "PLN"));
 
         Assert.Equal("Haircut", service.Name);
         Assert.Equal(TimeSpan.FromMinutes(45), service.Duration);

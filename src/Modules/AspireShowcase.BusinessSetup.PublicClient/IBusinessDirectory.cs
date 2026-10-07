@@ -42,6 +42,7 @@ public sealed record StaffInfo(
 /// <summary>A stretch of a weekday, in the business's local time: [Start, End).</summary>
 public sealed record WorkingPeriod(DayOfWeek Day, TimeOnly Start, TimeOnly End);
 
+/// <param name="Buffer">Kept free after each booking, on top of <paramref name="Duration"/>; clients don't see it.</param>
 /// <param name="Price">Shown to clients, in <paramref name="Currency"/> (ISO 4217); nothing is paid online.</param>
 public sealed record ServiceInfo(
-    ServiceId Id, string Name, TimeSpan Duration, decimal Price, string Currency, bool IsHidden);
+    ServiceId Id, string Name, TimeSpan Duration, TimeSpan Buffer, decimal Price, string Currency, bool IsHidden);
