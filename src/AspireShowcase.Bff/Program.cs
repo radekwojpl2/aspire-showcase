@@ -32,6 +32,7 @@ using (var scope = app.Services.CreateScope())
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseCsrfHeaderCheck();
+app.UseAccessTokens();
 
 app.MapBffEndpoints();
 app.MapReverseProxy();

@@ -14,7 +14,8 @@ using Microsoft.Extensions.Options;
 /// Logto rotates refresh tokens: a used one stops working, so two requests refreshing at
 /// once would fail the second. Refreshes are serialized per session, and a request that
 /// waited reads the session again to pick up the other one's result. With several bff
-/// replicas two can still race; the loser's request goes to web without a token and gets 401.
+/// replicas two can still race: the loser reads the session again too, but if the winner
+/// hasn't saved its result yet, the loser's browser is signed out.
 /// </remarks>
 sealed class AccessTokens(
     ITicketStore sessions,
