@@ -34,7 +34,7 @@ record BookingConfirmation(Guid Id, string ServiceName, string StaffName, string
 /// </summary>
 static class PublicBookingEndpoints
 {
-    const string SlotTaken = "This time was just taken.";
+    public const string SlotTaken = "This time was just taken.";
 
     public static void Map(IEndpointRouteBuilder api)
     {
@@ -160,9 +160,9 @@ static class PublicBookingEndpoints
         .WithName("BookSlot");
     }
 
-    static StaffMemberId? ToStaffId(Guid? id) => id is { } value ? new StaffMemberId(value) : null;
+    public static StaffMemberId? ToStaffId(Guid? id) => id is { } value ? new StaffMemberId(value) : null;
 
-    static PublicSlots ToPublicSlots(IReadOnlyList<FreeSlot> slots, Offer offer) => new(
+    public static PublicSlots ToPublicSlots(IReadOnlyList<FreeSlot> slots, Offer offer) => new(
         offer.Business.TimeZone,
         slots
             .Select(slot => (Slot: slot, Local: TimeZoneInfo.ConvertTime(slot.Start, offer.TimeZone)))
@@ -173,7 +173,7 @@ static class PublicBookingEndpoints
                     .ToList()))
             .ToList());
 
-    static BookingConfirmation ToConfirmation(Booking booking, Offer offer, StaffMemberId staffMemberId)
+    public static BookingConfirmation ToConfirmation(Booking booking, Offer offer, StaffMemberId staffMemberId)
     {
         var start = TimeZoneInfo.ConvertTime(booking.Start, offer.TimeZone);
         var end = TimeZoneInfo.ConvertTime(booking.End, offer.TimeZone);

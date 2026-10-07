@@ -104,7 +104,7 @@ static class ClientBookingEndpoints
     /// It switches the per-business query filter off here, and only here, and scopes the query to
     /// the client's own user ID instead.
     /// </summary>
-    static IQueryable<Booking> OfClient(SchedulingDbContext db, string userId) =>
+    public static IQueryable<Booking> OfClient(SchedulingDbContext db, string userId) =>
         db.Bookings.IgnoreQueryFilters().Where(booking => booking.Attendee.UserId == userId);
 
     static string UserId(ClaimsPrincipal user) =>

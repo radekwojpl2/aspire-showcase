@@ -83,6 +83,9 @@ sealed class Booking
     /// <summary>Until when the client can still cancel or move it themselves.</summary>
     public DateTimeOffset ClientCanChangeUntil => Start - ChangeNotice;
 
+    /// <summary>Whether the client can still cancel or move it themselves.</summary>
+    public bool ClientCanChange(DateTimeOffset now) => now <= ClientCanChangeUntil;
+
     public Attendee Attendee { get; private set; } = null!; // Set by Book, or by EF Core when loaded.
 
     public BookingStatus Status { get; private set; }
@@ -148,7 +151,7 @@ sealed class Booking
     /// <exception cref="DomainValidationException">The client's notice period has begun.</exception>
     void ThrowIfTooLateForClient(DateTimeOffset now, string change)
     {
-        if (now > ClientCanChangeUntil)
+        if (!ClientCanChange(now))
         {
             var errors = new DomainErrors();
             errors.Add("booking", $"It's too late to {change} online: contact the business.");
