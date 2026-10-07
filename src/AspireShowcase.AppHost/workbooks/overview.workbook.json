@@ -4,7 +4,7 @@
     {
       "type": 1,
       "content": {
-        "json": "# Aspire showcase\nRequests, OpenTelemetry metrics, browser telemetry and logs for the `web` Container App. Deployed from `src/AspireShowcase.AppHost/workbooks`; changes made in the portal are overwritten on the next deploy."
+        "json": "# Aspire showcase\nRequests, OpenTelemetry metrics, browser telemetry, sign-in and logs, across the app's Container Apps. Deployed from `src/AspireShowcase.AppHost/workbooks`; changes made in the portal are overwritten on the next deploy."
       },
       "name": "title"
     },
@@ -90,6 +90,14 @@
             "linkTarget": "parameter",
             "linkLabel": "Browser",
             "subTarget": "browser",
+            "style": "link"
+          },
+          {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b1b04",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Sign-in",
+            "subTarget": "signin",
             "style": "link"
           },
           {
@@ -428,6 +436,96 @@
         "value": "browser"
       },
       "name": "browser-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "Sign-in through `bff` and Logto. `bff` keeps each user's tokens in a session and refreshes the access token shortly before it expires. When it can't get a token for a session, it ends the session and the app sends the user to sign in again: `refresh_failed` when Logto rejected the refresh token, `session_not_found` when the cookie couldn't be read or its session is gone from `bff-db`. A failed refresh because Logto itself failed doesn't end the session; it shows as a failed call to Logto."
+            },
+            "name": "signin-help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"sessions.ended\"\n| summarize sessions = sum(valueSum) by reason = tostring(customDimensions.reason), bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Sessions ended, by reason (sessions.ended, counter)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "signin-sessions-ended"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "traces\n| where message startswith \"Refreshing the access token failed\"\n| summarize refreshes = count() by status = tostring(customDimensions.StatusCode), bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Refresh tokens Logto rejected, by status code (bff's warning log)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "signin-refresh-rejected"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "requests\n| where client_Type != \"Browser\" and (url has \"/bff/\" or url has \"/signin-oidc\" or url has \"/signout-callback-oidc\")\n| extend path = tostring(parse_url(url).Path)\n| summarize requests = count(), failed = countif(success == false) by path, resultCode\n| order by requests desc",
+              "size": 0,
+              "title": "Sign-ins, sign-outs and session checks (bff endpoints)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "signin-flow"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and (target has \"logto\" or data has \"logto\")\n| extend path = tostring(parse_url(data).Path)\n| summarize calls = count(), failed = countif(success == false), avg_ms = round(avg(duration), 2) by service = cloud_RoleName, path, resultCode\n| order by calls desc",
+              "size": 0,
+              "title": "Calls to Logto: metadata, tokens and refreshes",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "signin-logto-calls"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "signin"
+      },
+      "name": "signin-group"
     },
     {
       "type": 12,
