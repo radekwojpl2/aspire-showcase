@@ -140,7 +140,7 @@ dotnet user-secrets set Parameters:email-sender "Bookings <bookings@yourdomain.c
 
 In Azure, set them on the `production` environment: the `RESEND_API_KEY` secret and the `EMAIL_SENDER` variable.
 
-Until both are set, booking works as usual, and each email is skipped: logged as a warning and counted in `notifications.emails` with `result=skipped`. A skipped email isn't kept for later, so bookings made before the settings were set never get theirs.
+Until both are set, booking works as usual, and each email is skipped: logged as a warning and counted in `notifications.emails` with `result=skipped`. A skipped email isn't kept for later, so bookings made before the settings were set never get theirs. An email Resend refuses for good, such as to an address it won't send to (it refuses `example.com`), is logged as a warning and counted with `result=refused`, not retried, and the booking's other emails still go out.
 
 The sender's domain must be verified in Resend. Resend's test sender, `onboarding@resend.dev`, only delivers to the address of your Resend account; for anyone else Resend refuses the email, and the message is retried and ends up in the `_error` queue. The service also keeps the latest 50 notifications in memory.
 
@@ -252,7 +252,7 @@ The notifications service, in `src/AspireShowcase.Notifications/NotificationTele
 | `notifications.message.length` | Histogram | Characters in the messages received |
 | `notifications.stored` | Gauge | Notifications currently kept in memory |
 | `notifications.digested` | Counter | Notifications summed up by the scheduled digest |
-| `notifications.emails` | Counter | Booking emails (`kind` tag; `result` tag: `sent`, `skipped`) |
+| `notifications.emails` | Counter | Booking emails (`kind` tag; `result` tag: `sent`, `skipped`, `refused`) |
 
 `bff`, in `src/AspireShowcase.Bff/Sessions/SessionTelemetry.cs`:
 

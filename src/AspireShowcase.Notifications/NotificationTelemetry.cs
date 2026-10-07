@@ -33,7 +33,7 @@ sealed class NotificationTelemetry
         _digested = meter.CreateCounter<long>(
             "notifications.digested", "{notification}", "Notifications summed up by the scheduled digest.");
         _emails = meter.CreateCounter<long>(
-            "notifications.emails", "{email}", "Booking emails, by kind and result (sent, skipped).");
+            "notifications.emails", "{email}", "Booking emails, by kind and result (sent, skipped, refused).");
 
         // The default buckets are meant for milliseconds; these fit a message of up to 300 characters.
         _messageLength = meter.CreateHistogram(
@@ -65,7 +65,7 @@ sealed class NotificationTelemetry
     }
 
     /// <param name="kind">confirmation, new-booking, cancelled-by-client or cancelled-by-business.</param>
-    /// <param name="result">sent, or skipped when email isn't set up.</param>
+    /// <param name="result">sent, skipped when email isn't set up, or refused by Resend for good.</param>
     public void Email(Activity? activity, string kind, string result)
     {
         _emails.Add(1, new KeyValuePair<string, object?>("kind", kind), new KeyValuePair<string, object?>("result", result));
