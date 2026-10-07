@@ -125,6 +125,58 @@ public sealed class BookingTests(ApiFactory api)
         Assert.Equal(HttpStatusCode.NotFound, cancelTheirs.StatusCode);
     }
 
+    [Fact]
+    public async Task Changing_the_opening_hours_keeps_the_bookings_made()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        var client = TestUser.Client();
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
+            await business.BookAsync(api, client, TestBusiness.FirstSlot));
+
+        // Closed on Mondays from now on: only new bookings follow the hours.
+        await TestBusiness.ReadAsync<object>(await api.CreateClient(business.Owner).PutAsJsonAsync(
+            "/api/businesses/mine/opening-hours", new
+            {
+                timeZone = TestBusiness.TimeZone,
+                periods = new[] { new { day = "tuesday", opens = "09:00", closes = "12:00" } },
+            }));
+
+        Assert.Equal("2026-11-03", (await GetSlotsAsync(business)).Days[0].Date);
+        var kept = Assert.Single((await GetCalendarAsync(business)).Bookings);
+        Assert.Equal((booked.Id, "2026-11-02", "09:00"), (kept.Id, kept.Day, kept.Start));
+        var mine = await TestBusiness.ReadAsync<List<ClientBooking>>(await api.CreateClient(client).GetAsync("/api/me/bookings"));
+        Assert.Equal((booked.Id, "2026-11-02", "09:00"), (Assert.Single(mine).Id, mine[0].Date, mine[0].Start));
+    }
+
+    [Fact]
+    public async Task Changing_working_hours_keeps_the_staff_member_bookings()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        var owner = api.CreateClient(business.Owner);
+        var stylist = await TestBusiness.ReadAsync<IdResponse>(await owner.PostAsJsonAsync("/api/businesses/mine/staff", new
+        {
+            name = "Sam Stylist",
+            doesAllServices = true,
+            workingHours = new[] { new { day = "monday", opens = "09:00", closes = "12:00" } },
+        }));
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
+            await business.BookAsync(api, TestUser.Client(), TestBusiness.FirstSlot, stylist.Id));
+
+        // From 11:00 only from now on, which leaves the booking at 09:00 outside the new hours.
+        await TestBusiness.ReadAsync<object>(await owner.PutAsJsonAsync($"/api/businesses/mine/staff/{stylist.Id}", new
+        {
+            name = "Sam Stylist",
+            doesAllServices = true,
+            workingHours = new[] { new { day = "monday", opens = "11:00", closes = "12:00" } },
+        }));
+
+        var slots = await TestBusiness.ReadAsync<PublicSlots>(await api.CreateClient().GetAsync(
+            $"/api/public/businesses/{business.Slug}/slots?serviceId={business.ServiceId}&staffMemberId={stylist.Id}"));
+        Assert.Equal("11:00", Assert.Single(slots.Days[0].Slots).Start);
+        var kept = Assert.Single((await GetCalendarAsync(business)).Bookings);
+        Assert.Equal((booked.Id, stylist.Id, "09:00"), (kept.Id, kept.StaffMemberId, kept.Start));
+    }
+
     async Task<PublicSlots> GetSlotsAsync(TestBusiness business) =>
         await TestBusiness.ReadAsync<PublicSlots>(await api.CreateClient()
             .GetAsync($"/api/public/businesses/{business.Slug}/slots?serviceId={business.ServiceId}"));
