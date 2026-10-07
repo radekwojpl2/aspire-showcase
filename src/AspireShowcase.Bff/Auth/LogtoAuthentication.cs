@@ -32,6 +32,9 @@ static class LogtoAuthentication
     /// <summary>Set by /bff/login?signup=true, so Logto opens on its sign-up form.</summary>
     public const string SignUpKey = ".bff.signup";
 
+    /// <summary>The session cookie, which holds only the session's ID.</summary>
+    public const string SessionCookie = "bff-session";
+
     /// <summary>
     /// Signs users in with Logto's authorization code flow as a confidential client (it has an
     /// app secret, which a browser app can't keep), and keeps the result in a server-side session.
@@ -54,7 +57,7 @@ static class LogtoAuthentication
             })
             .AddCookie(options =>
             {
-                options.Cookie.Name = "bff-session";
+                options.Cookie.Name = SessionCookie;
                 // Only sent with requests from the app's own pages, which is half of the CSRF
                 // protection; the X-CSRF header on /api is the other half.
                 options.Cookie.SameSite = SameSiteMode.Strict;
