@@ -1,6 +1,8 @@
+using System.Diagnostics.Metrics;
 using System.Net;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 
 namespace AspireShowcase.Bff.IntegrationTests;
 
@@ -25,6 +27,7 @@ public sealed class SessionTests(BffFactory bff) : IClassFixture<BffFactory>
     [Fact]
     public async Task A_session_whose_token_cannot_be_refreshed_is_ended()
     {
+        using var ended = EndedSessions();
         var (cookie, sessionId) = await bff.SignInAsync("expired", DateTimeOffset.UtcNow.AddMinutes(-5));
         var path = NewApiPath();
 
@@ -33,18 +36,21 @@ public sealed class SessionTests(BffFactory bff) : IClassFixture<BffFactory>
         AssertSessionEnded(response);
         Assert.False(bff.Web.Received(path));
         Assert.Null(await bff.Services.GetRequiredService<ITicketStore>().RetrieveAsync(sessionId));
+        Assert.Equal("refresh_failed", Assert.Single(ended.GetMeasurementSnapshot()).Tags["reason"]);
     }
 
     [Fact]
     public async Task A_session_cookie_bff_cannot_read_is_ended()
     {
         // As after bff-db was reset, or its data protection keys lost.
+        using var ended = EndedSessions();
         var path = NewApiPath();
 
         var response = await SendAsync(path, "bff-session=not-a-session");
 
         AssertSessionEnded(response);
         Assert.False(bff.Web.Received(path));
+        Assert.Equal("session_not_found", Assert.Single(ended.GetMeasurementSnapshot()).Tags["reason"]);
     }
 
     [Fact]
@@ -76,6 +82,10 @@ public sealed class SessionTests(BffFactory bff) : IClassFixture<BffFactory>
         // The browser is told to delete the cookie.
         Assert.Contains(response.Headers.GetValues("Set-Cookie"), cookie => cookie.StartsWith("bff-session=;"));
     }
+
+    // What bff counts in sessions.ended from now on. The tests in this class run one at a time.
+    MetricCollector<long> EndedSessions() =>
+        new(bff.Services.GetRequiredService<IMeterFactory>(), "AspireShowcase.Bff", "sessions.ended");
 
     static string NewApiPath() => $"/api/session-test/{Guid.NewGuid():N}";
 }

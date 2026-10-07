@@ -108,7 +108,7 @@ The React app never holds a token. `bff` signs users in with Logto's authorizati
 
 Against CSRF, the session cookie is `SameSite=Strict`, and `bff` refuses `/api` requests without an `X-CSRF: 1` header, which only the app's own scripts can send.
 
-When a session can't be used any more (Logto rejected its refresh token, or it's gone from `bff-db`), `bff` deletes it and the cookie and answers `/api` with 401 and `X-Session-Ended: 1`. The React app then signs in again and comes back to the same page. A 401 from `web` itself doesn't do this, so a misconfigured API can't send users round Logto in a loop. If Logto is down, the request fails but the session stays.
+When a session can't be used any more (Logto rejected its refresh token, or it's gone from `bff-db`), `bff` deletes it and the cookie and answers `/api` with 401 and `X-Session-Ended: 1`, counting it in `sessions.ended`. The React app then signs in again and comes back to the same page. A 401 from `web` itself doesn't do this, so a misconfigured API can't send users round Logto in a loop. If Logto is down, the request fails but the session stays.
 
 Everything `bff` serves has a Content-Security-Policy: scripts, styles and requests only from the app itself, plus Application Insights in Azure, no framing by other sites, and forms only to `bff` and Logto. With the tokens out of the browser, injected script is what's left to defend against. Locally the pages come from Vite, which needs inline scripts for hot reload, so the policy only applies in Azure.
 
