@@ -56,7 +56,7 @@ public class WeeklyHoursTests
     }
 
     [Fact]
-    public void The_same_times_on_different_days_dont_overlap()
+    public void The_same_times_on_different_days_do_not_overlap()
     {
         var hours = WeeklyHours.Create([
             Period(DayOfWeek.Monday, "09:00", "12:00"),
