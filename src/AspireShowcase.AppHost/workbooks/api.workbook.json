@@ -112,6 +112,14 @@
             "style": "link"
           },
           {
+            "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b200b",
+            "cellValue": "tab",
+            "linkTarget": "parameter",
+            "linkLabel": "Bookings",
+            "subTarget": "bookings",
+            "style": "link"
+          },
+          {
             "id": "3f6d7c1e-6b0a-4b8e-9d1a-0f1f6d0b2008",
             "cellValue": "tab",
             "linkTarget": "parameter",
@@ -476,7 +484,146 @@
           {
             "type": 1,
             "content": {
-              "json": "The notifications service and the API calls into it: the API sends a notification after a to-do item is added or removed. Custom telemetry from `NotificationTelemetry.cs` in the service and `NotificationsClient.cs` in the API. A scheduled job in the service, `NotificationDigestJob`, sums up what was recorded since its last run; its span is a trace of its own, with a span link to each `notifications.record` span it covers."
+              "json": "What owners and clients do in the API's modules: starting and setting up a business (Business Setup), and booking and cancelling (Scheduling). Custom telemetry from `BusinessTelemetry.cs` and `SchedulingTelemetry.cs`. A `slot_taken` booking is one the database refused because the staff member was already booked then; `source` is `sample` for the **Add sample bookings** command, which only runs locally."
+            },
+            "name": "bookings-help"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"bookings.attempts\"\n| summarize bookings = sum(valueSum) by result = strcat(tostring(customDimensions.result), \" (\", tostring(customDimensions.source), \")\"), bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Bookings made and refused (bookings.attempts, counter)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "bookings-attempts"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"bookings.cancellations\"\n| summarize cancellations = sum(valueSum) by cancelled_by = tostring(customDimensions[\"by\"]), bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Cancellations, by who cancelled (bookings.cancellations, counter)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "bookings-cancellations"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name in (\"businesses.created\", \"businesses.rejected\")\n| extend outcome = iff(name == \"businesses.created\", \"created\", strcat(\"rejected: \", tostring(customDimensions.reason)))\n| summarize businesses = sum(valueSum) by outcome, bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Businesses started and turned down, by reason (businesses.created, businesses.rejected, counters)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "businesses-started"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name in (\"businesses.opening_hours.changes\", \"businesses.services.changes\", \"businesses.staff.changes\")\n| summarize changes = sum(valueSum) by name, result = tostring(customDimensions.result)\n| order by name asc, changes desc",
+              "size": 0,
+              "title": "Setup changes by result: opening hours, services, staff (counters)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "businesses-setup-changes"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and (name startswith \"bookings.\" or name startswith \"availability.\" or name startswith \"businesses.\")\n| summarize calls = count(), failed = countif(success == false), avg_ms = round(avg(duration), 2), p95_ms = round(percentile(duration, 95), 2) by name\n| order by calls desc",
+              "size": 0,
+              "title": "Operations in the modules (custom spans)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "50",
+            "name": "bookings-operations"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "dependencies\n| where client_Type != \"Browser\" and name == \"availability.slots\"\n| summarize lookups = count(), avg_slots = round(avg(toint(customDimensions[\"availability.slots\"])), 1) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Free-time lookups and the slots they found (availability.slots span)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "bookings-free-slots"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "traces\n| where client_Type != \"Browser\" and (message startswith \"business.\" or message startswith \"service.\" or message startswith \"staff_member.\" or message startswith \"opening_hours.\")\n| project timestamp, event = message, service = cloud_RoleName, details = tostring(customDimensions), operation_Id\n| order by timestamp desc",
+              "size": 0,
+              "title": "Span events of the setup operations (paste operation_Id into Trace lookup)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "bookings-events"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "tab",
+        "comparison": "isEqualTo",
+        "value": "bookings"
+      },
+      "name": "bookings-group"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "The notifications service and the message bus that brings it work. Booking or cancelling publishes an event through MassTransit's outbox in the API; a consumer in the API turns it into a `BookingNotice`, and the service sends the emails through Resend. Emails are `skipped` until the Resend key and sender are set. A message that keeps failing is retried, then moved to an `_error` queue in RabbitMQ. Custom telemetry from `NotificationTelemetry.cs`; the bus metrics and spans are MassTransit's own. A scheduled job in the service, `NotificationDigestJob`, sums up what was recorded since its last run; its span is a trace of its own, with a span link to each `notifications.record` span it covers."
             },
             "name": "notifications-help"
           },
@@ -563,9 +710,24 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "dependencies\n| where client_Type != \"Browser\" and (target contains \"notifications\" or data contains \"notifications\")\n| summarize calls = count(), failed = countif(success == false), avg_ms = round(avg(duration), 2), p95_ms = round(percentile(duration, 95), 2) by name, resultCode\n| order by calls desc",
+              "query": "customMetrics\n| where name == \"notifications.emails\"\n| summarize emails = sum(valueSum) by email = strcat(tostring(customDimensions.kind), \": \", tostring(customDimensions.result)), bin(timestamp, {TimeRange:grain})\n| render timechart",
               "size": 0,
-              "title": "Calls from the API to the service",
+              "title": "Booking emails, by kind and result (notifications.emails, counter)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "notifications-emails"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name in (\"messaging.masstransit.outbox.delivery\", \"messaging.masstransit.send\", \"messaging.masstransit.consume\", \"messaging.masstransit.consume.retries\", \"messaging.masstransit.consume.errors\", \"messaging.masstransit.send.errors\", \"messaging.masstransit.outbox.delivery.errors\")\n| extend message_type = tostring(customDimensions[\"messaging.masstransit.message_type\"]), consumer = tostring(customDimensions[\"messaging.masstransit.consumer_type\"])\n| summarize total = sum(valueSum) by message_type, consumer, metric = replace_string(name, \"messaging.masstransit.\", \"\"), service = cloud_RoleName\n| evaluate pivot(metric, sum(total))\n| order by message_type asc",
+              "size": 0,
+              "title": "Messages on the bus, by message type and consumer (MassTransit metrics)",
               "timeContextFromParameter": "TimeRange",
               "queryType": 0,
               "resourceType": "microsoft.insights/components",
@@ -575,8 +737,57 @@
                 "filter": true
               }
             },
+            "customWidth": "100",
+            "name": "bus-messages"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"messaging.masstransit.consume.duration\"\n| summarize avg_ms = sum(valueSum) / sum(valueCount) by consumer = tostring(customDimensions[\"messaging.masstransit.consumer_type\"]), bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "Time to consume a message, by consumer (ms; messaging.masstransit.consume.duration)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
             "customWidth": "50",
-            "name": "notifications-calls"
+            "name": "bus-consume-duration"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "customMetrics\n| where name == \"messaging.masstransit.delivery.duration\"\n| summarize avg_ms = sum(valueSum) / sum(valueCount), longest_ms = max(valueMax) by bin(timestamp, {TimeRange:grain})\n| render timechart",
+              "size": 0,
+              "title": "From sending a message to consuming it (ms; messaging.masstransit.delivery.duration)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "timechart"
+            },
+            "customWidth": "50",
+            "name": "bus-delivery-duration"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "union requests, dependencies\n| where client_Type != \"Browser\" and isnotempty(customDimensions[\"messaging.system\"]) and success == false\n| project timestamp, name, service = cloud_RoleName, message_type = tostring(customDimensions[\"messaging.masstransit.message_types\"]), duration_ms = round(duration, 2), operation_Id\n| join kind=leftouter (exceptions | project operation_Id, exception = type, exception_message = outerMessage) on operation_Id\n| project-away operation_Id1\n| order by timestamp desc",
+              "size": 0,
+              "title": "Failed sends and consumes: retried, then moved to _error (paste operation_Id into Trace lookup)",
+              "timeContextFromParameter": "TimeRange",
+              "queryType": 0,
+              "resourceType": "microsoft.insights/components",
+              "visualization": "table",
+              "gridSettings": {
+                "rowLimit": 100,
+                "filter": true
+              }
+            },
+            "customWidth": "100",
+            "name": "bus-failed"
           },
           {
             "type": 3,
@@ -601,9 +812,9 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "traces\n| where client_Type != \"Browser\" and message startswith \"notification.\"\n| project timestamp, event = message, service = cloud_RoleName, details = tostring(customDimensions), operation_Id\n| order by timestamp desc",
+              "query": "traces\n| where client_Type != \"Browser\" and (message startswith \"notification.\" or message startswith \"email.\")\n| project timestamp, event = message, service = cloud_RoleName, details = tostring(customDimensions), operation_Id\n| order by timestamp desc",
               "size": 0,
-              "title": "Span events (paste operation_Id into Trace lookup)",
+              "title": "Span events, notifications and emails (paste operation_Id into Trace lookup)",
               "timeContextFromParameter": "TimeRange",
               "queryType": 0,
               "resourceType": "microsoft.insights/components",
