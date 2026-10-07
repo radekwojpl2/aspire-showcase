@@ -58,8 +58,8 @@ static class LogtoExtensions
 
         return bff
             .WithEnvironment("Logto__Endpoint", builder.PublicEndpoint(logto))
-            .WithEnvironment("Logto__AppId", appId)
-            .WithEnvironment("Logto__AppSecret", appSecret)
+            .WithOptionalEnvironment("Logto__AppId", appId)
+            .WithOptionalEnvironment("Logto__AppSecret", appSecret)
             .WithEnvironment("Logto__ApiResource", ApiResource);
     }
 
@@ -79,8 +79,8 @@ static class LogtoExtensions
         return web
             .WithEnvironment("Logto__Endpoint", builder.PublicEndpoint(logto))
             .WithEnvironment("Logto__ApiResource", ApiResource)
-            .WithEnvironment("Logto__M2mAppId", m2mAppId)
-            .WithEnvironment("Logto__M2mAppSecret", m2mAppSecret);
+            .WithOptionalEnvironment("Logto__M2mAppId", m2mAppId)
+            .WithOptionalEnvironment("Logto__M2mAppSecret", m2mAppSecret);
     }
 
     static IResourceBuilder<ContainerResource> AddLogtoContainer(

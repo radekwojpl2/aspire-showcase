@@ -20,8 +20,8 @@ static class EmailExtensions
         var appUrl = builder.ExecutionContext.IsRunMode ? frontend.GetEndpoint("http") : bff.GetEndpoint("https");
 
         return notifications
-            .WithEnvironment("Email__ResendApiKey", apiKey)
-            .WithEnvironment("Email__From", sender)
+            .WithOptionalEnvironment("Email__ResendApiKey", apiKey)
+            .WithOptionalEnvironment("Email__From", sender)
             .WithEnvironment("Email__AppUrl", appUrl);
     }
 }
