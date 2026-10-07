@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { apiFetch } from './api.ts';
+import { useEffect, useState, type FormEvent } from 'react';
+import { apiFetch, readProblem } from './api.ts';
 import { BookingsPage } from './bookings.tsx';
 import { cancelBooking, confirmCancel, fetchCalendar, type Calendar, type CalendarBooking } from './calendar-api.ts';
 import { OpeningHoursPage } from './hours.tsx';
@@ -8,7 +8,8 @@ import { StaffPage } from './staff.tsx';
 import { TimeOffPage } from './time-off.tsx';
 import { ErrorMessage } from './ui.tsx';
 
-export type OwnedBusiness = { name: string; slug: string };
+// contactEmail is null for a business started before it was required.
+export type OwnedBusiness = { name: string; slug: string; contactEmail: string | null };
 
 // Each tab has its own address, so links, bookmarks and the back button work, but switching
 // tabs doesn't reload the page.
@@ -104,6 +105,7 @@ function Today({ business, go }: { business: OwnedBusiness; go: (tab: Tab) => vo
   const [reload, setReload] = useState(0);
   const [cancelling, setCancelling] = useState<string>();
   const [status, setStatus] = useState<string>();
+  const [contactEmail, setContactEmail] = useState(business.contactEmail);
 
   useEffect(() => {
     let current = true;
@@ -166,6 +168,13 @@ function Today({ business, go }: { business: OwnedBusiness; go: (tab: Tab) => vo
 
   return (
     <>
+      {!contactEmail && (
+        <section className="card setup" aria-labelledby="contact-missing-heading">
+          <h3 id="contact-missing-heading" className="section-title">Add a contact email</h3>
+          <p className="hint">Clients see it when they need to reach you, such as when it's too late to cancel online.</p>
+        </section>
+      )}
+
       {(!hasHours || !hasServices) && (
         <section className="card setup" aria-labelledby="setup-heading">
           <h3 id="setup-heading" className="section-title">Before clients can book</h3>
@@ -256,6 +265,62 @@ function Today({ business, go }: { business: OwnedBusiness; go: (tab: Tab) => vo
           </a>
         </div>
       </section>
+
+      <ContactCard contactEmail={contactEmail} onSaved={setContactEmail} />
     </>
+  );
+}
+
+// Where clients can reach the business: shown to them, unlike the owner's sign-in email.
+function ContactCard({ contactEmail, onSaved }: { contactEmail: string | null; onSaved: (email: string) => void }) {
+  const [draft, setDraft] = useState(contactEmail ?? '');
+  const [error, setError] = useState<string>();
+  const [status, setStatus] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setError(undefined);
+    setStatus('');
+    try {
+      const response = await apiFetch('/api/businesses/mine/contact', {
+        method: 'PUT',
+        body: JSON.stringify({ contactEmail: draft }),
+      });
+      if (response.ok) {
+        const saved = (await response.json()) as { contactEmail: string };
+        onSaved(saved.contactEmail);
+        setStatus('Saved.');
+      } else {
+        const problem = await readProblem(response);
+        setError(problem.errors?.contactEmail?.[0] ?? problem.title ?? `HTTP error! status: ${response.status}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to call the API');
+    }
+    setSaving(false);
+  };
+
+  return (
+    <section className="card" aria-labelledby="contact-heading">
+      <h3 id="contact-heading" className="section-title">Contact email</h3>
+      <form className="link-row" onSubmit={(event) => void save(event)} noValidate>
+        <input
+          className="input"
+          type="email"
+          aria-label="Contact email"
+          value={draft}
+          maxLength={254}
+          autoComplete="email"
+          aria-invalid={Boolean(error)}
+          onChange={(event) => setDraft(event.target.value)}
+        />
+        <button className="button button-secondary" type="submit" disabled={saving || !draft.trim() || draft === contactEmail}>
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+      </form>
+      {error ? <p className="field-error">{error}</p> : <p className="field-hint" role="status">{status}</p>}
+    </section>
   );
 }
