@@ -300,10 +300,18 @@ A managed identity is an identity in Entra ID that Azure creates for a resource 
 
 Then start the Deploy workflow by hand: **Actions** → **Deploy** → **Run workflow** on GitHub, or `gh workflow run Deploy`. It deploys `main`; merging to `main` does not deploy by itself. After the first deploy, [set up sign-in](#set-up-sign-in).
 
+To try a branch in Azure before merging it, pick the branch and tick **Deploy the selected branch even though it isn't main**, or:
+
+```
+gh workflow run Deploy --ref <branch> -f deploy_branch=true
+```
+
+Whatever was deployed last runs in Azure until `main` is deployed again.
+
 | Workflow | Runs on |
 |---|---|
 | CI | PRs, pushes to `main` |
-| Deploy | manual, `main` only |
+| Deploy | manual, `main`, or another branch when asked |
 | Deprovision | manual |
 
 Each deploy prints the URL of the Aspire dashboard in Azure, `https://aspire-dashboard.ext.<environment>.westeurope.azurecontainerapps.io`.

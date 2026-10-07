@@ -3,6 +3,11 @@ name: Deploy
 on:
   # Started by hand only: Actions → Deploy → Run workflow, or `gh workflow run Deploy`.
   workflow_dispatch:
+    inputs:
+      deploy_branch:
+        description: Deploy the selected branch even though it isn't main
+        type: boolean
+        default: false
 
 permissions:
   id-token: write # OIDC login to Azure
@@ -15,9 +20,10 @@ concurrency:
 
 jobs:
   deploy:
-    # The run can be started from any branch, but only main is deployed: it's the branch
-    # that pull requests and CI protect.
-    if: github.ref == 'refs/heads/main'
+    # main is deployed by default: it's the branch that pull requests and CI protect. Another
+    # branch only with deploy_branch ticked, to try it in Azure before merging; whatever was
+    # deployed last is what runs there, until main is deployed again.
+    if: github.ref == 'refs/heads/main' || inputs.deploy_branch
     runs-on: ubuntu-latest
     environment: production
     env:
