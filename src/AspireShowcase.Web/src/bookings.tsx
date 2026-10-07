@@ -29,7 +29,8 @@ function daysBetween(first: string, last: string): string[] {
   return days;
 }
 
-// User story MVP-12: the owner sees bookings by day or week, for everyone or one staff member.
+// User story MVP-12: the owner sees bookings by day or week, for everyone or one staff member,
+// with the time off (V1-1) of those days.
 export function BookingsPage() {
   const { signInEnabled, user } = useSession();
   const [load, setLoad] = useState<Load>('loading');
@@ -163,13 +164,27 @@ export function BookingsPage() {
       <div className={`calendar calendar-${view}`}>
         {days.map((day) => {
           const bookings = calendar.bookings.filter((booking) => booking.day === day);
+          const timeOff = calendar.timeOff.filter((piece) => piece.day === day);
           return (
             <section key={day} className="calendar-day" aria-label={label(day, { weekday: 'long', day: 'numeric', month: 'long' })}>
               {view === 'week' && (
                 <h3 className="calendar-day-name">{label(day, { weekday: 'short', day: 'numeric', month: 'short' })}</h3>
               )}
+              {timeOff.length > 0 && (
+                <ul className="calendar-bookings">
+                  {timeOff.map((piece) => (
+                    <li key={piece.id} className="calendar-booking calendar-time-off">
+                      <span className="calendar-time">
+                        {piece.start === '00:00' && piece.end === '24:00' ? 'All day' : `${piece.start}–${piece.end}`}
+                      </span>
+                      <span className="calendar-client">Time off · {piece.staffName ?? 'Whole business'}</span>
+                      {piece.note && <span className="hint">{piece.note}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
               {bookings.length === 0 ? (
-                <p className="hint">No bookings</p>
+                timeOff.length === 0 && <p className="hint">No bookings</p>
               ) : (
                 <ul className="calendar-bookings">
                   {bookings.map((booking) => (

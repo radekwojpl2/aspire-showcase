@@ -508,6 +508,30 @@
   overflow-wrap: anywhere;
 }
 
+/* Time off (V1-1): nobody can book it */
+.calendar-time-off {
+  border-left-color: var(--text-tertiary);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--surface-bg),
+    var(--surface-bg) 6px,
+    var(--surface-border) 6px,
+    var(--surface-border) 12px
+  );
+}
+
+.time-off-item {
+  align-items: flex-start;
+}
+
+.time-off-bookings {
+  margin-top: 0.5rem;
+}
+
+.time-off-bookings .field-error {
+  margin: 0 0 0.5rem;
+}
+
 .calendar-time {
   font-weight: 600;
 }

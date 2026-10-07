@@ -15,6 +15,17 @@ export type CalendarBooking = {
   clientEmail: string;
 };
 
+// The part of a time off (user story V1-1) on one day; end is "24:00" when it lasts all day.
+export type CalendarTimeOff = {
+  id: string;
+  day: string;
+  start: string;
+  end: string;
+  staffMemberId: string | null;
+  staffName: string | null;
+  note: string | null;
+};
+
 export type Calendar = {
   view: CalendarView;
   date: string;
@@ -23,7 +34,11 @@ export type Calendar = {
   timeZone: string;
   staff: { id: string; name: string }[];
   bookings: CalendarBooking[];
+  timeOff: CalendarTimeOff[];
 };
+
+// What cancelling needs to know of a booking, wherever it's listed.
+export type CancellableBooking = Pick<CalendarBooking, 'id' | 'day' | 'start' | 'serviceName' | 'clientName'>;
 
 // The owner's calendar; without a date, the API uses today in the business's time zone.
 // Null when the user has no business (404) or isn't an owner (403).
@@ -38,10 +53,10 @@ export async function fetchCalendar(view: CalendarView, date?: string, staffMemb
 }
 
 // User story MVP-14: the owner cancels for sickness or emergencies; the client gets an email.
-export async function cancelBooking(booking: CalendarBooking): Promise<void> {
+export async function cancelBooking(booking: CancellableBooking): Promise<void> {
   const response = await apiFetch(`/api/businesses/mine/bookings/${booking.id}/cancel`, { method: 'POST' });
   if (!response.ok) throw new Error((await readProblem(response)).title ?? `HTTP error! status: ${response.status}`);
 }
 
-export const confirmCancel = (booking: CalendarBooking) =>
+export const confirmCancel = (booking: CancellableBooking) =>
   window.confirm(`Cancel ${booking.clientName}'s ${booking.serviceName} on ${booking.day}, ${booking.start}?`);
