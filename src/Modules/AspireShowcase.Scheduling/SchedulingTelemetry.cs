@@ -62,6 +62,17 @@ sealed class SchedulingTelemetry
         activity?.AddEvent(new ActivityEvent($"time_off.{result}", tags: tags));
     }
 
+    /// <param name="result">saved or invalid.</param>
+    public void PolicyChanged(Activity? activity, CancellationPolicy? policy, string result)
+    {
+        if (policy is not null)
+        {
+            activity?.SetTag("business.id", policy.BusinessId.Value);
+            activity?.SetTag("cancellation_policy.notice_hours", (int)policy.Notice.TotalHours);
+        }
+        activity?.AddEvent(new ActivityEvent($"cancellation_policy.{result}"));
+    }
+
     public void CalendarRead(Activity? activity, CalendarView view, int bookings)
     {
         activity?.SetTag("calendar.view", view.ToString().ToLowerInvariant());
