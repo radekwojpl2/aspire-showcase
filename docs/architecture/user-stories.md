@@ -2,7 +2,7 @@
 
 User stories for the booking SaaS in [the proposed architecture](README.md), in three phases. Each phase is usable on its own: the MVP lets a small business and its staff take bookings, v1 makes it work for the day-to-day of a real shop, and v2 adds what keeps businesses on the platform.
 
-Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 12 of 14 MVP stories (all but MVP-3 and MVP-6) and part of MVP-3; V1-2 of v1; none of v2.
+Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 12 of 14 MVP stories (all but MVP-3 and MVP-6) and part of MVP-3; V1-2 and most of V1-1 of v1; none of v2.
 
 People in the stories:
 
@@ -97,9 +97,10 @@ As an owner, I want to cancel a client's booking, so that I can handle sickness 
 
 Goal: businesses with holidays, cancellation rules and phone bookings can run their whole calendar here.
 
-**V1-1. Block time off**
+**V1-1. Block time off** 🟡
 As an owner, I want to block holidays and breaks for the business or one staff member, so that nobody books me when I'm away.
-- Blocking a time with bookings in it lists those bookings so I can cancel or move them.
+- ✅ Blocking a time with bookings in it lists those bookings so I can cancel them.
+- ❌ … or move them. Needs rescheduling (V1-4).
 
 **V1-2. Buffer between appointments** ✅
 As an owner, I want a buffer time after a service (e.g. 10 minutes to clean up), so that appointments don't run back to back.

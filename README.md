@@ -238,8 +238,9 @@ The Scheduling module, `AspireShowcase.Scheduling`, in `src/Modules/AspireShowca
 |---|---|---|
 | `bookings.attempts` | Counter | Attempts to book (`result` tag: `booked`, `slot_taken`; `source` tag: `client`, `sample`) |
 | `bookings.cancellations` | Counter | Bookings cancelled (`by` tag: `client`, `business`) |
+| `time_off.changes` | Counter | Time off added and removed (`result` tag: `added`, `removed`, `invalid`) |
 
-Its `bookings.book` span is a client booking (with the service's `service.buffer_minutes`), `bookings.cancel` a cancellation, `availability.slots` says how many free slots were found, `bookings.calendar` which view was read and how many bookings it had, and `bookings.sample` how many sample bookings were made and refused. Client names and emails are never recorded.
+Its `bookings.book` span is a client booking (with the service's `service.buffer_minutes`), `bookings.cancel` a cancellation, `availability.slots` says how many free slots were found, `bookings.calendar` which view was read and how many bookings it had, `bookings.sample` how many sample bookings were made and refused, and `time_off.add` how many bookings were already in the blocked time. Client names and emails are never recorded.
 
 The notifications service, in `src/AspireShowcase.Notifications/NotificationTelemetry.cs`:
 
