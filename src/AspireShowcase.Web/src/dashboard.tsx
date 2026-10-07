@@ -5,6 +5,7 @@ import { cancelBooking, confirmCancel, fetchCalendar, type Calendar, type Calend
 import { OpeningHoursPage } from './hours.tsx';
 import { ServicesPage } from './services.tsx';
 import { StaffPage } from './staff.tsx';
+import { TimeOffPage } from './time-off.tsx';
 import { ErrorMessage } from './ui.tsx';
 
 export type OwnedBusiness = { name: string; slug: string };
@@ -17,6 +18,7 @@ const tabs = [
   { path: '/services', label: 'Services' },
   { path: '/staff', label: 'Staff' },
   { path: '/hours', label: 'Opening hours' },
+  { path: '/time-off', label: 'Time off' },
 ] as const;
 
 type Tab = (typeof tabs)[number]['path'];
@@ -68,6 +70,7 @@ export function OwnerDashboard({ business }: { business: OwnedBusiness }) {
       {tab === '/services' && <ServicesPage />}
       {tab === '/staff' && <StaffPage />}
       {tab === '/hours' && <OpeningHoursPage />}
+      {tab === '/time-off' && <TimeOffPage />}
     </div>
   );
 }
