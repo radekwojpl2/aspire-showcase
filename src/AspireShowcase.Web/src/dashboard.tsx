@@ -168,12 +168,8 @@ function Today({ business, go }: { business: OwnedBusiness; go: (tab: Tab) => vo
 
   return (
     <>
-      {!contactEmail && (
-        <section className="card setup" aria-labelledby="contact-missing-heading">
-          <h3 id="contact-missing-heading" className="section-title">Add a contact email</h3>
-          <p className="hint">Clients see it when they need to reach you, such as when it's too late to cancel online.</p>
-        </section>
-      )}
+      {/* Asked for first while it's missing, so it can be added right where the owner looks. */}
+      {!contactEmail && <ContactCard contactEmail={contactEmail} onSaved={setContactEmail} />}
 
       {(!hasHours || !hasServices) && (
         <section className="card setup" aria-labelledby="setup-heading">
@@ -266,7 +262,7 @@ function Today({ business, go }: { business: OwnedBusiness; go: (tab: Tab) => vo
         </div>
       </section>
 
-      <ContactCard contactEmail={contactEmail} onSaved={setContactEmail} />
+      {contactEmail && <ContactCard contactEmail={contactEmail} onSaved={setContactEmail} />}
     </>
   );
 }
@@ -303,8 +299,11 @@ function ContactCard({ contactEmail, onSaved }: { contactEmail: string | null; o
   };
 
   return (
-    <section className="card" aria-labelledby="contact-heading">
-      <h3 id="contact-heading" className="section-title">Contact email</h3>
+    <section className={contactEmail ? 'card' : 'card setup'} aria-labelledby="contact-heading">
+      <h3 id="contact-heading" className="section-title">{contactEmail ? 'Contact email' : 'Add a contact email'}</h3>
+      {!contactEmail && (
+        <p className="hint">Clients see it when they need to reach you, such as when it's too late to cancel online.</p>
+      )}
       <form className="link-row" onSubmit={(event) => void save(event)} noValidate>
         <input
           className="input"
