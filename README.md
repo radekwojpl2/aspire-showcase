@@ -218,7 +218,7 @@ Then open the app and click **Start your business**: it takes you to Logto's sig
 
 On top of what ASP.NET Core, the HTTP clients and Npgsql record by themselves, the API's modules and the notifications service record their own spans, span events and metrics, and `bff` a metric of its own. The notifications service and `bff` name theirs after the application, which is what the ServiceDefaults project subscribes to; an API module uses its own name and subscribes to it when the host adds the module. Names, links and messages that users type are never recorded.
 
-Two things are left out or renamed to keep the traces readable. Database queries outside any request or message aren't recorded: MassTransit's inbox cleanup runs every few seconds and would otherwise start a trace each time (`BackgroundQueryFilter` in ServiceDefaults). And `bff` names a proxied request after its path, with IDs as `{id}` and booking links as `{slug}`, instead of its one proxy route, `/api/{**rest}`.
+Two things are left out or renamed to keep the traces readable. Database queries outside any recorded request or message aren't recorded: MassTransit's inbox cleanup and the health checks run every few seconds and would otherwise start a trace each time (`BackgroundQueryFilter` in ServiceDefaults). And `bff` names a proxied request after its path, with IDs as `{id}` and booking links as `{slug}`, instead of its one proxy route, `/api/{**rest}`.
 
 The API's Business Setup module, `AspireShowcase.BusinessSetup`, in `src/Modules/AspireShowcase.BusinessSetup/BusinessTelemetry.cs`:
 

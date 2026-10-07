@@ -73,6 +73,8 @@ public sealed class BffFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("ConnectionStrings:bff-db", _postgres.GetConnectionString());
         // What service discovery resolves "web" to; never connected to, the stub answers instead.
         builder.UseSetting("services:web:http:0", "http://web.test");
+        // As the AppHost sets it: a span is recorded even when its parent isn't.
+        builder.UseSetting("OTEL_TRACES_SAMPLER", "always_on");
 
         builder.ConfigureTestServices(services =>
         {
