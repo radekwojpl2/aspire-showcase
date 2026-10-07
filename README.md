@@ -324,7 +324,7 @@ Tear down:
 gh workflow run deprovision.yml -f confirm=rg-aspire-showcase
 ```
 
-This keeps the resource group and its role assignments, so Deploy works again without extra steps.
+This keeps the resource group and its role assignments, so Deploy works again without extra steps. It also purges the deleted Key Vault: Azure only soft-deletes a vault and keeps its name taken for 90 days, and the next deploy would want the same name. Purging needs a small role on the subscription that `./scripts/setup-azure-oidc.ps1` creates, so if you set up Azure before it did, run the script again once.
 
 > [!IMPORTANT]
 > If you run `aspire destroy` instead, it deletes the resource group too, so run `./scripts/setup-azure-oidc.ps1` again before the next deploy.

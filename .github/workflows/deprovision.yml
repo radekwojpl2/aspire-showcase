@@ -56,6 +56,22 @@ jobs:
             --template-file empty.json \
             --output none
 
+      # Deleting the key vault only soft-deletes it, which keeps its name taken for 90 days. Its
+      # name comes from the resource group, so the next deploy would fail with "A vault with the
+      # same name already exists in deleted state". Purging needs the role setup-azure-oidc.ps1
+      # creates on the subscription.
+      - name: Purge the deleted key vault
+        run: |
+          if ! deleted=$(az keyvault list-deleted --resource-type vault --query "[].[name, properties.location, properties.vaultId]" --output tsv); then
+            echo "::error::Can't list deleted key vaults. Run scripts/setup-azure-oidc.ps1 again: it gives Deprovision the role to purge them."
+            exit 1
+          fi
+          # Only the vaults that were in this resource group; there may be none.
+          { echo "$deleted" | grep -i "/resourceGroups/$RESOURCE_GROUP/" || true; } | while IFS=$'\t' read -r name location _; do
+            echo "Purging $name"
+            az keyvault purge --name "$name" --location "$location" --output none
+          done
+
       - name: Verify
         run: |
           remaining=$(az resource list --resource-group "$RESOURCE_GROUP" --query "length(@)" --output tsv)

@@ -7,7 +7,8 @@
       1. Resource group the app is deployed into
       2. Entra ID app registration + service principal
       3. Contributor and User Access Administrator role assignments, scoped to the resource group
-         (User Access Administrator is needed because the deployment assigns AcrPull to the app's managed identity)
+         (User Access Administrator is needed because the deployment assigns AcrPull to the app's managed identity),
+         and a custom role on the subscription that only lists and purges deleted key vaults, for the Deprovision workflow
       4. Federated credential trusting the GitHub environment
       5. GitHub environment with the AZURE_* variables and a generated POSTGRES_PASSWORD secret
 
@@ -123,6 +124,49 @@ foreach ($role in 'Contributor', 'User Access Administrator') {
         Write-Host "    principal not ready yet, retrying in 10s ($attempt/5)"
         Start-Sleep -Seconds 10
     }
+}
+
+# Deleting a key vault only soft-deletes it, and keeps its name taken for 90 days. The vault's
+# name comes from the resource group, so after a Deprovision the next deploy would fail on it.
+# Deleted vaults belong to the subscription, not the resource group, so purging one needs a
+# role there: this one can do nothing else.
+$purgerRole = "Key Vault Purger ($AppName)"
+$subscriptionScope = "/subscriptions/$SubscriptionId"
+Write-Step "Role '$purgerRole' on the subscription"
+$purgerRoleId = Invoke-Cli az role definition list --name $purgerRole --scope $subscriptionScope --query '[0].id' --output tsv
+if (-not $purgerRoleId) {
+    $roleFile = New-TemporaryFile
+    try {
+        @{
+            Name             = $purgerRole
+            Description      = 'Lists and purges deleted key vaults, so the Deprovision workflow frees the vault name for the next deploy.'
+            Actions          = @(
+                'Microsoft.KeyVault/locations/deletedVaults/read',
+                'Microsoft.KeyVault/locations/deletedVaults/purge/action',
+                'Microsoft.KeyVault/locations/operationResults/read'
+            )
+            AssignableScopes = @($subscriptionScope)
+        } | ConvertTo-Json | Set-Content -Path $roleFile -Encoding ascii
+        Invoke-Cli az role definition create --role-definition "@$roleFile" --output none | Out-Null
+        Write-Host "    role created"
+    } finally {
+        Remove-Item $roleFile -ErrorAction SilentlyContinue
+    }
+}
+$existing = Invoke-Cli az role assignment list --assignee $spId --role $purgerRole --scope $subscriptionScope --query '[0].id' --output tsv
+if ($existing) {
+    Write-Host "    already assigned"
+} else {
+    # A new role definition, like a new service principal, can take a while to replicate.
+    for ($attempt = 1; ; $attempt++) {
+        & az role assignment create --assignee-object-id $spId --assignee-principal-type ServicePrincipal `
+            --role $purgerRole --scope $subscriptionScope --output none
+        if ($LASTEXITCODE -eq 0) { break }
+        if ($attempt -ge 10) { throw "Failed to assign role '$purgerRole'." }
+        Write-Host "    role not ready yet, retrying in 10s ($attempt/10)"
+        Start-Sleep -Seconds 10
+    }
+    Write-Host "    assigned"
 }
 
 # --- 4. Federated credential -------------------------------------------------
