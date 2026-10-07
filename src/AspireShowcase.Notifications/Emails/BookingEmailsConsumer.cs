@@ -23,7 +23,9 @@ sealed class NotificationsDbContext(DbContextOptions<NotificationsDbContext> opt
 /// <remarks>
 /// Each email is sent once: the inbox drops a redelivered message, and Resend drops a repeated
 /// request by its idempotency key (the message ID and the recipient), in case this service fails
-/// between sending and recording. A failure to send throws, so MassTransit retries the message.
+/// between sending and recording. A failure to send throws, so MassTransit retries the message;
+/// an email Resend refuses for good, such as to an address it won't send to, is logged and
+/// counted instead, and the booking's other emails still go out.
 /// </remarks>
 sealed class BookingEmailsConsumer(
     ResendEmailSender sender, EmailSettings settings, NotificationStore store, PendingDigest pending,
@@ -43,7 +45,17 @@ sealed class BookingEmailsConsumer(
                 continue;
             }
 
-            await sender.SendAsync(email.Message, $"{context.MessageId}-{email.Recipient}", context.CancellationToken);
+            try
+            {
+                await sender.SendAsync(email.Message, $"{context.MessageId}-{email.Recipient}", context.CancellationToken);
+            }
+            catch (EmailRefusedException refused)
+            {
+                telemetry.Email(activity, email.Kind, "refused");
+                logger.LogWarning("Resend refused the {Kind} email to the {Recipient} for booking {BookingId}: {Reason}",
+                    email.Kind, email.Recipient, context.Message.BookingId, refused.Reason);
+                continue;
+            }
             telemetry.Email(activity, email.Kind, "sent");
             logger.LogInformation("Sent the {Kind} email to the {Recipient} for booking {BookingId}",
                 email.Kind, email.Recipient, context.Message.BookingId);

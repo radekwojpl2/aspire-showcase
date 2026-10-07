@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 
 /// <summary>Email settings, from the AppHost.</summary>
@@ -18,6 +19,15 @@ sealed class EmailSettings
 sealed record EmailMessage(string To, string Subject, string Text, string Html);
 
 /// <summary>
+/// Resend refused an email for good, such as for an address it won't send to: asking again
+/// wouldn't change the answer. <see cref="Reason"/> is Resend's explanation.
+/// </summary>
+sealed class EmailRefusedException(string reason) : Exception($"Resend refused the email: {reason}")
+{
+    public string Reason { get; } = reason;
+}
+
+/// <summary>
 /// Sends email through Resend's API (https://resend.com/docs/api-reference/emails/send-email).
 /// </summary>
 /// <remarks>
@@ -27,7 +37,9 @@ sealed record EmailMessage(string To, string Subject, string Text, string Html);
 /// </remarks>
 sealed class ResendEmailSender(HttpClient http, EmailSettings settings)
 {
-    /// <exception cref="HttpRequestException">Resend refused it or couldn't be reached.</exception>
+    /// <exception cref="EmailRefusedException">Resend refused this email for good (400 or 422).</exception>
+    /// <exception cref="HttpRequestException">Resend couldn't take it now, or couldn't be reached; trying
+    /// again later may work.</exception>
     public async Task SendAsync(EmailMessage email, string idempotencyKey, CancellationToken cancellation)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "emails")
@@ -49,6 +61,10 @@ sealed class ResendEmailSender(HttpClient http, EmailSettings settings)
         {
             // Resend explains what's wrong in the body, such as a sender domain that isn't verified.
             var reason = await response.Content.ReadAsStringAsync(cancellation);
+            if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity)
+            {
+                throw new EmailRefusedException(reason);
+            }
             throw new HttpRequestException(
                 $"Resend answered {(int)response.StatusCode}: {reason}", null, response.StatusCode);
         }
