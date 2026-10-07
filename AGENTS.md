@@ -61,3 +61,4 @@ tests/
 - `main` is protected. Changes go on a branch and through a pull request, with the CI checks `build` and `web` passing.
 - Deploying is manual (`gh workflow run Deploy`) and creates billable Azure resources. Do it only when asked.
 - Match the surrounding code: comments explain why, and the README is kept short.
+- Name a test after the one behaviour it checks, as a sentence in plain words joined by underscores: `Time_off_of_the_business_is_not_offered_to_clients`. No contractions or possessive 's (`is_not`, `of_the_business`), so it reads right when the runner shows it as a sentence (`xunit.runner.json`). The class names the feature: `TimeOffTests`, `OwnerAccessTests`.
