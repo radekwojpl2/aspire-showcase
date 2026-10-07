@@ -40,7 +40,7 @@ public class AvailabilityCalculatorTests
     }
 
     [Fact]
-    public void Times_outside_working_hours_and_days_off_arent_offered()
+    public void Times_outside_working_hours_and_days_off_are_not_offered()
     {
         var slots = Slots([Works(Anna, "09:00", "10:00", DayOfWeek.Wednesday)], 30);
 
@@ -48,7 +48,7 @@ public class AvailabilityCalculatorTests
     }
 
     [Fact]
-    public void Booked_times_arent_offered()
+    public void Booked_times_are_not_offered()
     {
         var slots = Slots([Works(Anna, "09:00", "11:00")], 30, [new BusyTime(Anna, At("09:30"), At("10:00"))]);
 
@@ -57,7 +57,7 @@ public class AvailabilityCalculatorTests
     }
 
     [Fact]
-    public void A_booking_s_buffer_isnt_offered()
+    public void The_buffer_of_a_booking_is_not_offered()
     {
         // A 30-minute booking at 09:30 with a 15-minute buffer: busy until 10:15.
         var slots = Slots([Works(Anna, "09:00", "11:00")], 30, [new BusyTime(Anna, At("09:30"), At("10:15"))]);
@@ -84,7 +84,7 @@ public class AvailabilityCalculatorTests
     }
 
     [Fact]
-    public void Slots_that_have_started_arent_offered()
+    public void Slots_that_have_started_are_not_offered()
     {
         var slots = Slots([Works(Anna, "09:00", "10:00")], 15, now: At("09:20"));
 
@@ -92,7 +92,7 @@ public class AvailabilityCalculatorTests
     }
 
     [Fact]
-    public void Anyone_is_the_union_of_the_staff_s_slots_and_lists_who_is_free()
+    public void Anyone_is_the_union_of_the_slots_of_the_staff_and_lists_who_is_free()
     {
         var slots = Slots(
             [Works(Anna, "09:00", "10:00"), Works(Ben, "09:30", "10:30")], 30,
@@ -104,7 +104,7 @@ public class AvailabilityCalculatorTests
     }
 
     [Fact]
-    public void Another_staff_member_s_booking_leaves_the_slot_free()
+    public void A_booking_of_another_staff_member_leaves_the_slot_free()
     {
         var slots = Slots([Works(Anna, "09:00", "09:30")], 30, [new BusyTime(Ben, At("09:00"), At("09:30"))]);
 
@@ -112,7 +112,7 @@ public class AvailabilityCalculatorTests
     }
 
     [Fact]
-    public void A_period_ending_late_in_the_evening_doesnt_run_past_midnight()
+    public void A_period_ending_late_in_the_evening_does_not_run_past_midnight()
     {
         var slots = Slots([Works(Anna, "23:05", "23:55")], 5);
 
@@ -120,7 +120,7 @@ public class AvailabilityCalculatorTests
     }
 
     [Fact]
-    public void Times_skipped_when_the_clocks_go_forward_arent_offered()
+    public void Times_skipped_when_the_clocks_go_forward_are_not_offered()
     {
         // Summer time starts in Europe on Sunday 29 March 2026: 02:00 becomes 03:00.
         var sunday = new DateOnly(2026, 3, 29);

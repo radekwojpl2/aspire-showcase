@@ -102,7 +102,7 @@ public class BookingTests
     }
 
     [Fact]
-    public void A_booking_that_has_started_cant_be_cancelled()
+    public void A_booking_that_has_started_cannot_be_cancelled()
     {
         var start = DateTimeOffset.UtcNow.AddDays(1);
         var booking = BookingAt(start);

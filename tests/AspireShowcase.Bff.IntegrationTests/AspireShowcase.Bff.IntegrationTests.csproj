@@ -28,4 +28,9 @@
     <ProjectReference Include="..\..\src\AspireShowcase.Bff\AspireShowcase.Bff.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Shows test names as sentences: underscores become spaces. -->
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

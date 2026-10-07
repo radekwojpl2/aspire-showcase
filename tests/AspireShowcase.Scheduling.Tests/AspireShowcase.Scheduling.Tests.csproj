@@ -22,4 +22,9 @@
     <ProjectReference Include="..\..\src\Modules\AspireShowcase.Scheduling\AspireShowcase.Scheduling.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Shows test names as sentences: underscores become spaces. -->
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
