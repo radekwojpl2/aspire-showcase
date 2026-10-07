@@ -47,6 +47,7 @@ src/
 └── AspireShowcase.Web/              # React + Vite (resource "frontend")
 tests/
 ├── AspireShowcase.Api.IntegrationTests/ # the API over HTTP against PostgreSQL in a container (Testcontainers)
+├── AspireShowcase.Bff.IntegrationTests/ # bff over HTTP, with web replaced by a stub (Testcontainers)
 ├── AspireShowcase.BusinessSetup.Tests/  # xUnit tests of Business Setup's domain rules
 └── AspireShowcase.Scheduling.Tests/     # xUnit tests of Scheduling's domain rules
 ```

@@ -21,7 +21,7 @@ The API is a modular monolith, split into the modules of [`docs/architecture/ddd
 - **Identity & Access**: the anti-corruption layer over Logto. Public: `AddIdentityAccess`, the owner policy and `IOwnerRoles`.
 - **Shared kernel**: what every domain may use (validation errors).
 
-`AspireShowcase.Api` is only the host that composes them. The domain rules are tested in `tests/AspireShowcase.BusinessSetup.Tests` and `tests/AspireShowcase.Scheduling.Tests`, and the API with the database (double bookings, the outbox, migrations) in `tests/AspireShowcase.Api.IntegrationTests`, against PostgreSQL in a container started by Testcontainers.
+`AspireShowcase.Api` is only the host that composes them. The domain rules are tested in `tests/AspireShowcase.BusinessSetup.Tests` and `tests/AspireShowcase.Scheduling.Tests`, and the API with the database (double bookings, the outbox, migrations) in `tests/AspireShowcase.Api.IntegrationTests`, against PostgreSQL in a container started by Testcontainers. `tests/AspireShowcase.Bff.IntegrationTests` does the same for `bff`, with `web` replaced by a stub: the CSRF check, ended sessions and the Content-Security-Policy.
 
 ## Local and Azure are not the same
 
@@ -89,6 +89,7 @@ src/
 └── AspireShowcase.Web/              # React + Vite
 tests/
 ├── AspireShowcase.Api.IntegrationTests/ # the API against PostgreSQL in a container
+├── AspireShowcase.Bff.IntegrationTests/ # bff, with web replaced by a stub
 ├── AspireShowcase.BusinessSetup.Tests/  # Business Setup's domain rules
 └── AspireShowcase.Scheduling.Tests/     # Scheduling's domain rules
 ```
@@ -106,6 +107,10 @@ The React app never holds a token. `bff` signs users in with Logto's authorizati
 | `/signin-oidc`, `/signout-callback-oidc` | Where Logto sends the browser back |
 
 Against CSRF, the session cookie is `SameSite=Strict`, and `bff` refuses `/api` requests without an `X-CSRF: 1` header, which only the app's own scripts can send.
+
+When a session can't be used any more (Logto rejected its refresh token, or it's gone from `bff-db`), `bff` deletes it and the cookie and answers `/api` with 401 and `X-Session-Ended: 1`. The React app then signs in again and comes back to the same page. A 401 from `web` itself doesn't do this, so a misconfigured API can't send users round Logto in a loop. If Logto is down, the request fails but the session stays.
+
+Everything `bff` serves has a Content-Security-Policy: scripts, styles and requests only from the app itself, plus Application Insights in Azure, no framing by other sites, and forms only to `bff` and Logto. With the tokens out of the browser, injected script is what's left to defend against. Locally the pages come from Vite, which needs inline scripts for hot reload, so the policy only applies in Azure.
 
 Locally, Vite proxies these paths to `bff` and keeps the `Host` header, so Logto's redirect URIs are on `http://localhost:5173`. In Azure, `bff` serves the built React app itself, and `web` has no public endpoint.
 
@@ -134,14 +139,18 @@ A second ASP.NET Core service (`notifications`) that sends the booking emails (u
 2. A consumer in `web` looks up what the emails need (names, local times, the owner's email from Logto) and publishes a `BookingNotice`. Keeping that out of the request means booking doesn't fail when Logto is slow.
 3. `notifications` consumes it through MassTransit's inbox in `notifications-db`, so a redelivered message sends nothing twice, and sends the emails with an idempotency key that Resend checks too. A failed message is retried with growing waits, then lands in an `_error` queue in RabbitMQ.
 
-The message contracts are in `AspireShowcase.Scheduling.PublicClient`. Locally the `messaging` resource links to RabbitMQ's management UI, to watch the queues. Emails need two settings, and until they're set, they're skipped and logged:
+The message contracts are in `AspireShowcase.Scheduling.PublicClient`. Locally the `messaging` resource links to RabbitMQ's management UI, to watch the queues. Emails need two settings:
 
 ```
 dotnet user-secrets set Parameters:resend-api-key <api-key> --project src/AspireShowcase.AppHost
 dotnet user-secrets set Parameters:email-sender "Bookings <bookings@yourdomain.com>" --project src/AspireShowcase.AppHost
 ```
 
-The sender's domain must be verified in Resend. In Azure, set them on the `production` environment: the `RESEND_API_KEY` secret and the `EMAIL_SENDER` variable. The service also keeps the latest 50 notifications in memory.
+In Azure, set them on the `production` environment: the `RESEND_API_KEY` secret and the `EMAIL_SENDER` variable.
+
+Until both are set, booking works as usual, and each email is skipped: logged as a warning and counted in `notifications.emails` with `result=skipped`. A skipped email isn't kept for later, so bookings made before the settings were set never get theirs.
+
+The sender's domain must be verified in Resend. Resend's test sender, `onboarding@resend.dev`, only delivers to the address of your Resend account; for anyone else Resend refuses the email, and the message is retried and ends up in the `_error` queue. The service also keeps the latest 50 notifications in memory.
 
 - Local: a process.
 - Azure: a Container App with no external endpoint.
