@@ -18,7 +18,7 @@ public class BookingTests
         var start = new DateTimeOffset(2026, 10, 6, 9, 0, 0, TimeSpan.FromHours(2));
 
         var booking = Booking.Book(
-            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(45), TimeSpan.Zero,
+            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(45), TimeSpan.Zero, TimeSpan.Zero,
             Attendee.Create(null, "Ola Nowak", "ola.nowak@example.com"), DateTimeOffset.UtcNow);
 
         Assert.Equal(new DateTimeOffset(2026, 10, 6, 7, 0, 0, TimeSpan.Zero), booking.Start);
@@ -33,7 +33,7 @@ public class BookingTests
         var start = new DateTimeOffset(2026, 10, 6, 9, 0, 0, TimeSpan.Zero);
 
         var booking = Booking.Book(
-            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(45), TimeSpan.FromMinutes(10),
+            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(45), TimeSpan.FromMinutes(10), TimeSpan.Zero,
             Attendee.Create(null, "Ola Nowak", "ola.nowak@example.com"), DateTimeOffset.UtcNow);
 
         Assert.Equal(start.AddMinutes(45), booking.End);
@@ -44,12 +44,12 @@ public class BookingTests
     public void A_booking_needs_a_duration()
     {
         Assert.Throws<DomainValidationException>(() => Booking.Book(
-            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), DateTimeOffset.UtcNow, TimeSpan.Zero, TimeSpan.Zero,
+            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), DateTimeOffset.UtcNow, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero,
             Attendee.Create(null, "Ola Nowak", "ola.nowak@example.com"), DateTimeOffset.UtcNow));
     }
 
     static Booking BookingAt(DateTimeOffset start) => Booking.Book(
-        BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(30), TimeSpan.Zero,
+        BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(30), TimeSpan.Zero, TimeSpan.Zero,
         Attendee.Create("client-1", "Ola Nowak", "ola.nowak@example.com"), start.AddDays(-7));
 
     [Fact]

@@ -10,7 +10,9 @@ record PublicStaff(Guid Id, string Name);
 record PublicService(
     Guid Id, string Name, int DurationMinutes, decimal Price, string Currency, IReadOnlyList<PublicStaff> Staff);
 
-record PublicBusiness(string Name, string Slug, string TimeZone, IReadOnlyList<PublicService> Services);
+/// <param name="CancellationNoticeHours">Clients can cancel or move a booking up to this many hours before it; 0 for until it starts.</param>
+record PublicBusiness(
+    string Name, string Slug, string TimeZone, int CancellationNoticeHours, IReadOnlyList<PublicService> Services);
 
 /// <param name="Start">The local time, HH:mm.</param>
 /// <param name="StartsAt">The instant, to book it with.</param>
@@ -39,7 +41,9 @@ static class PublicBookingEndpoints
         var business = api.MapGroup("/public/businesses/{slug}");
 
         // MVP-1: no sign-in needed to see what's on offer.
-        business.MapGet("/", async (string slug, IBusinessDirectory directory, CancellationToken cancellation) =>
+        business.MapGet("/", async (
+            string slug, IBusinessDirectory directory, SchedulingDbContext db, BusinessScope scope,
+            CancellationToken cancellation) =>
         {
             if (await directory.FindBySlugAsync(slug, cancellation) is not { } found)
             {
@@ -56,7 +60,11 @@ static class PublicBookingEndpoints
                         .Select(member => new PublicStaff(member.Id.Value, member.Name))
                         .ToList()))
                 .ToList();
-            return Results.Ok(new PublicBusiness(found.Name, found.Slug, found.TimeZone, services));
+            // V1-3: clients see the policy before they book.
+            scope.BusinessId = found.Id;
+            var policy = await db.PolicyOfAsync(found.Id, cancellation);
+            return Results.Ok(new PublicBusiness(
+                found.Name, found.Slug, found.TimeZone, (int)policy.Notice.TotalHours, services));
         })
         .WithName("GetPublicBusiness");
 
@@ -84,7 +92,8 @@ static class PublicBookingEndpoints
         // MVP-4: booking needs a signed-in client, whose account the booking is tied to (MVP-3).
         business.MapPost("/bookings", async (
             string slug, BookSlot request, ClaimsPrincipal user, IBusinessDirectory directory, Availability availability,
-            IServiceScopeFactory scopes, SchedulingTelemetry telemetry, TimeProvider time, CancellationToken cancellation) =>
+            SchedulingDbContext db, IServiceScopeFactory scopes, SchedulingTelemetry telemetry, TimeProvider time,
+            CancellationToken cancellation) =>
         {
             using var activity = telemetry.StartActivity("bookings.book");
 
@@ -117,6 +126,8 @@ static class PublicBookingEndpoints
             var day = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(startsAt, offer.TimeZone).DateTime);
             var slot = (await availability.FreeSlotsAsync(offer, day, 1, cancellation))
                 .SingleOrDefault(free => free.Start == startsAt.ToUniversalTime());
+            // The booking keeps the policy the client saw (V1-3).
+            var notice = (await db.PolicyOfAsync(found.Id, cancellation)).Notice;
 
             // "Anyone" takes whoever is free; if the database refuses one (someone booked them a
             // moment ago), the next one is tried. Each attempt gets a scope of its own, so a refused
@@ -126,8 +137,8 @@ static class PublicBookingEndpoints
                 await using var attempt = scopes.CreateAsyncScope();
                 attempt.ServiceProvider.GetRequiredService<BusinessScope>().BusinessId = found.Id;
                 var booking = Booking.Book(
-                    found.Id, staffMemberId, offer.Service.Id, startsAt, offer.Service.Duration, offer.Service.Buffer, attendee,
-                    time.GetUtcNow());
+                    found.Id, staffMemberId, offer.Service.Id, startsAt, offer.Service.Duration, offer.Service.Buffer, notice,
+                    attendee, time.GetUtcNow());
                 var result = await attempt.ServiceProvider.GetRequiredService<Bookings>().AddAsync(booking, cancellation);
                 telemetry.Booking(result, "client");
                 if (result == BookingResult.Booked)

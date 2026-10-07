@@ -31,6 +31,13 @@ sealed class SchedulingDbContext(DbContextOptions<SchedulingDbContext> options, 
 
     public DbSet<TimeOff> TimeOff => Set<TimeOff>();
 
+    public DbSet<CancellationPolicy> CancellationPolicies => Set<CancellationPolicy>();
+
+    /// <summary>The business's policy, or none if it hasn't set one. The business must be in scope.</summary>
+    public async Task<CancellationPolicy> PolicyOfAsync(BusinessId businessId, CancellationToken cancellation) =>
+        await CancellationPolicies.SingleOrDefaultAsync(policy => policy.BusinessId == businessId, cancellation)
+            ?? CancellationPolicy.None(businessId);
+
     // A property of the context, so EF Core reads it anew for every query.
     BusinessId? ScopedBusinessId => scope.BusinessId;
 
@@ -50,6 +57,7 @@ sealed class SchedulingDbContext(DbContextOptions<SchedulingDbContext> options, 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SchedulingDbContext).Assembly);
         modelBuilder.Entity<Booking>().HasQueryFilter(booking => booking.BusinessId == ScopedBusinessId);
         modelBuilder.Entity<TimeOff>().HasQueryFilter(timeOff => timeOff.BusinessId == ScopedBusinessId);
+        modelBuilder.Entity<CancellationPolicy>().HasQueryFilter(policy => policy.BusinessId == ScopedBusinessId);
 
         // MassTransit's transactional outbox and inbox: messages published while saving a booking
         // are written here in the same transaction and sent afterwards; messages consumed are
