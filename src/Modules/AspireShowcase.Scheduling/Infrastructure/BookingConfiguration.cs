@@ -8,8 +8,8 @@ namespace AspireShowcase.Scheduling;
 sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
 {
     /// <summary>
-    /// The exclusion constraint that keeps a staff member's confirmed bookings from overlapping.
-    /// EF Core can't model it, so the migration that creates the table adds it in SQL.
+    /// The exclusion constraint that keeps a staff member's confirmed bookings, buffers included,
+    /// from overlapping. EF Core can't model it, so the migrations add it in SQL.
     /// </summary>
     public const string NoOverlapConstraint = "EX_Bookings_StaffMember_NoOverlap";
 

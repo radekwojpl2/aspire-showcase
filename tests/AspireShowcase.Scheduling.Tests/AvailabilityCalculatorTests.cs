@@ -3,7 +3,7 @@ using AspireShowcase.Scheduling;
 
 namespace AspireShowcase.Scheduling.Tests;
 
-/// <summary>The rules of user stories MVP-1 and MVP-2: which slots are free, and for whom.</summary>
+/// <summary>The rules of user stories MVP-1, MVP-2 and V1-2: which slots are free, and for whom.</summary>
 public class AvailabilityCalculatorTests
 {
     static readonly TimeZoneInfo Warsaw = TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw");
@@ -22,9 +22,11 @@ public class AvailabilityCalculatorTests
         AvailabilityCalculator.Instant(day ?? Tuesday, TimeOnly.Parse(localTime), Warsaw)!.Value;
 
     static IReadOnlyList<FreeSlot> Slots(
-        IEnumerable<StaffSchedule> staff, int minutes, IEnumerable<BusyTime>? busy = null, DateTimeOffset? now = null) =>
+        IEnumerable<StaffSchedule> staff, int minutes, IEnumerable<BusyTime>? busy = null, DateTimeOffset? now = null,
+        int bufferMinutes = 0) =>
         AvailabilityCalculator.FreeSlots(
-            staff, TimeSpan.FromMinutes(minutes), busy ?? [], Warsaw, Tuesday, 1, now ?? LongBefore);
+            staff, TimeSpan.FromMinutes(minutes), TimeSpan.FromMinutes(bufferMinutes), busy ?? [], Warsaw, Tuesday, 1,
+            now ?? LongBefore);
 
     static string[] LocalStarts(IEnumerable<FreeSlot> slots) =>
         slots.Select(slot => TimeZoneInfo.ConvertTime(slot.Start, Warsaw).ToString("HH:mm")).ToArray();
@@ -52,6 +54,33 @@ public class AvailabilityCalculatorTests
 
         // 09:15 would run into the booking; 10:00 starts as it ends.
         Assert.Equal(["09:00", "10:00", "10:15", "10:30"], LocalStarts(slots));
+    }
+
+    [Fact]
+    public void A_booking_s_buffer_isnt_offered()
+    {
+        // A 30-minute booking at 09:30 with a 15-minute buffer: busy until 10:15.
+        var slots = Slots([Works(Anna, "09:00", "11:00")], 30, [new BusyTime(Anna, At("09:30"), At("10:15"))]);
+
+        Assert.Equal(["09:00", "10:15", "10:30"], LocalStarts(slots));
+    }
+
+    [Fact]
+    public void A_slot_keeps_its_own_buffer_free_before_the_next_booking()
+    {
+        // 15 minutes plus a 15-minute buffer: 09:00 is cleaned up by the booking at 09:30, 09:15 wouldn't be.
+        var slots = Slots(
+            [Works(Anna, "09:00", "10:30")], 15, [new BusyTime(Anna, At("09:30"), At("10:00"))], bufferMinutes: 15);
+
+        Assert.Equal(["09:00", "10:00", "10:15"], LocalStarts(slots));
+    }
+
+    [Fact]
+    public void The_buffer_may_run_past_the_end_of_the_working_hours()
+    {
+        var slots = Slots([Works(Anna, "09:00", "10:00")], 30, bufferMinutes: 15);
+
+        Assert.Equal(["09:00", "09:15", "09:30"], LocalStarts(slots));
     }
 
     [Fact]
@@ -97,7 +126,7 @@ public class AvailabilityCalculatorTests
         var sunday = new DateOnly(2026, 3, 29);
 
         var slots = AvailabilityCalculator.FreeSlots(
-            [Works(Anna, "01:30", "03:30", DayOfWeek.Sunday)], TimeSpan.FromMinutes(15), [], Warsaw, sunday, 1,
+            [Works(Anna, "01:30", "03:30", DayOfWeek.Sunday)], TimeSpan.FromMinutes(15), TimeSpan.Zero, [], Warsaw, sunday, 1,
             new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero));
 
         Assert.Equal(

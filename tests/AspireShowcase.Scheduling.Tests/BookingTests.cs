@@ -18,7 +18,7 @@ public class BookingTests
         var start = new DateTimeOffset(2026, 10, 6, 9, 0, 0, TimeSpan.FromHours(2));
 
         var booking = Booking.Book(
-            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(45),
+            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(45), TimeSpan.Zero,
             Attendee.Create(null, "Ola Nowak", "ola.nowak@example.com"), DateTimeOffset.UtcNow);
 
         Assert.Equal(new DateTimeOffset(2026, 10, 6, 7, 0, 0, TimeSpan.Zero), booking.Start);
@@ -28,15 +28,28 @@ public class BookingTests
     }
 
     [Fact]
+    public void A_booking_keeps_its_staff_member_busy_until_after_the_buffer()
+    {
+        var start = new DateTimeOffset(2026, 10, 6, 9, 0, 0, TimeSpan.Zero);
+
+        var booking = Booking.Book(
+            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(45), TimeSpan.FromMinutes(10),
+            Attendee.Create(null, "Ola Nowak", "ola.nowak@example.com"), DateTimeOffset.UtcNow);
+
+        Assert.Equal(start.AddMinutes(45), booking.End);
+        Assert.Equal(start.AddMinutes(55), booking.OccupiedUntil);
+    }
+
+    [Fact]
     public void A_booking_needs_a_duration()
     {
         Assert.Throws<DomainValidationException>(() => Booking.Book(
-            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), DateTimeOffset.UtcNow, TimeSpan.Zero,
+            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), DateTimeOffset.UtcNow, TimeSpan.Zero, TimeSpan.Zero,
             Attendee.Create(null, "Ola Nowak", "ola.nowak@example.com"), DateTimeOffset.UtcNow));
     }
 
     static Booking BookingAt(DateTimeOffset start) => Booking.Book(
-        BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(30),
+        BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(30), TimeSpan.Zero,
         Attendee.Create("client-1", "Ola Nowak", "ola.nowak@example.com"), start.AddDays(-7));
 
     [Fact]

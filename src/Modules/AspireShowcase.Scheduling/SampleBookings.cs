@@ -73,7 +73,7 @@ static class SampleBookings
                                 {
                                     var client = Clients[random.Next(Clients.Length)];
                                     var booking = Booking.Book(
-                                        business.Id, member.Id, service.Id, start, service.Duration,
+                                        business.Id, member.Id, service.Id, start, service.Duration, service.Buffer,
                                         Attendee.Create(null, client, Email(client)), now);
                                     // Made-up clients at example.com: nobody gets emails about them.
                                     booking.ClearEvents();
@@ -88,7 +88,7 @@ static class SampleBookings
                                         taken++;
                                     }
                                 }
-                                start += service.Duration + TimeSpan.FromMinutes(15 * random.Next(3));
+                                start += service.Duration + service.Buffer + TimeSpan.FromMinutes(15 * random.Next(3));
                             }
                         }
                     }
