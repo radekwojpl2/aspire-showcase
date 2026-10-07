@@ -71,12 +71,10 @@ src/
 ├── AspireShowcase.Bff/              # backend for frontend: sign-in, sessions, proxy; serves the UI in Azure
 ├── AspireShowcase.Api/              # API host (resource "web"), reachable only from bff
 ├── Modules/
-│   ├── AspireShowcase.BusinessSetup/  # business, booking link, hours, services, staff
-│   ├── AspireShowcase.BusinessSetup.PublicClient/  # how other modules talk to Business Setup
-│   ├── AspireShowcase.Scheduling/     # bookings and the owner's calendar
-│   ├── AspireShowcase.Scheduling.PublicClient/  # the messages Scheduling publishes
-│   ├── AspireShowcase.Identity/       # anti-corruption layer over Logto
-│   └── AspireShowcase.SharedKernel/   # what every module's domain may use
+│   ├── BusinessSetup/                 # business, booking link, hours, services, staff
+│   ├── Scheduling/                    # bookings and the owner's calendar
+│   ├── Identity/                      # anti-corruption layer over Logto
+│   └── BuildingBlocks/                # what every module may use
 ├── AspireShowcase.Notifications/    # notifications service: booking emails
 └── AspireShowcase.Web/              # React + Vite
 tests/
@@ -117,8 +115,8 @@ The API's modules, `bff` and the notifications service apply their EF Core migra
 
 ```
 dotnet tool restore
-dotnet ef migrations add <Name> --project src/Modules/AspireShowcase.BusinessSetup --startup-project src/AspireShowcase.Api --context BusinessSetupDbContext
-dotnet ef migrations add <Name> --project src/Modules/AspireShowcase.Scheduling --startup-project src/AspireShowcase.Api --context SchedulingDbContext
+dotnet ef migrations add <Name> --project src/Modules/BusinessSetup/AspireShowcase.BusinessSetup --startup-project src/AspireShowcase.Api --context BusinessSetupDbContext
+dotnet ef migrations add <Name> --project src/Modules/Scheduling/AspireShowcase.Scheduling --startup-project src/AspireShowcase.Api --context SchedulingDbContext
 dotnet ef migrations add <Name> --project src/AspireShowcase.Bff
 dotnet ef migrations add <Name> --project src/AspireShowcase.Notifications
 ```
@@ -220,7 +218,7 @@ On top of what ASP.NET Core, the HTTP clients and Npgsql record by themselves, t
 
 Two things are left out or renamed to keep the traces readable. Database queries outside any recorded request or message aren't recorded: MassTransit's inbox cleanup and the health checks run every few seconds and would otherwise start a trace each time (`BackgroundQueryFilter` in ServiceDefaults). And `bff` names a proxied request after its path, with IDs as `{id}` and booking links as `{slug}`, instead of its one proxy route, `/api/{**rest}`.
 
-The API's Business Setup module, `AspireShowcase.BusinessSetup`, in `src/Modules/AspireShowcase.BusinessSetup/BusinessTelemetry.cs`:
+The API's Business Setup module, `AspireShowcase.BusinessSetup`, in `src/Modules/BusinessSetup/AspireShowcase.BusinessSetup/BusinessTelemetry.cs`:
 
 | Metric | Kind | Measures |
 |---|---|---|
@@ -232,7 +230,7 @@ The API's Business Setup module, `AspireShowcase.BusinessSetup`, in `src/Modules
 
 Its `businesses.create` span carries a `business.created` or `business.rejected` event, `businesses.opening_hours.set` an `opening_hours.saved` or `opening_hours.invalid` one, the `businesses.services.*` spans a `service.<result>` one, and the `businesses.staff.*` spans a `staff_member.<result>` one.
 
-The Scheduling module, `AspireShowcase.Scheduling`, in `src/Modules/AspireShowcase.Scheduling/SchedulingTelemetry.cs`:
+The Scheduling module, `AspireShowcase.Scheduling`, in `src/Modules/Scheduling/AspireShowcase.Scheduling/SchedulingTelemetry.cs`:
 
 | Metric | Kind | Measures |
 |---|---|---|

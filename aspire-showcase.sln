@@ -18,19 +18,19 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.BusinessSetu
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{EC447DCF-ABFA-6E24-52A5-D7FD48A5C558}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.SharedKernel", "src\Modules\AspireShowcase.SharedKernel\AspireShowcase.SharedKernel.csproj", "{53E0F63D-0399-4A2D-AE83-7720BD7C2E26}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.BuildingBlocks.Domain", "src\Modules\BuildingBlocks\AspireShowcase.BuildingBlocks.Domain\AspireShowcase.BuildingBlocks.Domain.csproj", "{53E0F63D-0399-4A2D-AE83-7720BD7C2E26}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Identity", "src\Modules\AspireShowcase.Identity\AspireShowcase.Identity.csproj", "{809A2DEE-110D-4EF3-B031-2D0887C94927}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Identity", "src\Modules\Identity\AspireShowcase.Identity\AspireShowcase.Identity.csproj", "{809A2DEE-110D-4EF3-B031-2D0887C94927}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.BusinessSetup", "src\Modules\AspireShowcase.BusinessSetup\AspireShowcase.BusinessSetup.csproj", "{81755320-546E-41E5-BC97-7DBCB759DFCB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.BusinessSetup", "src\Modules\BusinessSetup\AspireShowcase.BusinessSetup\AspireShowcase.BusinessSetup.csproj", "{81755320-546E-41E5-BC97-7DBCB759DFCB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Scheduling", "src\Modules\AspireShowcase.Scheduling\AspireShowcase.Scheduling.csproj", "{0540E01D-E47E-4B8D-84F6-15C6F780A778}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Scheduling", "src\Modules\Scheduling\AspireShowcase.Scheduling\AspireShowcase.Scheduling.csproj", "{0540E01D-E47E-4B8D-84F6-15C6F780A778}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.BusinessSetup.PublicClient", "src\Modules\AspireShowcase.BusinessSetup.PublicClient\AspireShowcase.BusinessSetup.PublicClient.csproj", "{1D05DB24-2756-43EF-88E0-8DD269C467B9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.BusinessSetup.PublicClient", "src\Modules\BusinessSetup\AspireShowcase.BusinessSetup.PublicClient\AspireShowcase.BusinessSetup.PublicClient.csproj", "{1D05DB24-2756-43EF-88E0-8DD269C467B9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Scheduling.Tests", "tests\AspireShowcase.Scheduling.Tests\AspireShowcase.Scheduling.Tests.csproj", "{D881E5E7-2495-44E6-82BA-8896C4FB74F0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Scheduling.PublicClient", "src\Modules\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj", "{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Scheduling.PublicClient", "src\Modules\Scheduling\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj", "{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Api.IntegrationTests", "tests\AspireShowcase.Api.IntegrationTests\AspireShowcase.Api.IntegrationTests.csproj", "{392E1696-903A-4699-9700-C92FF1198A2A}"
 EndProject

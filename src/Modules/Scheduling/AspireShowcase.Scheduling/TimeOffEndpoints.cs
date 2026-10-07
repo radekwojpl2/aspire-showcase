@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Security.Claims;
 using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.Identity;
-using AspireShowcase.SharedKernel;
+using AspireShowcase.BuildingBlocks.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace AspireShowcase.Scheduling;

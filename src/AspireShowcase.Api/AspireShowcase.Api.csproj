@@ -21,9 +21,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AspireShowcase.ServiceDefaults\AspireShowcase.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\Modules\AspireShowcase.BusinessSetup\AspireShowcase.BusinessSetup.csproj" />
-    <ProjectReference Include="..\Modules\AspireShowcase.Identity\AspireShowcase.Identity.csproj" />
-    <ProjectReference Include="..\Modules\AspireShowcase.Scheduling\AspireShowcase.Scheduling.csproj" />
+    <ProjectReference Include="..\Modules\BusinessSetup\AspireShowcase.BusinessSetup\AspireShowcase.BusinessSetup.csproj" />
+    <ProjectReference Include="..\Modules\Identity\AspireShowcase.Identity\AspireShowcase.Identity.csproj" />
+    <ProjectReference Include="..\Modules\Scheduling\AspireShowcase.Scheduling\AspireShowcase.Scheduling.csproj" />
   </ItemGroup>
 
 </Project>

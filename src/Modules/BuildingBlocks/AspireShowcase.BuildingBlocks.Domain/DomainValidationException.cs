@@ -1,4 +1,4 @@
-namespace AspireShowcase.SharedKernel;
+namespace AspireShowcase.BuildingBlocks.Domain;
 
 /// <summary>
 /// A change was refused because it breaks a rule of the domain. <see cref="Errors"/> says what's

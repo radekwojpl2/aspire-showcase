@@ -1,6 +1,6 @@
 using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.Scheduling;
-using AspireShowcase.SharedKernel;
+using AspireShowcase.BuildingBlocks.Domain;
 
 namespace AspireShowcase.Scheduling.Tests;
 
