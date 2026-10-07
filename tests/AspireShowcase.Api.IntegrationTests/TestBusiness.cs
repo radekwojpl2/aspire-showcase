@@ -89,4 +89,4 @@ public sealed record ClientBooking(Guid Id, string BusinessSlug, string Date, st
 
 public sealed record Calendar(List<CalendarBooking> Bookings);
 
-public sealed record CalendarBooking(Guid Id, string Day, string Start, string ClientName);
+public sealed record CalendarBooking(Guid Id, string Day, string Start, Guid StaffMemberId, string ClientName);
