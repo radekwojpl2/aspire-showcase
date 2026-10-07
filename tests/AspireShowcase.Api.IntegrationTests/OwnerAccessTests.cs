@@ -17,6 +17,7 @@ public sealed class OwnerAccessTests(ApiFactory api)
         var id = Guid.NewGuid();
         return new()
         {
+            { "PUT", "/api/businesses/mine/contact" },
             { "GET", "/api/businesses/mine/opening-hours" },
             { "PUT", "/api/businesses/mine/opening-hours" },
             { "GET", "/api/businesses/mine/services" },

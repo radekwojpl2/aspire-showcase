@@ -135,7 +135,7 @@ public class WeeklyHoursTests
     [Fact]
     public void A_new_business_is_closed_until_its_hours_are_set()
     {
-        var business = Business.Start("Anna's Hair", "anna-hair", "Europe/Warsaw", "user-1", DateTimeOffset.UtcNow);
+        var business = Business.Start("Anna's Hair", "anna-hair", "Europe/Warsaw", "hello@anna-hair.example", "user-1", DateTimeOffset.UtcNow);
 
         Assert.Equal(WeeklyHours.Closed, business.OpeningHours);
     }
@@ -143,7 +143,7 @@ public class WeeklyHoursTests
     [Fact]
     public void Setting_hours_replaces_them_and_the_time_zone()
     {
-        var business = Business.Start("Anna's Hair", "anna-hair", "Europe/Warsaw", "user-1", DateTimeOffset.UtcNow);
+        var business = Business.Start("Anna's Hair", "anna-hair", "Europe/Warsaw", "hello@anna-hair.example", "user-1", DateTimeOffset.UtcNow);
         var hours = WeeklyHours.Create([Period(DayOfWeek.Monday, "09:00", "17:00")]);
 
         business.SetOpeningHours(hours, "Europe/London", []);
@@ -159,7 +159,7 @@ public class WeeklyHoursTests
     [InlineData("Central European Standard Time")] // a Windows ID, not IANA
     public void The_time_zone_has_to_be_an_IANA_time_zone(string? timeZone)
     {
-        var business = Business.Start("Anna's Hair", "anna-hair", "Europe/Warsaw", "user-1", DateTimeOffset.UtcNow);
+        var business = Business.Start("Anna's Hair", "anna-hair", "Europe/Warsaw", "hello@anna-hair.example", "user-1", DateTimeOffset.UtcNow);
 
         var errors = ErrorsOf(() => business.SetOpeningHours(WeeklyHours.Closed, timeZone, []));
 

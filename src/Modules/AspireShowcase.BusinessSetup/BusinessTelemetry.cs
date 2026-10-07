@@ -55,6 +55,16 @@ sealed class BusinessTelemetry
         activity?.AddEvent(new ActivityEvent("business.rejected"));
     }
 
+    /// <param name="result">saved or invalid.</param>
+    public void ContactChanged(Activity? activity, Business? business, string result)
+    {
+        if (business is not null)
+        {
+            activity?.SetTag("business.id", business.Id.Value);
+        }
+        activity?.AddEvent(new ActivityEvent($"contact.{result}"));
+    }
+
     /// <param name="result">added, changed, hidden, shown, invalid or name_taken.</param>
     public void ServiceChanged(Activity? activity, Service? service, string result)
     {

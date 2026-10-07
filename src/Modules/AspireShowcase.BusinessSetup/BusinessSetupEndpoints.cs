@@ -8,9 +8,12 @@ using Npgsql;
 namespace AspireShowcase.BusinessSetup;
 
 /// <param name="OwnerName">The owner's name as their staff member, as clients will see it.</param>
-record StartBusiness(string? Name, string? Slug, string? TimeZone, string? OwnerName);
+record StartBusiness(string? Name, string? Slug, string? TimeZone, string? ContactEmail, string? OwnerName);
 
-record BusinessResponse(Guid Id, string Name, string Slug, string TimeZone, DateTimeOffset CreatedAt);
+/// <param name="ContactEmail">Null for a business started before it was required, until the owner adds one.</param>
+record BusinessResponse(Guid Id, string Name, string Slug, string TimeZone, string? ContactEmail, DateTimeOffset CreatedAt);
+
+record ContactBody(string? ContactEmail);
 
 /// <param name="Problem">Why the link can't be used, when it can't.</param>
 record SlugAvailability(string Slug, bool Available, string? Problem);
@@ -63,7 +66,8 @@ static class BusinessSetupEndpoints
             Business business;
             try
             {
-                business = Business.Start(request.Name, request.Slug, request.TimeZone, UserId(user), time.GetUtcNow());
+                business = Business.Start(
+                    request.Name, request.Slug, request.TimeZone, request.ContactEmail, UserId(user), time.GetUtcNow());
             }
             catch (DomainValidationException exception)
             {
@@ -120,6 +124,35 @@ static class BusinessSetupEndpoints
             return Results.Created("/api/businesses/mine", ToResponse(business));
         })
         .WithName("CreateBusiness");
+
+        // Where clients can reach the business (V1-3); also how an older business gets one.
+        businesses.MapPut("/mine/contact", async (
+            ContactBody request, ClaimsPrincipal user, BusinessSetupDbContext db, BusinessTelemetry telemetry,
+            CancellationToken cancellation) =>
+        {
+            using var activity = telemetry.StartActivity("businesses.contact.set");
+
+            if (await FindMineAsync(db.Businesses, user, cancellation) is not { } business)
+            {
+                return Results.NotFound();
+            }
+
+            try
+            {
+                business.ChangeContactEmail(request.ContactEmail);
+            }
+            catch (DomainValidationException exception)
+            {
+                telemetry.ContactChanged(activity, null, "invalid");
+                return Results.ValidationProblem(exception.Errors.ToDictionary());
+            }
+
+            await db.SaveChangesAsync(cancellation);
+            telemetry.ContactChanged(activity, business, "saved");
+            return Results.Ok(ToResponse(business));
+        })
+        .RequireAuthorization(IdentityAccess.OwnerPolicy)
+        .WithName("SetContact");
 
         // User story MVP-9. Only owners: the owner role comes with starting a business.
         var openingHours = businesses.MapGroup("/mine/opening-hours")
@@ -214,7 +247,7 @@ static class BusinessSetupEndpoints
         TimeOnly.TryParseExact(value, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out time);
 
     static BusinessResponse ToResponse(Business business) =>
-        new(business.Id.Value, business.Name, business.Slug, business.TimeZone, business.CreatedAt);
+        new(business.Id.Value, business.Name, business.Slug, business.TimeZone, business.ContactEmail, business.CreatedAt);
 
     static OpeningHoursBody ToBody(Business business) => new(business.TimeZone, ToPeriodBodies(business.OpeningHours));
 
