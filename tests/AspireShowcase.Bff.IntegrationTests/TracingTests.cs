@@ -50,7 +50,25 @@ public sealed class TracingTests(BffFactory bff) : IClassFixture<BffFactory>
         await bff.Services.GetRequiredService<ITicketStore>().RetrieveAsync("no-such-session");
 
         // Neither this query nor the migrations bff ran when it started.
-        Assert.DoesNotContain(bff.Spans, span => span.Source.Name == "Npgsql" && string.IsNullOrEmpty(span.ParentId));
+        AssertNoQueryOnItsOwn();
+    }
+
+    [Fact]
+    public async Task Health_check_queries_are_not_traced()
+    {
+        // /health requests aren't traced, so their queries would be traces of their own.
+        var response = await bff.CreateClient().GetAsync("/health");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        AssertNoQueryOnItsOwn();
+    }
+
+    /// <summary>Every exported database span's parent was exported too.</summary>
+    void AssertNoQueryOnItsOwn()
+    {
+        var spanIds = bff.Spans.Select(span => span.SpanId).ToHashSet();
+        Assert.All(bff.Spans.Where(span => span.Source.Name == "Npgsql"),
+            span => Assert.Contains(span.ParentSpanId, spanIds));
     }
 
     Task<HttpResponseMessage> SendAsync(HttpMethod method, string url) => SendAsync(new HttpRequestMessage(method, url));
