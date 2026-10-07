@@ -3,6 +3,7 @@ import { apiFetch, readProblem } from './api.ts';
 import { BookingsPage } from './bookings.tsx';
 import { cancelBooking, confirmCancel, fetchCalendar, type Calendar, type CalendarBooking } from './calendar-api.ts';
 import { OpeningHoursPage } from './hours.tsx';
+import { CancellationPolicyCard } from './policy.tsx';
 import { ServicesPage } from './services.tsx';
 import { StaffPage } from './staff.tsx';
 import { TimeOffPage } from './time-off.tsx';
@@ -18,7 +19,7 @@ const tabs = [
   { path: '/bookings', label: 'Bookings' },
   { path: '/services', label: 'Services' },
   { path: '/staff', label: 'Staff' },
-  { path: '/hours', label: 'Opening hours' },
+  { path: '/hours', label: 'Hours & policy' },
   { path: '/time-off', label: 'Time off' },
 ] as const;
 
@@ -70,7 +71,12 @@ export function OwnerDashboard({ business }: { business: OwnedBusiness }) {
       {tab === '/bookings' && <BookingsPage />}
       {tab === '/services' && <ServicesPage />}
       {tab === '/staff' && <StaffPage />}
-      {tab === '/hours' && <OpeningHoursPage />}
+      {tab === '/hours' && (
+        <>
+          <OpeningHoursPage />
+          <CancellationPolicyCard />
+        </>
+      )}
       {tab === '/time-off' && <TimeOffPage />}
     </div>
   );

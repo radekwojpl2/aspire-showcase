@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { apiFetch, readProblem } from './api.ts';
+import { describePolicy } from './policy-text.ts';
 import { signInUrl, useSession } from './session.ts';
 import { ErrorMessage } from './ui.tsx';
 
@@ -14,7 +15,7 @@ type Service = {
   staff: Staff[];
 };
 
-type Business = { name: string; slug: string; timeZone: string; services: Service[] };
+type Business = { name: string; slug: string; timeZone: string; cancellationNoticeHours: number; services: Service[] };
 
 // Local date and time in the business's time zone, and the instant to book it with.
 type Slot = { start: string; startsAt: string };
@@ -313,6 +314,8 @@ export function BookingPage({ slug }: { slug: string }) {
             {service.name} with {staffMember?.name ?? 'anyone free'}, {dayLabel(chosen.date)}{' '}
             {chosen.start}–{addMinutes(chosen.start, service.durationMinutes)} · {price(service)}
           </p>
+          {/* V1-3: clients see the policy before they book. */}
+          <p className="hint">{describePolicy(business.cancellationNoticeHours)}</p>
 
           {!signInEnabled ? (
             <p className="hint">Booking needs sign-in, which isn't set up yet.</p>
