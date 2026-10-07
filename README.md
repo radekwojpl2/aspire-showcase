@@ -2,7 +2,8 @@
 
 React + ASP.NET Core with [Aspire](https://aspire.dev), deployed to Azure Container Apps.
 
-## This project is just a showcase what can be done with Aspire. It's not a production-ready app.
+> [!NOTE]
+> This project is just a showcase of what can be done with Aspire. It's not a production-ready app.
 
 ## What this shows
 
@@ -11,17 +12,7 @@ One AppHost describes the whole system: a React app, a backend for frontend (`bf
 - **Locally**, `aspire run` starts everything on your machine (`bff`, the API and the notifications service as processes, Vite with hot reload, Logto and PostgreSQL as containers) and sends logs, traces and metrics to the Aspire dashboard.
 - **In Azure**, `aspire deploy` turns it into Container Apps, a PostgreSQL Flexible Server, Key Vault and Application Insights, from a GitHub Actions workflow.
 
-The app is the start of an appointment booking SaaS for small businesses. So far, someone signs up and starts a business with a name and a booking link (user story MVP-8), sets its weekly opening hours (MVP-9), adds the services clients can book (MVP-10), adds staff with their services and working hours (MVP-11), and sees the bookings by day and week and cancels one for sickness or emergencies (MVP-12, MVP-14). Clients book on the business's public page, `/book/{slug}`: they see the free times for the next 4 weeks without an account, choose a staff member or anyone, and sign in or sign up to book (MVP-1 to MVP-4). Signed in, **My bookings** lists their upcoming bookings at every business and cancels one, which frees the time at once (MVP-7). On a local run, the `web` resource also has an **Add sample bookings** command in the dashboard. The point is still the AppHost in `src/AspireShowcase.AppHost`.
-
-The API is a modular monolith, split into the modules of [`docs/architecture/ddd-modules.md`](docs/architecture/ddd-modules.md). Each module is its own project in `src/Modules`, so the compiler keeps the boundaries: a module's domain model is internal, and other projects only see its entry points. So far:
-
-- **Business Setup**: the `Business`, `Service` and `StaffMember` aggregates, with `WeeklyHours` (opening and working hours) and `Money` as value objects, with its own `DbContext`, migrations and `business_setup` schema. Public: `AddBusinessSetup`, `MapBusinessSetup`.
-- **Business Setup public client** (`AspireShowcase.BusinessSetup.PublicClient`): the only way other modules talk to Business Setup. `IBusinessDirectory` reads businesses, staff and services as plain records; Business Setup implements it, and other modules reference only this project. It also holds the typed IDs of Business Setup's aggregates (`BusinessId`, `ServiceId`, `StaffMemberId`): aggregates refer to each other only by these, never by object, and EF Core stores them as plain `uuid` columns.
-- **Scheduling**: the `Booking` aggregate with its `Attendee`, and the `AvailabilityCalculator` domain service that turns working hours, durations and bookings into free slots, in the `scheduling` schema. A PostgreSQL exclusion constraint keeps one staff member's bookings from overlapping, while different staff can be booked at the same time, and a query filter keeps every query to one business, except "My bookings", which crosses businesses on purpose through its own query scoped to the client. Public: `AddScheduling`, `MapScheduling`.
-- **Identity & Access**: the anti-corruption layer over Logto. Public: `AddIdentityAccess`, the owner policy and `IOwnerRoles`.
-- **Shared kernel**: what every domain may use (validation errors).
-
-`AspireShowcase.Api` is only the host that composes them. The domain rules are tested in `tests/AspireShowcase.BusinessSetup.Tests` and `tests/AspireShowcase.Scheduling.Tests`, and the API with the database (double bookings, the outbox, migrations) in `tests/AspireShowcase.Api.IntegrationTests`, against PostgreSQL in a container started by Testcontainers. `tests/AspireShowcase.Bff.IntegrationTests` does the same for `bff`, with `web` replaced by a stub: the CSRF check, ended sessions and the Content-Security-Policy.
+The app is a small appointment booking service: a business owner sets up their business, opening hours, services and staff, and clients book a free time on the business's public page. The point is the AppHost in `src/AspireShowcase.AppHost`, not the app.
 
 ## Local and Azure are not the same
 
