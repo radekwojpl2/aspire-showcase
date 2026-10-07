@@ -10,6 +10,12 @@ public sealed record BookingConfirmed(Guid BookingId, Guid BusinessId, DateTimeO
 /// <param name="CancelledBy">client or business.</param>
 public sealed record BookingCancelled(Guid BookingId, Guid BusinessId, string CancelledBy, DateTimeOffset OccurredAt);
 
+/// <summary>A booking was moved to another time, by the client or the business (V1-4).</summary>
+/// <param name="RescheduledBy">client or business.</param>
+/// <param name="PreviousStart">When it was before.</param>
+public sealed record BookingRescheduled(
+    Guid BookingId, Guid BusinessId, string RescheduledBy, DateTimeOffset PreviousStart, DateTimeOffset OccurredAt);
+
 /// <summary>
 /// Everything a message to the client and the owner about a booking needs, in the business's
 /// local time. Scheduling publishes it after a <see cref="BookingConfirmed"/> or

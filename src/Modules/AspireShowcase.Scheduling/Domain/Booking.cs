@@ -17,6 +17,13 @@ enum BookingStatus
     Cancelled,
 }
 
+/// <summary>Who moved a booking to another time (V1-4): the client, or the business for them.</summary>
+enum RescheduledBy
+{
+    Client,
+    Business,
+}
+
 /// <summary>Who cancelled a booking: the client (MVP-7), or the business for them (MVP-14).</summary>
 enum CancelledBy
 {
@@ -49,6 +56,7 @@ sealed class Booking
 
     public BusinessId BusinessId { get; private set; }
 
+    /// <summary>Who it's with; moving it (V1-4) can change that.</summary>
     public StaffMemberId StaffMemberId { get; private set; }
 
     public ServiceId ServiceId { get; private set; }
@@ -92,6 +100,50 @@ sealed class Booking
 
     /// <summary>What happened since it was loaded, until it's saved: see <see cref="BookingEvent"/>.</summary>
     public IReadOnlyList<BookingEvent> Events => _events;
+
+    /// <summary>
+    /// Moves the booking to another time, with the same or another staff member (user story V1-4).
+    /// It keeps its length and buffer, and the row is updated in place: the old time is only free
+    /// once the new one is saved, and moving it a little later doesn't collide with itself. Whether
+    /// the new time is free is the database's call, as when booking. Moving it where it is
+    /// already changes nothing.
+    /// </summary>
+    /// <exception cref="DomainValidationException">It's cancelled or has started, the new time
+    /// has started, or a client is too late under the cancellation policy (V1-3).</exception>
+    public void Reschedule(DateTimeOffset start, StaffMemberId staffMemberId, DateTimeOffset now, RescheduledBy by)
+    {
+        var errors = new DomainErrors();
+        if (Status == BookingStatus.Cancelled)
+        {
+            errors.Add("booking", "It's cancelled, so it can't be moved.");
+        }
+        else if (Start <= now)
+        {
+            errors.Add("booking", "It has already started, so it can't be moved.");
+        }
+        if (start <= now)
+        {
+            errors.Add("startsAt", "Choose a time that hasn't started.");
+        }
+        errors.ThrowIfAny();
+        if (by == RescheduledBy.Client)
+        {
+            ThrowIfTooLateForClient(now, "move it");
+        }
+        if (start == Start && staffMemberId == StaffMemberId)
+        {
+            return;
+        }
+
+        var (previousStart, previousStaffMemberId) = (Start, StaffMemberId);
+        var length = End - Start;
+        var buffer = OccupiedUntil - End;
+        Start = start.ToUniversalTime();
+        End = Start + length;
+        OccupiedUntil = End + buffer;
+        StaffMemberId = staffMemberId;
+        _events.Add(new BookingRescheduled(Id, now, previousStart, previousStaffMemberId, by));
+    }
 
     /// <exception cref="DomainValidationException">The client's notice period has begun.</exception>
     void ThrowIfTooLateForClient(DateTimeOffset now, string change)
@@ -187,6 +239,11 @@ sealed record BookingConfirmed(BookingId BookingId, DateTimeOffset OccurredAt) :
 /// <summary>The client (MVP-7) or the business (MVP-14) cancelled.</summary>
 sealed record BookingCancelled(BookingId BookingId, DateTimeOffset OccurredAt, CancelledBy By)
     : BookingEvent(BookingId, OccurredAt);
+
+/// <summary>The client or the business moved it to another time (V1-4).</summary>
+sealed record BookingRescheduled(
+    BookingId BookingId, DateTimeOffset OccurredAt, DateTimeOffset PreviousStart, StaffMemberId PreviousStaffMemberId,
+    RescheduledBy By) : BookingEvent(BookingId, OccurredAt);
 
 /// <summary>What became of an attempt to book.</summary>
 enum BookingResult
