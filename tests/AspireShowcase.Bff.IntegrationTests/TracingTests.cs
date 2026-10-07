@@ -63,13 +63,14 @@ public sealed class TracingTests(BffFactory bff) : IClassFixture<BffFactory>
         AssertNoQueryOnItsOwn();
     }
 
-    /// <summary>Every exported database span's parent was exported too.</summary>
-    void AssertNoQueryOnItsOwn()
-    {
-        var spanIds = bff.Spans.Select(span => span.SpanId).ToHashSet();
-        Assert.All(bff.Spans.Where(span => span.Source.Name == "Npgsql"),
-            span => Assert.Contains(span.ParentSpanId, spanIds));
-    }
+    /// <summary>
+    /// No exported database span would show as a trace of its own: each has a parent that's
+    /// recorded. Checked on the parent itself rather than on what was exported, because a
+    /// request's span is exported only when the request ends, after its queries.
+    /// </summary>
+    void AssertNoQueryOnItsOwn() =>
+        Assert.DoesNotContain(bff.Spans, span => span.Source.Name == "Npgsql" &&
+            (string.IsNullOrEmpty(span.ParentId) || span.Parent is { Recorded: false }));
 
     Task<HttpResponseMessage> SendAsync(HttpMethod method, string url) => SendAsync(new HttpRequestMessage(method, url));
 
