@@ -9,6 +9,7 @@ type Business = {
   name: string;
   slug: string;
   timeZone: string;
+  contactEmail: string | null;
   createdAt: string;
 };
 
@@ -124,6 +125,7 @@ export function StartBusiness() {
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
   // Until the link is edited by hand, it follows the name.
   const [slugEdited, setSlugEdited] = useState(false);
   const [availability, setAvailability] = useState<Availability>({ state: 'idle' });
@@ -202,6 +204,7 @@ export function StartBusiness() {
           name,
           slug,
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          contactEmail,
           ownerName: user?.name,
         }),
       });
@@ -280,13 +283,32 @@ export function StartBusiness() {
           </p>
         </div>
 
+        <div className="field">
+          <label htmlFor="business-contact">Contact email</label>
+          <input
+            id="business-contact"
+            className="input"
+            type="email"
+            value={contactEmail}
+            onChange={(event) => setContactEmail(event.target.value)}
+            maxLength={254}
+            autoComplete="email"
+            aria-invalid={Boolean(errors.contactEmail)}
+            aria-describedby="business-contact-hint"
+            required
+          />
+          <p id="business-contact-hint" className={errors.contactEmail ? 'field-error' : 'field-hint'}>
+            {errors.contactEmail?.[0] ?? 'Shown to your clients, for when they need to reach you.'}
+          </p>
+        </div>
+
         {formError && <ErrorMessage message={formError} />}
 
         <div>
           <button
             className="button"
             type="submit"
-            disabled={submitting || !name.trim() || !slug || availability.state === 'unavailable'}
+            disabled={submitting || !name.trim() || !slug || !contactEmail.trim() || availability.state === 'unavailable'}
           >
             {submitting ? 'Starting...' : 'Start my business'}
           </button>
