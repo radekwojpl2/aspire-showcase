@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using AspireShowcase.Scheduling.PublicClient;
 using MassTransit;
 using MassTransit.Testing;
@@ -42,6 +43,25 @@ public sealed class MessagingTests(ApiFactory api)
         Assert.Equal(new BookingParty("Cleo Client", "cleo@example.com"), notice.Client);
         // The owner's email comes from Logto, through Identity.
         Assert.Equal(FakeUserProfiles.EmailOf(business.Owner.Id), notice.Owner.Email);
+    }
+
+    [Fact]
+    public async Task Moving_a_booking_publishes_a_notice_of_where_it_was_and_is()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        var client = TestUser.Client();
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
+            await business.BookAsync(api, client, TestBusiness.FirstSlot));
+
+        await TestBusiness.ReadAsync<BookingConfirmation>(await api.CreateClient(client).PostAsJsonAsync(
+            $"/api/me/bookings/{booked.Id}/reschedule", new { startsAt = TestBusiness.FirstSlot.AddHours(2) }));
+
+        var moved = await ConsumedAsync<BookingRescheduled>(message => message.BookingId == booked.Id);
+        var notice = await ConsumedAsync<BookingNotice>(message => message.BookingId == booked.Id && message.Kind == "rescheduled");
+        Assert.Equal(("client", TestBusiness.FirstSlot), (moved.RescheduledBy, moved.PreviousStart));
+        Assert.Equal(
+            ("client", "2026-11-02", "09:00", "11:00"),
+            (notice.RescheduledBy, notice.PreviousDate, notice.PreviousStart, notice.Start));
     }
 
     /// <summary>

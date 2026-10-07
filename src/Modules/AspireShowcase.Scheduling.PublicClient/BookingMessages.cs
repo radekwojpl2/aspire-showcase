@@ -19,16 +19,20 @@ public sealed record BookingRescheduled(
 /// <summary>
 /// Everything a message to the client and the owner about a booking needs, in the business's
 /// local time. Scheduling publishes it after a <see cref="BookingConfirmed"/> or
-/// <see cref="BookingCancelled"/>, once it has looked the details up; the notifications service
+/// <see cref="BookingCancelled"/> or <see cref="BookingRescheduled"/>, once it has looked the details up; the notifications service
 /// turns it into emails without asking anyone anything.
 /// </summary>
-/// <param name="Kind">confirmed or cancelled.</param>
+/// <param name="Kind">confirmed, cancelled or rescheduled.</param>
 /// <param name="CancelledBy">client or business, for a cancellation.</param>
 /// <param name="Date">yyyy-MM-dd.</param>
 /// <param name="Start">HH:mm.</param>
+/// <param name="RescheduledBy">client or business, for a booking moved to another time (V1-4).</param>
+/// <param name="PreviousDate">For a moved booking, its date before, yyyy-MM-dd.</param>
+/// <param name="PreviousStart">For a moved booking, its start before, HH:mm.</param>
 public sealed record BookingNotice(
     string Kind, string? CancelledBy, Guid BookingId, string BusinessName, string BusinessSlug, string ServiceName,
-    string StaffName, string Date, string Start, string End, string TimeZone, BookingParty Client, BookingParty Owner);
+    string StaffName, string Date, string Start, string End, string TimeZone, BookingParty Client, BookingParty Owner,
+    string? RescheduledBy = null, string? PreviousDate = null, string? PreviousStart = null);
 
 /// <param name="Email">Null when their account has none: then they get no email.</param>
 public sealed record BookingParty(string Name, string? Email);

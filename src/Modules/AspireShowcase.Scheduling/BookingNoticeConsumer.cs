@@ -18,7 +18,8 @@ namespace AspireShowcase.Scheduling;
 /// </remarks>
 sealed class BookingNoticeConsumer(
     SchedulingDbContext db, IBusinessDirectory directory, IUserProfiles profiles)
-    : IConsumer<PublicClient.BookingConfirmed>, IConsumer<PublicClient.BookingCancelled>
+    : IConsumer<PublicClient.BookingConfirmed>, IConsumer<PublicClient.BookingCancelled>,
+        IConsumer<PublicClient.BookingRescheduled>
 {
     public async Task Consume(ConsumeContext<PublicClient.BookingConfirmed> context)
     {
@@ -34,6 +35,22 @@ sealed class BookingNoticeConsumer(
         if (await BuildAsync(message.BookingId, "cancelled", message.CancelledBy, context.CancellationToken) is { } notice)
         {
             await context.Publish(notice);
+        }
+    }
+
+    // V1-4: the notice says where the booking was, in the business's time zone, as well as where it is.
+    public async Task Consume(ConsumeContext<PublicClient.BookingRescheduled> context)
+    {
+        var message = context.Message;
+        if (await BuildAsync(message.BookingId, "rescheduled", null, context.CancellationToken) is { } notice)
+        {
+            var before = TimeZoneInfo.ConvertTime(message.PreviousStart, TimeZoneInfo.FindSystemTimeZoneById(notice.TimeZone));
+            await context.Publish(notice with
+            {
+                RescheduledBy = message.RescheduledBy,
+                PreviousDate = before.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                PreviousStart = before.ToString("HH:mm", CultureInfo.InvariantCulture),
+            });
         }
     }
 
