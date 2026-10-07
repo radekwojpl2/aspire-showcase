@@ -2,7 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AspireShowcase.ServiceDefaults\AspireShowcase.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\Modules\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj" />
+    <ProjectReference Include="..\Modules\Scheduling\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -26,7 +26,7 @@ Run from the repository root.
 | Logs and traces | `aspire logs <resource>`, `aspire otel traces <resource>` |
 | Build and test the .NET projects | `dotnet build`, `dotnet test` (the integration tests need Docker running) |
 | Lint and build the React app | `npm run lint`, `npm run build` in `src/AspireShowcase.Web` |
-| Add an EF Core migration | `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/<Module> --startup-project src/AspireShowcase.Api --context <Module>DbContext` (or `--project src/AspireShowcase.Bff` alone) |
+| Add an EF Core migration | `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/<Module>/AspireShowcase.<Module> --startup-project src/AspireShowcase.Api --context <Module>DbContext` (or `--project src/AspireShowcase.Bff` alone) |
 
 ## Layout
 
@@ -36,13 +36,15 @@ src/
 ├── AspireShowcase.ServiceDefaults/  # telemetry, health checks, service discovery
 ├── AspireShowcase.Bff/              # backend for frontend (resource "bff"): sign-in, sessions, proxy to web; serves the React app in Azure
 ├── AspireShowcase.Api/              # API host (resource "web"), reachable only from bff; composes the modules
-├── Modules/                         # one project per module of docs/architecture/ddd-modules.md
-│   ├── AspireShowcase.BusinessSetup/  # business, booking link, hours, services, staff; own DbContext and migrations
-│   ├── AspireShowcase.BusinessSetup.PublicClient/  # contracts other modules use to talk to Business Setup
-│   ├── AspireShowcase.Scheduling/     # bookings and the owner's calendar; own DbContext and migrations
-│   ├── AspireShowcase.Scheduling.PublicClient/  # the messages Scheduling publishes on the bus
-│   ├── AspireShowcase.Identity/       # anti-corruption layer over Logto
-│   └── AspireShowcase.SharedKernel/   # what every module's domain may use
+├── Modules/                         # a folder per module of docs/architecture/ddd-modules.md
+│   ├── BusinessSetup/
+│   │   ├── AspireShowcase.BusinessSetup/  # business, booking link, hours, services, staff; own DbContext and migrations
+│   │   └── AspireShowcase.BusinessSetup.PublicClient/  # contracts other modules use to talk to Business Setup
+│   ├── Scheduling/
+│   │   ├── AspireShowcase.Scheduling/     # bookings and the owner's calendar; own DbContext and migrations
+│   │   └── AspireShowcase.Scheduling.PublicClient/  # the messages Scheduling publishes on the bus
+│   ├── Identity/AspireShowcase.Identity/  # anti-corruption layer over Logto
+│   └── BuildingBlocks/AspireShowcase.BuildingBlocks.Domain/  # what every module's domain may use
 ├── AspireShowcase.Notifications/    # notifications service: booking emails (MassTransit consumer, Resend), with a Quartz.NET job
 └── AspireShowcase.Web/              # React + Vite (resource "frontend")
 tests/

@@ -1,5 +1,5 @@
 using System.Net.Mail;
-using AspireShowcase.SharedKernel;
+using AspireShowcase.BuildingBlocks.Domain;
 
 namespace AspireShowcase.Scheduling;
 

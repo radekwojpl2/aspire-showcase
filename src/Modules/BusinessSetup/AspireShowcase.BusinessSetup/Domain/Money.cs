@@ -1,5 +1,5 @@
 using System.Globalization;
-using AspireShowcase.SharedKernel;
+using AspireShowcase.BuildingBlocks.Domain;
 
 namespace AspireShowcase.BusinessSetup;
 

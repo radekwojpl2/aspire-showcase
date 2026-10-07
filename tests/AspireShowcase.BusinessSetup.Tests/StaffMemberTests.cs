@@ -1,6 +1,6 @@
 using AspireShowcase.BusinessSetup;
 using AspireShowcase.BusinessSetup.PublicClient;
-using AspireShowcase.SharedKernel;
+using AspireShowcase.BuildingBlocks.Domain;
 
 namespace AspireShowcase.BusinessSetup.Tests;
 

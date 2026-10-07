@@ -17,9 +17,9 @@
 
   <ItemGroup>
     <!-- Business Setup only through its public client, never the module itself. -->
-    <ProjectReference Include="..\AspireShowcase.BusinessSetup.PublicClient\AspireShowcase.BusinessSetup.PublicClient.csproj" />
-    <ProjectReference Include="..\AspireShowcase.Identity\AspireShowcase.Identity.csproj" />
-    <ProjectReference Include="..\AspireShowcase.SharedKernel\AspireShowcase.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\BusinessSetup\AspireShowcase.BusinessSetup.PublicClient\AspireShowcase.BusinessSetup.PublicClient.csproj" />
+    <ProjectReference Include="..\..\Identity\AspireShowcase.Identity\AspireShowcase.Identity.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Domain\AspireShowcase.BuildingBlocks.Domain.csproj" />
     <ProjectReference Include="..\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj" />
   </ItemGroup>
 
