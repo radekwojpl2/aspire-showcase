@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AspireShowcase.BusinessSetup.Migrations
 {
     /// <inheritdoc />
-    public partial class AddStaff : Migration
+    internal partial class AddStaff : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

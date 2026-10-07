@@ -5,7 +5,7 @@
 namespace AspireShowcase.BusinessSetup.Migrations
 {
     /// <inheritdoc />
-    public partial class AddBusinessContactEmail : Migration
+    internal partial class AddBusinessContactEmail : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AspireShowcase.Scheduling.Migrations
 {
     /// <inheritdoc />
-    public partial class AddBookingBuffer : Migration
+    internal partial class AddBookingBuffer : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

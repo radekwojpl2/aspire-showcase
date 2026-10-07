@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AspireShowcase.Scheduling.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCancellationPolicy : Migration
+    internal partial class AddCancellationPolicy : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AspireShowcase.Scheduling.Migrations
 {
     /// <inheritdoc />
-    public partial class AddMessagingOutbox : Migration
+    internal partial class AddMessagingOutbox : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -5,7 +5,7 @@
 namespace AspireShowcase.BusinessSetup.Migrations
 {
     /// <inheritdoc />
-    public partial class AddOpeningHours : Migration
+    internal partial class AddOpeningHours : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

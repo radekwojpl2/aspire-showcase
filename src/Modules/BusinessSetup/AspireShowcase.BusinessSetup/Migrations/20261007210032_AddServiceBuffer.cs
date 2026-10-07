@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AspireShowcase.BusinessSetup.Migrations
 {
     /// <inheritdoc />
-    public partial class AddServiceBuffer : Migration
+    internal partial class AddServiceBuffer : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

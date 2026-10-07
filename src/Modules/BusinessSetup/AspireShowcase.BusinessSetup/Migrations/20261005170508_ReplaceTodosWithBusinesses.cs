@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AspireShowcase.BusinessSetup.Migrations
 {
     /// <inheritdoc />
-    public partial class ReplaceTodosWithBusinesses : Migration
+    internal partial class ReplaceTodosWithBusinesses : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
