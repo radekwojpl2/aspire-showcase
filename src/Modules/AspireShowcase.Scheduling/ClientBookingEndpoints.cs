@@ -8,13 +8,15 @@ namespace AspireShowcase.Scheduling;
 
 /// <param name="Date">The local date in the business's time zone, yyyy-MM-dd.</param>
 /// <param name="Start">The local time, HH:mm.</param>
+/// <param name="CanChangeUntil">Until when the client can cancel or move it themselves (V1-3).</param>
+/// <param name="BusinessContactEmail">Where to reach the business after that; null if it has none yet.</param>
 record ClientBooking(
     Guid Id, string BusinessName, string BusinessSlug, string ServiceName, string StaffName, string Date, string Start,
-    string End, string TimeZone);
+    string End, string TimeZone, DateTimeOffset CanChangeUntil, string? BusinessContactEmail);
 
 /// <summary>
 /// A client's own bookings (user story MVP-7), under /me/bookings: every business they booked
-/// with, and cancelling one.
+/// with, and cancelling one, unless the business's cancellation policy says it's too late (V1-3).
 /// </summary>
 static class ClientBookingEndpoints
 {
@@ -57,7 +59,9 @@ static class ClientBookingEndpoints
                         start.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                         start.ToString("HH:mm", CultureInfo.InvariantCulture),
                         end.ToString("HH:mm", CultureInfo.InvariantCulture),
-                        info.TimeZone);
+                        info.TimeZone,
+                        booking.ClientCanChangeUntil,
+                        info.ContactEmail);
                 }));
             }
             return list.OrderBy(booking => booking.Date).ThenBy(booking => booking.Start).ToList();
