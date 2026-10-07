@@ -21,7 +21,7 @@ public class StaffMemberTests
 
     static Business OpenBusiness()
     {
-        var business = Business.Start("Anna's Hair", "anna-hair", "Europe/Warsaw", "owner-1", Now);
+        var business = Business.Start("Anna's Hair", "anna-hair", "Europe/Warsaw", "hello@anna-hair.example", "owner-1", Now);
         business.SetOpeningHours(OpeningHours, "Europe/Warsaw", []);
         return business;
     }

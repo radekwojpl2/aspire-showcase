@@ -30,14 +30,21 @@ sealed class Business
     /// <summary>The IANA time zone of <see cref="OpeningHours"/>; see <see cref="BusinessTimeZone"/>.</summary>
     public string TimeZone { get; private set; } = BusinessTimeZone.Default;
 
+    /// <summary>
+    /// Where clients can reach the business; see <see cref="BusinessSetup.ContactEmail"/>. Required
+    /// for a new business, so null only for one started before it was.
+    /// </summary>
+    public string? ContactEmail { get; private set; }
+
     /// <summary>Closed every day until the owner sets them.</summary>
     public WeeklyHours OpeningHours { get; private set; } = WeeklyHours.Closed;
 
     public DateTimeOffset CreatedAt { get; private set; }
 
     /// <summary>Starts a business for its owner (user story MVP-8).</summary>
-    /// <exception cref="DomainValidationException">The name, slug or time zone can't be used.</exception>
-    public static Business Start(string? name, string? slug, string? timeZone, string ownerId, DateTimeOffset now)
+    /// <exception cref="DomainValidationException">The name, slug, time zone or contact email can't be used.</exception>
+    public static Business Start(
+        string? name, string? slug, string? timeZone, string? contactEmail, string ownerId, DateTimeOffset now)
     {
         var errors = new DomainErrors();
         var trimmedName = name?.Trim();
@@ -50,6 +57,7 @@ sealed class Business
             errors.Add("slug", slugProblem);
         }
         CheckTimeZone(timeZone, errors);
+        CheckContactEmail(contactEmail, errors);
         errors.ThrowIfAny();
 
         return new Business
@@ -59,6 +67,7 @@ sealed class Business
             Slug = slug!,
             OwnerId = ownerId,
             TimeZone = timeZone!,
+            ContactEmail = contactEmail!.Trim(),
             CreatedAt = now,
         };
     }
@@ -92,6 +101,25 @@ sealed class Business
 
         OpeningHours = hours;
         TimeZone = timeZone!;
+    }
+
+    /// <summary>Changes where clients can reach the business.</summary>
+    /// <exception cref="DomainValidationException">It isn't an email address.</exception>
+    public void ChangeContactEmail(string? contactEmail)
+    {
+        var errors = new DomainErrors();
+        CheckContactEmail(contactEmail, errors);
+        errors.ThrowIfAny();
+
+        ContactEmail = contactEmail!.Trim();
+    }
+
+    static void CheckContactEmail(string? contactEmail, DomainErrors errors)
+    {
+        if (BusinessSetup.ContactEmail.Problem(contactEmail) is { } problem)
+        {
+            errors.Add("contactEmail", problem);
+        }
     }
 
     static void CheckTimeZone(string? timeZone, DomainErrors errors)

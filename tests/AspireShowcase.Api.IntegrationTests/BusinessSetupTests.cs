@@ -84,8 +84,35 @@ public sealed class BusinessSetupTests(ApiFactory api)
 
     static string NewSlug() => $"test-{Guid.NewGuid():N}";
 
+    [Fact]
+    public async Task A_business_cannot_be_started_without_a_contact_email()
+    {
+        var response = await api.CreateClient(TestUser.Owner()).PostAsJsonAsync("/api/businesses",
+            new { name = "Test salon", slug = NewSlug(), timeZone = TestBusiness.TimeZone, ownerName = "Olivia Owner" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("contactEmail", (await response.Content.ReadFromJsonAsync<HttpValidationProblemDetails>())!.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task The_owner_can_change_the_contact_email()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        var owner = api.CreateClient(business.Owner);
+
+        var changed = await owner.PutAsJsonAsync("/api/businesses/mine/contact", new { contactEmail = "bookings@salon.example" });
+        var invalid = await owner.PutAsJsonAsync("/api/businesses/mine/contact", new { contactEmail = "nope" });
+
+        Assert.Equal(HttpStatusCode.OK, changed.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        var mine = await TestBusiness.ReadAsync<MyBusiness>(await owner.GetAsync("/api/businesses/mine"));
+        Assert.Equal("bookings@salon.example", mine.ContactEmail);
+    }
+
+    sealed record MyBusiness(string ContactEmail);
+
     static object StartBusiness(string slug) =>
-        new { name = "Test salon", slug, timeZone = TestBusiness.TimeZone, ownerName = "Olivia Owner" };
+        new { name = "Test salon", slug, timeZone = TestBusiness.TimeZone, contactEmail = "hello@salon.example", ownerName = "Olivia Owner" };
 
     sealed record SlugAvailability(string Slug, bool Available);
 }

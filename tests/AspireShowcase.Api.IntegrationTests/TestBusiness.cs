@@ -21,7 +21,7 @@ public sealed record TestBusiness(TestUser Owner, Guid Id, string Slug, Guid Ser
         var slug = $"test-{Guid.NewGuid():N}";
 
         var started = await http.PostAsJsonAsync("/api/businesses",
-            new { name = "Test salon", slug, timeZone = TimeZone, ownerName = "Olivia Owner" });
+            new { name = "Test salon", slug, timeZone = TimeZone, contactEmail = "hello@salon.example", ownerName = "Olivia Owner" });
         var business = await ReadAsync<BusinessResponse>(started);
 
         var hours = await http.PutAsJsonAsync("/api/businesses/mine/opening-hours", new
