@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\Identity\AspireShowcase.Identity\AspireShowcase.Identity.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Domain\AspireShowcase.BuildingBlocks.Domain.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Infrastructure\AspireShowcase.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\AspireShowcase.BusinessSetup.Domain\AspireShowcase.BusinessSetup.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +29,7 @@
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Hosting" />
     <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="AspireShowcase.BusinessSetup.Domain" />
   </ItemGroup>
 
   <ItemGroup>

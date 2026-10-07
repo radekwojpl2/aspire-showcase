@@ -1,7 +1,7 @@
 using System.Globalization;
 using AspireShowcase.BuildingBlocks.Domain;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Domain;
 
 /// <summary>
 /// An amount in a currency, such as a service's price. A value object: two are equal when both

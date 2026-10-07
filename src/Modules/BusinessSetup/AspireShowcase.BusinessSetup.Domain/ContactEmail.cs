@@ -1,6 +1,6 @@
 using System.Net.Mail;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Domain;
 
 /// <summary>
 /// The email address clients can reach a business at, such as when it's too late to cancel

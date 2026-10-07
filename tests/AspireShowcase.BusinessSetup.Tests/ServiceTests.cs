@@ -1,4 +1,4 @@
-using AspireShowcase.BusinessSetup;
+using AspireShowcase.BusinessSetup.Domain;
 using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.BuildingBlocks.Domain;
 
