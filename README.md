@@ -7,9 +7,9 @@ React + ASP.NET Core with [Aspire](https://aspire.dev), deployed to Azure Contai
 
 ## What this shows
 
-One AppHost describes the whole system: a React app, a backend for frontend (`bff`) that the browser talks to, an ASP.NET Core API behind it, a notifications service, [Logto](https://logto.io) for sign-in, and one PostgreSQL server holding the app's, `bff`'s and Logto's databases. The same description is used twice:
+One AppHost describes the whole system: a React app, a backend for frontend (`bff`) that the browser talks to, an ASP.NET Core API behind it, a notifications service, RabbitMQ as the message bus between the API and that service, [Logto](https://logto.io) for sign-in, and one PostgreSQL server holding the app's, `bff`'s, the notifications service's and Logto's databases. The same description is used twice:
 
-- **Locally**, `aspire run` starts everything on your machine (`bff`, the API and the notifications service as processes, Vite with hot reload, Logto and PostgreSQL as containers) and sends logs, traces and metrics to the Aspire dashboard.
+- **Locally**, `aspire run` starts everything on your machine (`bff`, the API and the notifications service as processes, Vite with hot reload, Logto, PostgreSQL and RabbitMQ as containers) and sends logs, traces and metrics to the Aspire dashboard.
 - **In Azure**, `aspire deploy` turns it into Container Apps, a PostgreSQL Flexible Server, Key Vault and Application Insights, from a GitHub Actions workflow.
 
 The app is a small appointment booking service: a business owner sets up their business, opening hours, services and staff, and clients book a free time on the business's public page. The point is the AppHost in `src/AspireShowcase.AppHost`, not the app.
@@ -23,6 +23,7 @@ The AppHost is the same code in both, but Aspire uses it differently. With `aspi
 | bff, API, notifications service | Processes | Container Apps; only `bff` is public |
 | React app | Vite dev server with hot reload, proxying to `bff` | Built into the `bff` container |
 | PostgreSQL | Container with a data volume | Flexible Server |
+| RabbitMQ | Container, with the management UI | Container App, one replica, no storage: a restart loses the messages still in its queues, `_error` queues included |
 | Connection strings | Environment variables | Key Vault, read with managed identities |
 | Logto | Containers | Container Apps |
 | Parameters and secrets | AppHost user secrets | GitHub `production` environment |
@@ -107,12 +108,12 @@ Locally, Vite proxies these paths to `bff` and keeps the `Host` header, so Logto
 
 ## Database
 
-One PostgreSQL server (`postgres`) with three databases: `app-db` for the API's modules, `bff-db` for `bff`'s sessions and data protection keys, and `logto-db` for Logto. In `app-db`, each module has its own schema (`business_setup`, `scheduling`), `DbContext` and migrations, and only maps its own tables. Scheduling keeps its migration history in its schema; Business Setup's stays in `public.__EFMigrationsHistory`, where it was before the modules had schemas. Scheduling's no-overlap constraint needs the `btree_gist` extension, which the AppHost allows on the Flexible Server in Azure.
+One PostgreSQL server (`postgres`) with four databases: `app-db` for the API's modules, `bff-db` for `bff`'s sessions and data protection keys, `notifications-db` for the notifications service's MassTransit inbox and outbox, and `logto-db` for Logto. In `app-db`, each module has its own schema (`business_setup`, `scheduling`), `DbContext` and migrations, and only maps its own tables. Scheduling keeps its migration history in its schema; Business Setup's stays in `public.__EFMigrationsHistory`, where it was before the modules had schemas. Scheduling's no-overlap constraint needs the `btree_gist` extension, which the AppHost allows on the Flexible Server in Azure.
 
 - Local: a container, with its data in a Docker volume.
 - Azure: a Flexible Server. The connection strings are in Key Vault, and the Container Apps read them with their managed identities.
 
-The API's modules and `bff` apply their EF Core migrations on startup. To add one after changing a model (a module's migrations are built through the API host):
+The API's modules, `bff` and the notifications service apply their EF Core migrations on startup. To add one after changing a model (a module's migrations are built through the API host):
 
 ```
 dotnet tool restore
