@@ -23,6 +23,7 @@ static class ApiProxy
     public static void AddApiProxy(this WebApplicationBuilder builder)
     {
         builder.Services.AddSingleton<AccessTokens>();
+        builder.Services.AddSingleton<SessionTelemetry>();
 
         builder.Services.AddReverseProxy()
             .LoadFromMemory(
@@ -89,6 +90,9 @@ static class ApiProxy
             var token = await context.RequestServices.GetRequiredService<AccessTokens>().GetAsync(context);
             if (token is null && context.Request.Cookies.ContainsKey(LogtoAuthentication.SessionCookie))
             {
+                // UseAuthentication read the session already: if it found one, its token is what failed.
+                context.RequestServices.GetRequiredService<SessionTelemetry>().Ended(
+                    context.User.Identity?.IsAuthenticated == true ? "refresh_failed" : "session_not_found");
                 // Deletes the cookie, and the session if it's still in bff-db.
                 await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 context.Response.Headers[SessionEndedHeader] = "1";
