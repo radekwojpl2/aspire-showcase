@@ -34,6 +34,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Scheduling.P
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Api.IntegrationTests", "tests\AspireShowcase.Api.IntegrationTests\AspireShowcase.Api.IntegrationTests.csproj", "{392E1696-903A-4699-9700-C92FF1198A2A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Bff.IntegrationTests", "tests\AspireShowcase.Bff.IntegrationTests\AspireShowcase.Bff.IntegrationTests.csproj", "{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -212,6 +214,18 @@ Global
 		{392E1696-903A-4699-9700-C92FF1198A2A}.Release|x64.Build.0 = Release|Any CPU
 		{392E1696-903A-4699-9700-C92FF1198A2A}.Release|x86.ActiveCfg = Release|Any CPU
 		{392E1696-903A-4699-9700-C92FF1198A2A}.Release|x86.Build.0 = Release|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Debug|x64.Build.0 = Debug|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Debug|x86.Build.0 = Debug|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Release|x64.ActiveCfg = Release|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Release|x64.Build.0 = Release|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Release|x86.ActiveCfg = Release|Any CPU
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -232,5 +246,6 @@ Global
 		{D881E5E7-2495-44E6-82BA-8896C4FB74F0} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{AF6A354D-7ABC-4EF8-9D27-595BD6CD51B1} = {EC447DCF-ABFA-6E24-52A5-D7FD48A5C558}
 		{392E1696-903A-4699-9700-C92FF1198A2A} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{BBB5C0C3-5161-4605-BEEE-277DD2F0CDCA} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
