@@ -5,20 +5,22 @@ namespace AspireShowcase.Scheduling;
 /// <summary>When a staff member works: periods of weekdays, in the business's local time.</summary>
 sealed record StaffSchedule(StaffMemberId StaffMemberId, IReadOnlyList<WorkingPeriod> WorkingHours);
 
-/// <summary>A time a staff member is already booked.</summary>
+/// <summary>A time a staff member can't be booked: [Start, End).</summary>
+/// <param name="End">When they're free again: for a booking, after its buffer.</param>
 sealed record BusyTime(StaffMemberId StaffMemberId, DateTimeOffset Start, DateTimeOffset End);
 
 /// <summary>A start time with the staff members who are free for the whole service from then.</summary>
 sealed record FreeSlot(DateTimeOffset Start, IReadOnlyList<StaffMemberId> FreeStaff);
 
 /// <summary>
-/// Works out the free slots (user stories MVP-1 and MVP-2): from the staff's working hours, the
-/// service's duration and their existing bookings. A domain service: the rule needs bookings and
+/// Works out the free slots (user stories MVP-1, MVP-2 and V1-2): from the staff's working hours,
+/// the service's duration and buffer, and their existing bookings. A domain service: the rule needs bookings and
 /// Business Setup's hours together, so it belongs to no single aggregate.
 /// </summary>
 /// <remarks>
 /// Slots start on a 15-minute grid from the start of each working period, in the business's
-/// time zone, and the whole service has to fit in the period. Times a daylight saving change
+/// time zone, and the whole service has to fit in the period. Its buffer may run past the end of
+/// the period (cleaning up after the last client), but not into another booking. Times a daylight saving change
 /// skips don't exist and aren't offered. A slot lists every free staff member, so "anyone"
 /// is the union of their slots, and booking can assign whoever is free.
 /// </remarks>
@@ -26,11 +28,12 @@ static class AvailabilityCalculator
 {
     public static readonly TimeSpan Step = TimeSpan.FromMinutes(15);
 
+    /// <param name="buffer">Kept free after the service; zero for none.</param>
     /// <param name="firstDay">The first local day to look at.</param>
     /// <param name="days">How many days, from <paramref name="firstDay"/>.</param>
     /// <param name="now">Slots that start before this aren't offered.</param>
     public static IReadOnlyList<FreeSlot> FreeSlots(
-        IEnumerable<StaffSchedule> staff, TimeSpan duration, IEnumerable<BusyTime> busy, TimeZoneInfo timeZone,
+        IEnumerable<StaffSchedule> staff, TimeSpan duration, TimeSpan buffer, IEnumerable<BusyTime> busy, TimeZoneInfo timeZone,
         DateOnly firstDay, int days, DateTimeOffset now)
     {
         var busyByStaff = busy.ToLookup(time => time.StaffMemberId);
@@ -51,8 +54,8 @@ static class AvailabilityCalculator
                         {
                             continue;
                         }
-                        var end = start + duration;
-                        if (theirBusyTimes.Any(busyTime => busyTime.Start < end && start < busyTime.End))
+                        var occupiedUntil = start + duration + buffer;
+                        if (theirBusyTimes.Any(busyTime => busyTime.Start < occupiedUntil && start < busyTime.End))
                         {
                             continue;
                         }

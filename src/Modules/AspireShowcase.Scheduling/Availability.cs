@@ -61,12 +61,12 @@ sealed class Availability(IBusinessDirectory directory, SchedulingDbContext db, 
         var busy = await db.Bookings.AsNoTracking()
             .Where(booking => booking.Status == BookingStatus.Confirmed &&
                               staffIds.Contains(booking.StaffMemberId) &&
-                              booking.Start < new DateTimeOffset(to) && booking.End > new DateTimeOffset(from))
-            .Select(booking => new BusyTime(booking.StaffMemberId, booking.Start, booking.End))
+                              booking.Start < new DateTimeOffset(to) && booking.OccupiedUntil > new DateTimeOffset(from))
+            .Select(booking => new BusyTime(booking.StaffMemberId, booking.Start, booking.OccupiedUntil))
             .ToListAsync(cancellation);
 
         return AvailabilityCalculator.FreeSlots(
             offer.Staff.Select(member => new StaffSchedule(member.Id, member.WorkingHours)),
-            offer.Service.Duration, busy, offer.TimeZone, firstDay, days, time.GetUtcNow());
+            offer.Service.Duration, offer.Service.Buffer, busy, offer.TimeZone, firstDay, days, time.GetUtcNow());
     }
 }
