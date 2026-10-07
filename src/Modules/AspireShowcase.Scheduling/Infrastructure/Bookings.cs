@@ -35,6 +35,24 @@ sealed class Bookings(SchedulingDbContext db, IPublishEndpoint publish)
         }
     }
 
+    /// <summary>
+    /// Saves a booking moved to another time (V1-4), unless another confirmed booking of that
+    /// staff member overlaps the new time; as in <see cref="AddAsync"/>, the database decides.
+    /// </summary>
+    public async Task<BookingResult> RescheduleAsync(Booking booking, CancellationToken cancellation)
+    {
+        try
+        {
+            await SaveAsync(booking, cancellation);
+            return BookingResult.Booked;
+        }
+        catch (DbUpdateException exception) when (BookingConfiguration.IsSlotTaken(exception))
+        {
+            db.Entry(booking).State = EntityState.Detached;
+            return BookingResult.SlotTaken;
+        }
+    }
+
     /// <summary>Saves the booking's changes and publishes its events through the outbox.</summary>
     public async Task SaveAsync(Booking booking, CancellationToken cancellation)
     {
@@ -50,6 +68,11 @@ sealed class Bookings(SchedulingDbContext db, IPublishEndpoint publish)
     {
         BookingCancelled cancelled => new PublicClient.BookingCancelled(
             booking.Id.Value, booking.BusinessId.Value, cancelled.By.ToString().ToLowerInvariant(), cancelled.OccurredAt),
-        _ => new PublicClient.BookingConfirmed(booking.Id.Value, booking.BusinessId.Value, bookingEvent.OccurredAt),
+        BookingRescheduled rescheduled => new PublicClient.BookingRescheduled(
+            booking.Id.Value, booking.BusinessId.Value, rescheduled.By.ToString().ToLowerInvariant(),
+            rescheduled.PreviousStart, rescheduled.OccurredAt),
+        BookingConfirmed confirmed => new PublicClient.BookingConfirmed(
+            booking.Id.Value, booking.BusinessId.Value, confirmed.OccurredAt),
+        _ => throw new InvalidOperationException($"No message for {bookingEvent.GetType().Name}."),
     };
 }

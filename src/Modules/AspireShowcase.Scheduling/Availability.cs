@@ -49,8 +49,12 @@ sealed class Availability(IBusinessDirectory directory, SchedulingDbContext db, 
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), offer.TimeZone).DateTime);
 
     /// <summary>Free slots for the offer on <paramref name="days"/> local days from <paramref name="firstDay"/>.</summary>
+    /// <param name="moving">
+    /// A booking being moved to another time (V1-4): its own time doesn't count as busy, and the
+    /// slots fit its length and buffer, which it keeps from when it was booked.
+    /// </param>
     public async Task<IReadOnlyList<FreeSlot>> FreeSlotsAsync(
-        Offer offer, DateOnly firstDay, int days, CancellationToken cancellation)
+        Offer offer, DateOnly firstDay, int days, CancellationToken cancellation, Booking? moving = null)
     {
         scope.BusinessId = offer.Business.Id;
 
@@ -58,10 +62,15 @@ sealed class Availability(IBusinessDirectory directory, SchedulingDbContext db, 
         var from = firstDay.AddDays(-1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var to = firstDay.AddDays(days + 1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var staffIds = offer.Staff.Select(member => member.Id).ToList();
-        var busy = await db.Bookings.AsNoTracking()
+        var bookings = db.Bookings.AsNoTracking()
             .Where(booking => booking.Status == BookingStatus.Confirmed &&
                               staffIds.Contains(booking.StaffMemberId) &&
-                              booking.Start < new DateTimeOffset(to) && booking.OccupiedUntil > new DateTimeOffset(from))
+                              booking.Start < new DateTimeOffset(to) && booking.OccupiedUntil > new DateTimeOffset(from));
+        if (moving is not null)
+        {
+            bookings = bookings.Where(booking => booking.Id != moving.Id);
+        }
+        var busy = await bookings
             .Select(booking => new BusyTime(booking.StaffMemberId, booking.Start, booking.OccupiedUntil))
             .ToListAsync(cancellation);
 
@@ -77,6 +86,8 @@ sealed class Availability(IBusinessDirectory directory, SchedulingDbContext db, 
 
         return AvailabilityCalculator.FreeSlots(
             offer.Staff.Select(member => new StaffSchedule(member.Id, member.WorkingHours)),
-            offer.Service.Duration, offer.Service.Buffer, busy, offer.TimeZone, firstDay, days, time.GetUtcNow());
+            moving is null ? offer.Service.Duration : moving.End - moving.Start,
+            moving is null ? offer.Service.Buffer : moving.OccupiedUntil - moving.End,
+            busy, offer.TimeZone, firstDay, days, time.GetUtcNow());
     }
 }
