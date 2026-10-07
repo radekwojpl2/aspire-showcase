@@ -23,6 +23,8 @@ sealed class Service
 
     public const int MaxDurationMinutes = 8 * 60;
 
+    public const int MaxBufferMinutes = 2 * 60;
+
     // For EF Core.
     Service()
     {
@@ -35,6 +37,12 @@ sealed class Service
     public string Name { get; private set; } = "";
 
     public TimeSpan Duration { get; private set; }
+
+    /// <summary>
+    /// Time kept free after each booking, such as 10 minutes to clean up (user story V1-2). Clients
+    /// see only the duration; nobody can be booked during the buffer.
+    /// </summary>
+    public TimeSpan Buffer { get; private set; }
 
     /// <summary>Shown to clients; nothing is paid online.</summary>
     public Money Price { get; private set; } = null!; // Set by Add, or by EF Core when loaded.
@@ -49,23 +57,26 @@ sealed class Service
 
     /// <summary>Adds a service to a business (user story MVP-10). It's offered to clients straight away.</summary>
     /// <param name="price">With <paramref name="currency"/>, the price shown to clients.</param>
-    /// <exception cref="DomainValidationException">The name, duration or price can't be used; every
-    /// problem is reported at once.</exception>
+    /// <param name="bufferMinutes">None when null.</param>
+    /// <exception cref="DomainValidationException">The name, duration, buffer or price can't be
+    /// used; every problem is reported at once.</exception>
     public static Service Add(
-        BusinessId businessId, string? name, int? durationMinutes, decimal? price, string? currency, DateTimeOffset now)
+        BusinessId businessId, string? name, int? durationMinutes, int? bufferMinutes, decimal? price, string? currency,
+        DateTimeOffset now)
     {
         var service = new Service { Id = ServiceId.New(), BusinessId = businessId, CreatedAt = now };
-        service.Change(name, durationMinutes, price, currency);
+        service.Change(name, durationMinutes, bufferMinutes, price, currency);
         return service;
     }
 
     /// <summary>
-    /// Changes the name, duration and price. Bookings already made keep the time they were booked
-    /// for; the new duration applies to new bookings.
+    /// Changes the name, duration, buffer and price. Bookings already made keep the time they were
+    /// booked for, buffer included; the new duration and buffer apply to new bookings.
     /// </summary>
-    /// <exception cref="DomainValidationException">The name, duration or price can't be used; every
-    /// problem is reported at once.</exception>
-    public void Change(string? name, int? durationMinutes, decimal? price, string? currency)
+    /// <param name="bufferMinutes">None when null.</param>
+    /// <exception cref="DomainValidationException">The name, duration, buffer or price can't be
+    /// used; every problem is reported at once.</exception>
+    public void Change(string? name, int? durationMinutes, int? bufferMinutes, decimal? price, string? currency)
     {
         var errors = new DomainErrors();
         var trimmedName = name?.Trim();
@@ -78,11 +89,18 @@ sealed class Service
             errors.Add("durationMinutes",
                 $"Use {DurationStepMinutes}-minute steps, from {DurationStepMinutes} minutes to {MaxDurationMinutes / 60} hours.");
         }
+        var buffer = bufferMinutes ?? 0;
+        if (buffer is < 0 or > MaxBufferMinutes || buffer % DurationStepMinutes != 0)
+        {
+            errors.Add("bufferMinutes",
+                $"Use {DurationStepMinutes}-minute steps, from none to {MaxBufferMinutes / 60} hours.");
+        }
         var money = Money.Create(price, currency, errors);
         errors.ThrowIfAny();
 
         Name = trimmedName!;
         Duration = TimeSpan.FromMinutes(durationMinutes!.Value);
+        Buffer = TimeSpan.FromMinutes(buffer);
         Price = money!;
     }
 
