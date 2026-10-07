@@ -1,3 +1,4 @@
+using AspireShowcase.BuildingBlocks.Infrastructure;
 using AspireShowcase.BusinessSetup.PublicClient;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;

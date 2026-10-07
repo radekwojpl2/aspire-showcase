@@ -1,3 +1,4 @@
+using AspireShowcase.BuildingBlocks.Infrastructure;
 using AspireShowcase.BusinessSetup.PublicClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
