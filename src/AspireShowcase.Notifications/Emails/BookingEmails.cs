@@ -7,8 +7,8 @@ using AspireShowcase.Scheduling.PublicClient;
 sealed record OutgoingEmail(string Recipient, string Kind, EmailMessage Message);
 
 /// <summary>
-/// Which emails a booking event sends, and what they say (user stories MVP-5, MVP-7, MVP-13 and
-/// MVP-14). Someone without an email address gets none.
+/// Which emails a booking event sends, and what they say (user stories MVP-5, MVP-7, MVP-13,
+/// MVP-14 and V1-4). Someone without an email address gets none.
 /// </summary>
 static class BookingEmails
 {
@@ -17,6 +17,7 @@ static class BookingEmails
         var app = (appUrl ?? "").TrimEnd('/');
         var when = $"{Day(booking.Date)}, {booking.Start}–{booking.End} ({booking.TimeZone.Replace('_', ' ')})";
         var what = $"{booking.ServiceName} with {booking.StaffName}";
+        var before = booking.PreviousDate is { } previousDate ? $"{Day(previousDate)}, {booking.PreviousStart}" : "";
 
         IEnumerable<OutgoingEmail> emails = (booking.Kind, booking.CancelledBy) switch
         {
@@ -47,6 +48,29 @@ static class BookingEmails
                     $"Hi {booking.Owner.Name},",
                     [$"{booking.Client.Name} cancelled, so this time is free again:", what, when],
                     ("Open your bookings", $"{app}/bookings")),
+            ],
+            // V1-4: the client moved it; both hear about it.
+            ("rescheduled", _) when booking.RescheduledBy == "client" =>
+            [
+                Email(booking.Client, "client", "rescheduled-by-client",
+                    $"Moved: {booking.ServiceName} at {booking.BusinessName}, now {Day(booking.Date)} {booking.Start}",
+                    $"Hi {booking.Client.Name},",
+                    [$"Your booking at {booking.BusinessName} is moved:", what, when, $"It was {before}."],
+                    ("See or change your bookings", $"{app}/my-bookings")),
+                Email(booking.Owner, "owner", "rescheduled-by-client",
+                    $"Moved by {booking.Client.Name}: {booking.ServiceName}, now {Day(booking.Date)} {booking.Start}",
+                    $"Hi {booking.Owner.Name},",
+                    [$"{booking.Client.Name} moved their booking from {before} to:", what, when],
+                    ("Open your bookings", $"{app}/bookings")),
+            ],
+            // V1-4: the business moved it, such as for time off; the client hears about it.
+            ("rescheduled", _) =>
+            [
+                Email(booking.Client, "client", "rescheduled-by-business",
+                    $"{booking.BusinessName} moved your booking: {booking.ServiceName}, now {Day(booking.Date)} {booking.Start}",
+                    $"Hi {booking.Client.Name},",
+                    [$"{booking.BusinessName} moved your booking from {before} to:", what, when],
+                    ("See or change your bookings", $"{app}/my-bookings")),
             ],
             // MVP-14: the business cancelled; the client hears about it.
             ("cancelled", _) =>

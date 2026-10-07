@@ -22,4 +22,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Which emails a booking event sends is tested directly. -->
+    <InternalsVisibleTo Include="AspireShowcase.Notifications.Tests" />
+  </ItemGroup>
+
 </Project>
