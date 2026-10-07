@@ -7,13 +7,14 @@ type Service = {
   id: string;
   name: string;
   durationMinutes: number;
+  bufferMinutes: number;
   price: number;
   currency: string;
   isHidden: boolean;
 };
 
 // What the form edits; strings, as the inputs hold them.
-type Draft = { name: string; durationMinutes: string; price: string; currency: string };
+type Draft = { name: string; durationMinutes: string; bufferMinutes: string; price: string; currency: string };
 
 type Load = 'loading' | 'loaded' | 'no-business' | 'not-owner';
 
@@ -36,12 +37,13 @@ function usualCurrency(services: Service[]): string {
 const emptyDraft = (services: Service[]): Draft => ({
   name: '',
   durationMinutes: '30',
+  bufferMinutes: '0',
   price: '',
   currency: usualCurrency(services),
 });
 
-// User story MVP-10: the owner adds services with a duration and a price, and hides them
-// instead of deleting them.
+// User stories MVP-10 and V1-2: the owner adds services with a duration, a buffer after them and
+// a price, and hides them instead of deleting them.
 export function ServicesPage() {
   const { signInEnabled, user } = useSession();
   const [load, setLoad] = useState<Load>('loading');
@@ -111,6 +113,7 @@ export function ServicesPage() {
         ? {
             name: service.name,
             durationMinutes: String(service.durationMinutes),
+            bufferMinutes: String(service.bufferMinutes),
             price: String(service.price),
             currency: service.currency,
           }
@@ -133,6 +136,7 @@ export function ServicesPage() {
           body: JSON.stringify({
             name: draft.name,
             durationMinutes: draft.durationMinutes ? Number(draft.durationMinutes) : null,
+            bufferMinutes: draft.bufferMinutes ? Number(draft.bufferMinutes) : 0,
             price: draft.price ? Number(draft.price) : null,
             currency: draft.currency,
           }),
@@ -192,7 +196,9 @@ export function ServicesPage() {
                     {service.isHidden && <span className="badge badge-muted">Hidden</span>}
                   </span>
                   <span className="hint">
-                    {formatDuration(service.durationMinutes)} · {formatPrice(service)}
+                    {formatDuration(service.durationMinutes)}
+                    {service.bufferMinutes > 0 && ` + ${formatDuration(service.bufferMinutes)} buffer`} ·{' '}
+                    {formatPrice(service)}
                   </span>
                 </div>
                 <div className="service-actions">
@@ -242,6 +248,24 @@ export function ServicesPage() {
               onChange={(event) => setDraft({ ...draft, durationMinutes: event.target.value })}
             />
             {fieldError('durationMinutes')}
+          </div>
+
+          <div className="field">
+            <label htmlFor="service-buffer">Buffer after it, in minutes</label>
+            <input
+              id="service-buffer"
+              className="input input-narrow"
+              type="number"
+              min={0}
+              max={120}
+              step={5}
+              {...field('bufferMinutes')}
+              onChange={(event) => setDraft({ ...draft, bufferMinutes: event.target.value })}
+            />
+            {fieldError('bufferMinutes')}
+            <p className="field-hint">
+              Time kept free after each booking, such as to clean up. Clients see only the duration.
+            </p>
           </div>
 
           <div className="field">
