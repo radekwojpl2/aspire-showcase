@@ -30,7 +30,7 @@ public class ModuleBoundaryTests
     public static TheoryData<string> ModuleAssemblies() => [.. Modules.Assemblies.Select(assembly => assembly.GetName().Name!)];
 
     [Fact]
-    public void Every_module_folder_has_assemblies_in_the_api_host()
+    public void Every_module_folder_has_assemblies()
     {
         Assert.All(Modules.Names, module =>
             Assert.Contains(Modules.Assemblies, assembly => Modules.ModuleOf(assembly.GetName()) == module));

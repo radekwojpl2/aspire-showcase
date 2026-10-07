@@ -4,7 +4,7 @@ namespace AspireShowcase.ArchitectureTests;
 
 /// <summary>
 /// The modules as they're built: one folder per module under src/Modules, each with assemblies
-/// named AspireShowcase.{Module}[.{Part}], all brought in by the API host.
+/// named AspireShowcase.{Module}[.{Part}].
 /// </summary>
 static class Modules
 {
