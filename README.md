@@ -332,6 +332,7 @@ Deploy publishes two workbooks to `insights` → Workbooks.
 | Requests | Rate, failures, latency, outgoing calls |
 | Metrics | Any OpenTelemetry metric, HTTP, runtime |
 | Browser | Page views, load time, exceptions |
+| Sign-in | Sessions `bff` ended and why, refresh tokens Logto rejected, sign-ins, calls to Logto |
 | Logs & exceptions | Logs by severity, exceptions by type |
 
 **Aspire showcase API**: for finding what is wrong with the API or its database.
