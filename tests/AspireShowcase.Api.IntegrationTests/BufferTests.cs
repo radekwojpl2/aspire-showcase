@@ -11,7 +11,7 @@ namespace AspireShowcase.Api.IntegrationTests;
 public sealed class BufferTests(ApiFactory api)
 {
     [Fact]
-    public async Task A_service_s_buffer_is_kept_free_after_each_booking()
+    public async Task The_buffer_of_a_service_is_kept_free_after_each_booking()
     {
         var business = await TestBusiness.StartAsync(api);
         await SetBufferAsync(business, business.ServiceId, "Haircut", 60, bufferMinutes: 15);

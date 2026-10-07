@@ -12,7 +12,7 @@ namespace AspireShowcase.Api.IntegrationTests;
 public sealed class TimeOffTests(ApiFactory api)
 {
     [Fact]
-    public async Task Time_off_of_the_business_isnt_offered_to_clients()
+    public async Task Time_off_of_the_business_is_not_offered_to_clients()
     {
         var business = await TestBusiness.StartAsync(api);
 
@@ -34,7 +34,7 @@ public sealed class TimeOffTests(ApiFactory api)
     }
 
     [Fact]
-    public async Task A_staff_member_s_time_off_leaves_the_others_bookable()
+    public async Task Time_off_of_one_staff_member_leaves_the_others_bookable()
     {
         var business = await TestBusiness.StartAsync(api, moreStaff: 1);
         var stylist = await StaffAsync(business, "Stylist 1");
@@ -47,7 +47,7 @@ public sealed class TimeOffTests(ApiFactory api)
     }
 
     [Fact]
-    public async Task Blocking_a_time_with_bookings_lists_them_until_they_re_cancelled()
+    public async Task Blocking_a_time_with_bookings_lists_them_until_they_are_cancelled()
     {
         var business = await TestBusiness.StartAsync(api);
         var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
@@ -67,7 +67,7 @@ public sealed class TimeOffTests(ApiFactory api)
     }
 
     [Fact]
-    public async Task Another_staff_member_s_booking_isnt_listed()
+    public async Task A_booking_of_another_staff_member_is_not_listed()
     {
         var business = await TestBusiness.StartAsync(api, moreStaff: 1);
         var stylist = await StaffAsync(business, "Stylist 1");
@@ -108,7 +108,7 @@ public sealed class TimeOffTests(ApiFactory api)
     }
 
     [Fact]
-    public async Task Another_business_s_time_off_is_out_of_reach()
+    public async Task Time_off_of_another_business_is_out_of_reach()
     {
         var business = await TestBusiness.StartAsync(api);
         var other = await TestBusiness.StartAsync(api);
@@ -122,7 +122,7 @@ public sealed class TimeOffTests(ApiFactory api)
     }
 
     [Fact]
-    public async Task Time_off_for_someone_else_s_staff_or_in_a_wrong_format_is_refused()
+    public async Task Time_off_for_staff_of_another_business_or_in_a_wrong_format_is_refused()
     {
         var business = await TestBusiness.StartAsync(api);
 

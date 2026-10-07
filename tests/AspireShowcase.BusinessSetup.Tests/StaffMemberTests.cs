@@ -79,7 +79,7 @@ public class StaffMemberTests
     }
 
     [Fact]
-    public void Services_have_to_be_the_business_s_own()
+    public void Services_have_to_belong_to_the_business()
     {
         var errors = ErrorsOf(() => Add("Ben", false, [ServiceId.New()], [ServiceId.New()]));
 
@@ -116,7 +116,7 @@ public class StaffMemberTests
     }
 
     [Fact]
-    public void Opening_hours_cant_shrink_past_someone_s_working_hours()
+    public void Opening_hours_cannot_shrink_past_the_working_hours_of_someone_on_the_staff()
     {
         var business = OpenBusiness();
         var saturdays = Hours(Period(DayOfWeek.Saturday, "10:00", "14:00"));
