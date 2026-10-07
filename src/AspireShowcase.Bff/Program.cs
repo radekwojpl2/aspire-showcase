@@ -29,6 +29,7 @@ using (var scope = app.Services.CreateScope())
     await scope.ServiceProvider.GetRequiredService<BffDbContext>().Database.MigrateAsync();
 }
 
+app.UseContentSecurityPolicy();
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseCsrfHeaderCheck();
