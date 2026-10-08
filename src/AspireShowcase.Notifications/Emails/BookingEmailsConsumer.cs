@@ -35,7 +35,7 @@ sealed class BookingEmailsConsumer(
     {
         using var activity = telemetry.StartActivity("notifications.emails");
 
-        foreach (var email in BookingEmails.For(context.Message, settings.AppUrl))
+        foreach (var email in BookingEmails.For(context.Message, settings.AppUrl, settings.From))
         {
             if (!settings.IsConfigured)
             {

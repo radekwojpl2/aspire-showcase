@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 /// <summary>Email settings, from the AppHost.</summary>
 sealed class EmailSettings
@@ -16,7 +18,11 @@ sealed class EmailSettings
 }
 
 /// <summary>One email to send.</summary>
-sealed record EmailMessage(string To, string Subject, string Text, string Html);
+/// <param name="Attachments">Files sent with it, such as the booking's calendar invite; null for none.</param>
+sealed record EmailMessage(string To, string Subject, string Text, string Html, IReadOnlyList<EmailAttachment>? Attachments = null);
+
+/// <param name="ContentType">Its media type, with parameters, such as text/calendar; method=REQUEST.</param>
+sealed record EmailAttachment(string FileName, string ContentType, byte[] Content);
 
 /// <summary>
 /// Resend refused an email for good, such as for an address it won't send to: asking again
@@ -37,6 +43,11 @@ sealed class EmailRefusedException(string reason) : Exception($"Resend refused t
 /// </remarks>
 sealed class ResendEmailSender(HttpClient http, EmailSettings settings)
 {
+    static readonly JsonSerializerOptions SkipNulls = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    };
+
     /// <exception cref="EmailRefusedException">Resend refused this email for good (400 or 422).</exception>
     /// <exception cref="HttpRequestException">Resend couldn't take it now, or couldn't be reached; trying
     /// again later may work.</exception>
@@ -51,7 +62,14 @@ sealed class ResendEmailSender(HttpClient http, EmailSettings settings)
                 subject = email.Subject,
                 text = email.Text,
                 html = email.Html,
-            }),
+                // Resend takes each file's content as base64; null leaves the property out.
+                attachments = email.Attachments?.Select(attachment => new
+                {
+                    filename = attachment.FileName,
+                    content = Convert.ToBase64String(attachment.Content),
+                    content_type = attachment.ContentType,
+                }),
+            }, options: SkipNulls),
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ResendApiKey);
         request.Headers.Add("Idempotency-Key", idempotencyKey);

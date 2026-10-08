@@ -8,11 +8,13 @@ sealed record OutgoingEmail(string Recipient, string Kind, EmailMessage Message)
 
 /// <summary>
 /// Which emails a booking event sends, and what they say (user stories MVP-5, MVP-7, MVP-13,
-/// MVP-14, V1-4 and V1-5). Someone without an email address gets none.
+/// MVP-14, V1-4 and V1-5). Someone without an email address gets none. The client's come with
+/// the booking as a calendar invite (V1-7).
 /// </summary>
 static class BookingEmails
 {
-    public static IEnumerable<OutgoingEmail> For(BookingNotice booking, string? appUrl)
+    /// <param name="sender">The From address, the organizer of the calendar invite.</param>
+    public static IEnumerable<OutgoingEmail> For(BookingNotice booking, string? appUrl, string? sender = null)
     {
         var app = (appUrl ?? "").TrimEnd('/');
         var when = $"{Day(booking.Date)}, {booking.Start}–{booking.End} ({booking.TimeZone.Replace('_', ' ')})";
@@ -99,7 +101,14 @@ static class BookingEmails
             ],
             _ => [],
         };
-        return emails.Where(email => !string.IsNullOrEmpty(email.Message.To));
+        // V1-7: so the client's calendar adds the booking, moves it, or removes it. The owner has
+        // the booking in their calendar here already.
+        var invite = CalendarInvite.For(booking, sender);
+        return emails
+            .Where(email => !string.IsNullOrEmpty(email.Message.To))
+            .Select(email => email.Recipient == "client" && invite is not null
+                ? email with { Message = email.Message with { Attachments = [invite] } }
+                : email);
     }
 
     static OutgoingEmail Email(
