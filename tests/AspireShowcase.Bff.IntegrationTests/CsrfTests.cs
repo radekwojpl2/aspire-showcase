@@ -44,6 +44,25 @@ public sealed class CsrfTests(BffFactory bff) : IClassFixture<BffFactory>
     }
 
     [Fact]
+    public async Task The_logo_of_a_business_can_be_read_without_the_header_for_an_img_tag()
+    {
+        var path = $"/api/public/businesses/test-{Guid.NewGuid():N}/logo";
+
+        var response = await bff.CreateClient().GetAsync($"{path}?v=1");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(bff.Web.Received(path));
+    }
+
+    [Fact]
+    public async Task Changing_the_logo_still_needs_the_header()
+    {
+        var response = await bff.CreateClient().PutAsync("/api/businesses/mine/logo", new ByteArrayContent([1]));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Requests_outside_api_do_not_need_the_header()
     {
         var response = await bff.CreateClient().GetAsync("/bff/user");

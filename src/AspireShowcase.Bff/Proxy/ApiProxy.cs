@@ -57,10 +57,15 @@ static class ApiProxy
     /// any request to this site; a custom header can only be set by the app's own scripts
     /// (another site would need a CORS preflight, which bff never allows).
     /// </summary>
+    /// <remarks>
+    /// Except for reading a business's logo (V1-6): the booking page shows it with an img tag,
+    /// which can't add a header, and reading a public image changes nothing for anyone.
+    /// </remarks>
     public static void UseCsrfHeaderCheck(this WebApplication app) =>
         app.Use(async (context, next) =>
         {
-            if (context.Request.Path.StartsWithSegments("/api") && context.Request.Headers[CsrfHeader] != "1")
+            if (context.Request.Path.StartsWithSegments("/api") && context.Request.Headers[CsrfHeader] != "1" &&
+                !IsLogo(context.Request))
             {
                 await Results.Problem(
                     title: $"Requests to /api need the {CsrfHeader}: 1 header.",
@@ -70,6 +75,11 @@ static class ApiProxy
 
             await next(context);
         });
+
+    // GET /api/public/businesses/{slug}/logo, and HEAD.
+    static bool IsLogo(HttpRequest request) =>
+        (HttpMethods.IsGet(request.Method) || HttpMethods.IsHead(request.Method)) &&
+        request.Path.Value?.Split('/') is ["", "api", "public", "businesses", { Length: > 0 }, "logo"];
 
     /// <summary>
     /// Gets the user's access token for /api requests, which the proxy then sends to web. A
