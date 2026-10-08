@@ -83,6 +83,7 @@ export function BookingPage({ slug }: { slug: string }) {
   const [serviceId, setServiceId] = useState(initial.service);
   const [staffId, setStaffId] = useState(initial.staff);
   const [days, setDays] = useState<Day[]>();
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [week, setWeek] = useState(0);
   const [startsAt, setStartsAt] = useState(initial.start);
   const [clientName, setClientName] = useState(user?.name ?? '');
@@ -112,18 +113,28 @@ export function BookingPage({ slug }: { slug: string }) {
     };
   }, [slug]);
 
-  const loadSlots = useCallback(async () => {
+  // isCurrent: false once another choice was made, so a slow answer can't show the wrong service's times.
+  const loadSlots = useCallback(async (isCurrent: () => boolean = () => true) => {
     if (!serviceId) return;
     const query = new URLSearchParams({ serviceId });
     if (staffId) query.set('staffMemberId', staffId);
     const response = await apiFetch(`/api/public/businesses/${encodeURIComponent(slug)}/slots?${query}`);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    setDays(((await response.json()) as { days: Day[] }).days);
+    const found = ((await response.json()) as { days: Day[] }).days;
+    if (isCurrent()) setDays(found);
   }, [slug, serviceId, staffId]);
 
+  // The previous times stay on screen, disabled, until the new ones come: clearing them would
+  // collapse the calendar and make the page jump on every change of service or staff.
   useEffect(() => {
-    setDays(undefined);
-    loadSlots().catch((err) => setError(err instanceof Error ? err.message : 'Failed to call the API'));
+    let current = true;
+    setLoadingSlots(true);
+    loadSlots(() => current)
+      .catch((err) => current && setError(err instanceof Error ? err.message : 'Failed to call the API'))
+      .finally(() => current && setLoadingSlots(false));
+    return () => {
+      current = false;
+    };
   }, [loadSlots]);
 
   useEffect(() => writeChoice(serviceId, staffId, startsAt), [serviceId, staffId, startsAt]);
@@ -301,7 +312,7 @@ export function BookingPage({ slug }: { slug: string }) {
           {!days ? (
             <p className="status" role="status">Loading...</p>
           ) : (
-            <div className="slot-days">
+            <div className="slot-days" aria-busy={loadingSlots}>
               {shownDays.map((day) => (
                 <div key={day} className="slot-day">
                   <h3 className="calendar-day-name">{dayLabel(day)}</h3>
@@ -315,6 +326,7 @@ export function BookingPage({ slug }: { slug: string }) {
                           type="button"
                           className={`button button-secondary slot ${slot.startsAt === startsAt ? 'active' : ''}`}
                           aria-pressed={slot.startsAt === startsAt}
+                          disabled={loadingSlots}
                           onClick={() => {
                             setStartsAt(slot.startsAt);
                             setError(undefined);
