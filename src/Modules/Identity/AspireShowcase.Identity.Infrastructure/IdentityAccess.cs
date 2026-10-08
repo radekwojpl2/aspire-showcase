@@ -10,8 +10,9 @@ namespace AspireShowcase.Identity;
 
 /// <summary>
 /// Identity &amp; Access: the API's anti-corruption layer over Logto. Other modules see users as a
-/// subject ID, the <see cref="Policies.Owner"/> policy, <see cref="IOwnerRoles"/> and <see cref="IUserProfiles"/>, all
-/// in Identity.PublicClient; only this module knows about Logto's tokens, scopes and Management API.
+/// subject ID, the <see cref="Policies.Owner"/> policy, <see cref="IOwnerRoles"/>,
+/// <see cref="IUserProfiles"/> and <see cref="IAccounts"/>, all in Identity.PublicClient; only this
+/// module knows about Logto's tokens, scopes and Management API.
 /// </summary>
 public static class IdentityAccess
 {
@@ -56,5 +57,6 @@ public static class IdentityAccess
         });
         builder.Services.AddTransient<IOwnerRoles>(services => services.GetRequiredService<LogtoManagement>());
         builder.Services.AddTransient<IUserProfiles>(services => services.GetRequiredService<LogtoManagement>());
+        builder.Services.AddTransient<IAccounts>(services => services.GetRequiredService<LogtoManagement>());
     }
 }

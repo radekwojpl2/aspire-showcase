@@ -20,10 +20,10 @@ sealed class LogtoManagementSettings
 
 /// <summary>
 /// Calls Logto's Management API: gives users the "owner" role, which grants the
-/// manage:business permission of web's API resource, and reads user profiles.
+/// manage:business permission of web's API resource, reads user profiles, and deletes accounts.
 /// </summary>
 sealed class LogtoManagement(HttpClient http, LogtoManagementSettings settings, TimeProvider time)
-    : IOwnerRoles, IUserProfiles
+    : IOwnerRoles, IUserProfiles, IAccounts
 {
     /// <summary>The user role in Logto that owners get; it has to exist in the Logto console.</summary>
     public const string OwnerRole = "owner";
@@ -99,6 +99,27 @@ sealed class LogtoManagement(HttpClient http, LogtoManagementSettings settings, 
         catch (Exception exception) when (exception is HttpRequestException or JsonException)
         {
             throw new UserProfilesUnavailableException("Logto's Management API call failed.", exception);
+        }
+    }
+
+    /// <summary>Deletes the user in Logto, with their sessions; one that's gone already counts as deleted.</summary>
+    public async Task DeleteAsync(string userId, CancellationToken cancellation)
+    {
+        if (!settings.IsConfigured)
+        {
+            throw new AccountsUnavailableException("The Logto machine-to-machine application isn't configured.");
+        }
+
+        try
+        {
+            using var _ = await SendAsync(HttpMethod.Delete, $"api/users/{Uri.EscapeDataString(userId)}", null, cancellation);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+        }
+        catch (HttpRequestException exception)
+        {
+            throw new AccountsUnavailableException("Logto's Management API call failed.", exception);
         }
     }
 
