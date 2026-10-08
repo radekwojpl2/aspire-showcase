@@ -9,6 +9,7 @@ public static class SchedulingWeb
     public static void MapScheduling(this IEndpointRouteBuilder api, bool includeDevelopmentTools)
     {
         CalendarEndpoints.Map(api);
+        OwnerBookingEndpoints.Map(api);
         TimeOffEndpoints.Map(api);
         PublicBookingEndpoints.Map(api);
         ClientBookingEndpoints.Map(api);

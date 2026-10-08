@@ -3,6 +3,7 @@ using AspireShowcase.Scheduling.Application.Calendar;
 using AspireShowcase.Scheduling.Application.ClientBookings;
 using AspireShowcase.Scheduling.Application.Development;
 using AspireShowcase.Scheduling.Application.Notices;
+using AspireShowcase.Scheduling.Application.OwnerBooking;
 using AspireShowcase.Scheduling.Application.Policies;
 using AspireShowcase.Scheduling.Application.PublicBooking;
 using AspireShowcase.Scheduling.Application.Rescheduling;
@@ -50,6 +51,8 @@ public static class SchedulingModule
         builder.Services.AddScoped<GetPublicBusiness>();
         builder.Services.AddScoped<GetFreeSlots>();
         builder.Services.AddScoped<BookSlotHandler>();
+        builder.Services.AddScoped<MakeBooking>();
+        builder.Services.AddScoped<BookForClient>();
         builder.Services.AddScoped<ListMyBookings>();
         builder.Services.AddScoped<CancelMyBooking>();
         builder.Services.AddScoped<GetCalendar>();
