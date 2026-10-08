@@ -1,4 +1,5 @@
 using AspireShowcase.BuildingBlocks.Domain;
+using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.Identity.PublicClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -168,7 +169,8 @@ sealed class SetOpeningHours(IBusinessSetupDbContext db, BusinessTelemetry telem
 static class Responses
 {
     public static BusinessResponse ToResponse(Business business) =>
-        new(business.Id.Value, business.Name, business.Slug, business.TimeZone, business.ContactEmail, business.CreatedAt);
+        new(business.Id.Value, business.Name, business.Slug, business.TimeZone, business.ContactEmail, business.CreatedAt,
+            business.Address, business.Description, BusinessInfo.LogoUrlOf(business.Slug, business.LogoVersion));
 
     public static OpeningHoursBody ToOpeningHours(Business business) =>
         new(business.TimeZone, HoursBodies.ToBodies(business.OpeningHours));

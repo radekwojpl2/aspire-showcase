@@ -33,7 +33,20 @@ public interface IBusinessDirectory
 /// <param name="TimeZone">The IANA time zone its hours are in.</param>
 /// <param name="OwnerId">The owner's user ID (sub), for anything that has to reach them.</param>
 /// <param name="ContactEmail">Where clients can reach the business; null if the owner hasn't given one yet.</param>
-public sealed record BusinessInfo(BusinessId Id, string Name, string Slug, string TimeZone, string OwnerId, string? ContactEmail);
+/// <param name="Address">Where it is, for the booking page (V1-6); null for none. Lines are separated by \n.</param>
+/// <param name="Description">What it's about, for the booking page (V1-6); null for none.</param>
+/// <param name="LogoVersion">Changes with each new logo (V1-6); null when it has none.</param>
+public sealed record BusinessInfo(
+    BusinessId Id, string Name, string Slug, string TimeZone, string OwnerId, string? ContactEmail, string? Address,
+    string? Description, int? LogoVersion)
+{
+    /// <summary>Where the logo is served; null without one.</summary>
+    public string? LogoUrl => LogoUrlOf(Slug, LogoVersion);
+
+    /// <summary>Where a business's logo is served, changing with each new one so browsers fetch it again.</summary>
+    public static string? LogoUrlOf(string slug, int? logoVersion) =>
+        logoVersion is { } version ? $"/api/public/businesses/{slug}/logo?v={version}" : null;
+}
 
 /// <param name="ServiceIds">The services they do; every service when <paramref name="DoesAllServices"/>.</param>
 /// <param name="WorkingHours">When they work: their own hours, or else the business's opening hours.</param>

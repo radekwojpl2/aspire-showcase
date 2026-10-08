@@ -6,7 +6,15 @@ namespace AspireShowcase.BusinessSetup.Application;
 record StartBusiness(string? Name, string? Slug, string? TimeZone, string? ContactEmail, string? OwnerName);
 
 /// <param name="ContactEmail">Null for a business started before it was required, until the owner adds one.</param>
-record BusinessResponse(Guid Id, string Name, string Slug, string TimeZone, string? ContactEmail, DateTimeOffset CreatedAt);
+/// <param name="Address">For the booking page (V1-6), like <paramref name="Description"/> and <paramref name="LogoUrl"/>; null for none.</param>
+record BusinessResponse(
+    Guid Id, string Name, string Slug, string TimeZone, string? ContactEmail, DateTimeOffset CreatedAt, string? Address,
+    string? Description, string? LogoUrl);
+
+record PageBody(string? Address, string? Description);
+
+/// <summary>A logo to serve, with the version its address names.</summary>
+record LogoImage(byte[] Image, string ContentType, int? Version);
 
 record ContactBody(string? ContactEmail);
 

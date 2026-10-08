@@ -66,6 +66,27 @@ sealed class BusinessTelemetry
         activity?.AddEvent(new ActivityEvent($"contact.{result}"));
     }
 
+    /// <param name="result">saved or invalid.</param>
+    public void PageChanged(Activity? activity, Business? business, string result)
+    {
+        if (business is not null)
+        {
+            activity?.SetTag("business.id", business.Id.Value);
+        }
+        activity?.AddEvent(new ActivityEvent($"page.{result}"));
+    }
+
+    /// <param name="result">saved, removed or invalid.</param>
+    public void LogoChanged(Activity? activity, Business? business, string result)
+    {
+        if (business is not null)
+        {
+            activity?.SetTag("business.id", business.Id.Value);
+            activity?.SetTag("business.logo_version", business.LogoVersion);
+        }
+        activity?.AddEvent(new ActivityEvent($"logo.{result}"));
+    }
+
     /// <param name="result">added, changed, hidden, shown, invalid or name_taken.</param>
     public void ServiceChanged(Activity? activity, Service? service, string result)
     {

@@ -60,5 +60,8 @@ static class BusinessSetupEndpoints
 
         // User story MVP-11.
         StaffEndpoints.Map(businesses.MapGroup("/mine/staff").RequireAuthorization(Policies.Owner));
+
+        // User story V1-6.
+        BusinessPageEndpoints.Map(businesses, api);
     }
 }
