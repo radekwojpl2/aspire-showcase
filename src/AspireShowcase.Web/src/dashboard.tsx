@@ -248,7 +248,9 @@ function Today({ business, go }: { business: OwnedBusiness; go: (tab: Tab) => vo
                   <span className="agenda-time">{booking.start}–{booking.end}</span>
                   <span className="agenda-what">
                     <strong>{booking.clientName}</strong> · {booking.serviceName} with {booking.staffName}
-                    <a className="calendar-email" href={`mailto:${booking.clientEmail}`}>{booking.clientEmail}</a>
+                    {booking.clientEmail && (
+                      <a className="calendar-email" href={`mailto:${booking.clientEmail}`}>{booking.clientEmail}</a>
+                    )}
                   </span>
                   {!past && (
                     <button

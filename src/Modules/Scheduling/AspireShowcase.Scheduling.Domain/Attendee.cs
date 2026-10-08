@@ -9,10 +9,17 @@ namespace AspireShowcase.Scheduling.Domain;
 /// before v2.
 /// </summary>
 /// <param name="UserId">The Logto user ID (sub) when the client booked signed in.</param>
-sealed record Attendee(string? UserId, string Name, string Email)
+/// <param name="Email">Null only once the client deleted their account (V1-8).</param>
+sealed record Attendee(string? UserId, string Name, string? Email)
 {
     public const int MaxNameLength = 100;
     public const int MaxEmailLength = 254;
+
+    /// <summary>
+    /// Who a booking was for once the client deleted their account (user story V1-8): the
+    /// business keeps the booking, but not their name, email or account.
+    /// </summary>
+    public static readonly Attendee Forgotten = new(null, "A former client", null);
 
     /// <exception cref="DomainValidationException">The name or email can't be used.</exception>
     public static Attendee Create(string? userId, string? name, string? email)

@@ -1,4 +1,5 @@
 using AspireShowcase.Scheduling.Application;
+using AspireShowcase.Scheduling.Application.Accounts;
 using AspireShowcase.Scheduling.Application.Calendar;
 using AspireShowcase.Scheduling.Application.ClientBookings;
 using AspireShowcase.Scheduling.Application.Development;
@@ -53,6 +54,7 @@ public static class SchedulingModule
         builder.Services.AddScoped<BookSlotHandler>();
         builder.Services.AddScoped<MakeBooking>();
         builder.Services.AddScoped<BookForClient>();
+        builder.Services.AddScoped<DeleteMyAccount>();
         builder.Services.AddScoped<ListMyBookings>();
         builder.Services.AddScoped<CancelMyBooking>();
         builder.Services.AddScoped<GetCalendar>();

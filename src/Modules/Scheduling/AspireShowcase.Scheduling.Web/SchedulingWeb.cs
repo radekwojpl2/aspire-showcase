@@ -13,6 +13,7 @@ public static class SchedulingWeb
         TimeOffEndpoints.Map(api);
         PublicBookingEndpoints.Map(api);
         ClientBookingEndpoints.Map(api);
+        AccountEndpoints.Map(api);
         if (includeDevelopmentTools)
         {
             SampleBookings.Map(api);

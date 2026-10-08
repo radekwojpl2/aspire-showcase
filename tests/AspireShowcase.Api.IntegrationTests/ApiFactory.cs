@@ -35,6 +35,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public FakeOwnerRoles OwnerRoles { get; } = new();
 
+    public FakeAccounts Accounts { get; } = new();
+
+    /// <summary>The API's clock, which starts at <see cref="Now"/>. Only a test with a factory of its own moves it.</summary>
+    public FakeTimeProvider Time { get; } = new(Now);
+
     /// <summary>Every DbContext the host registers, one per module.</summary>
     public List<Type> DbContextTypes { get; } = [];
 
@@ -68,9 +73,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             services.AddSingleton<IOwnerRoles>(OwnerRoles);
             services.RemoveAll<IUserProfiles>();
             services.AddSingleton<IUserProfiles, FakeUserProfiles>();
+            services.RemoveAll<IAccounts>();
+            services.AddSingleton<IAccounts>(Accounts);
 
             services.RemoveAll<TimeProvider>();
-            services.AddSingleton<TimeProvider>(new FakeTimeProvider(Now));
+            services.AddSingleton<TimeProvider>(Time);
 
             services.AddMassTransitTestHarness(bus => bus.AddConsumer<NotificationsStandIn>());
             // The harness keeps the host from stopping until its test timeout (30 seconds by

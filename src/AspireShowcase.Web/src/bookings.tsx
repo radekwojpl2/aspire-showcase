@@ -235,7 +235,9 @@ export function BookingsPage() {
                       <span className="calendar-time">{booking.start}–{booking.end}</span>
                       <span className="calendar-client">{booking.clientName}</span>
                       <span className="hint">{booking.serviceName} · {booking.staffName}</span>
-                      <a className="calendar-email" href={`mailto:${booking.clientEmail}`}>{booking.clientEmail}</a>
+                      {booking.clientEmail && (
+                        <a className="calendar-email" href={`mailto:${booking.clientEmail}`}>{booking.clientEmail}</a>
+                      )}
                       <button
                         type="button"
                         className="button button-secondary calendar-cancel"

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch, readProblem } from './api.ts';
+import { DeleteAccountCard } from './delete-account.tsx';
 import { MoveBooking } from './reschedule.tsx';
 import { signInUrl, useSession } from './session.ts';
 import { ErrorMessage } from './ui.tsx';
@@ -153,6 +154,8 @@ export function MyBookingsPage() {
           </ul>
         )}
       </section>
+
+      <DeleteAccountCard isOwner={user.isOwner} />
     </>
   );
 }
