@@ -1,3 +1,12 @@
+using AspireShowcase.Scheduling.Application;
+using AspireShowcase.Scheduling.Application.Calendar;
+using AspireShowcase.Scheduling.Application.ClientBookings;
+using AspireShowcase.Scheduling.Application.Development;
+using AspireShowcase.Scheduling.Application.Notices;
+using AspireShowcase.Scheduling.Application.Policies;
+using AspireShowcase.Scheduling.Application.PublicBooking;
+using AspireShowcase.Scheduling.Application.Rescheduling;
+using AspireShowcase.Scheduling.Application.TimeOffs;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -16,7 +25,7 @@ namespace AspireShowcase.Scheduling;
 public static class SchedulingModule
 {
     /// <summary>The name of the module's spans and metrics.</summary>
-    public const string TelemetryName = "AspireShowcase.Scheduling";
+    public const string TelemetryName = SchedulingTelemetry.Name;
 
     /// <param name="connectionName">The database the AppHost passes in, holding the module's tables.</param>
     public static void AddScheduling(this IHostApplicationBuilder builder, string connectionName)
@@ -30,9 +39,32 @@ public static class SchedulingModule
             npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", SchedulingDbContext.Schema)));
         builder.EnrichNpgsqlDbContext<SchedulingDbContext>();
 
+        builder.Services.AddScoped<ISchedulingDbContext>(services => services.GetRequiredService<SchedulingDbContext>());
         builder.Services.AddScoped<Bookings>();
+        builder.Services.AddScoped<IBookings>(services => services.GetRequiredService<Bookings>());
         builder.Services.AddScoped<Availability>();
         builder.Services.AddSingleton<SchedulingTelemetry>();
+
+        // The use cases, one handler each.
+        builder.Services.AddScoped<GetPublicBusiness>();
+        builder.Services.AddScoped<GetFreeSlots>();
+        builder.Services.AddScoped<BookSlotHandler>();
+        builder.Services.AddScoped<ListMyBookings>();
+        builder.Services.AddScoped<CancelMyBooking>();
+        builder.Services.AddScoped<GetCalendar>();
+        builder.Services.AddScoped<CancelBooking>();
+        builder.Services.AddScoped<Moves>();
+        builder.Services.AddScoped<GetMyBookingSlots>();
+        builder.Services.AddScoped<RescheduleMyBooking>();
+        builder.Services.AddScoped<GetBookingSlots>();
+        builder.Services.AddScoped<RescheduleBooking>();
+        builder.Services.AddScoped<ListTimeOff>();
+        builder.Services.AddScoped<AddTimeOff>();
+        builder.Services.AddScoped<RemoveTimeOff>();
+        builder.Services.AddScoped<GetCancellationPolicy>();
+        builder.Services.AddScoped<SetCancellationPolicy>();
+        builder.Services.AddScoped<MakeSampleBookings>();
+        builder.Services.AddScoped<BuildBookingNotice>();
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing.AddSource(TelemetryName))
             .WithMetrics(metrics => metrics.AddMeter(TelemetryName));
@@ -59,8 +91,6 @@ public static class SchedulingModule
     {
         CalendarEndpoints.Map(api);
         TimeOffEndpoints.Map(api);
-        CancellationPolicyEndpoints.Map(api);
-        RescheduleEndpoints.Map(api);
         PublicBookingEndpoints.Map(api);
         ClientBookingEndpoints.Map(api);
         if (includeDevelopmentTools)

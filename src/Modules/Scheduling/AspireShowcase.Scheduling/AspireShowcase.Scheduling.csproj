@@ -23,6 +23,8 @@
     <ProjectReference Include="..\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Infrastructure\AspireShowcase.BuildingBlocks.Infrastructure.csproj" />
     <ProjectReference Include="..\AspireShowcase.Scheduling.Domain\AspireShowcase.Scheduling.Domain.csproj" />
+    <ProjectReference Include="..\AspireShowcase.Scheduling.Application\AspireShowcase.Scheduling.Application.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Web\AspireShowcase.BuildingBlocks.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>

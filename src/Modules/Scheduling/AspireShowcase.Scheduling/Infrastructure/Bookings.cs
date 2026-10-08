@@ -1,3 +1,5 @@
+using AspireShowcase.BusinessSetup.PublicClient;
+using AspireShowcase.Scheduling.Application;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,7 +15,7 @@ namespace AspireShowcase.Scheduling;
 /// After a refused save the outbox messages stay in the request's DbContext, so a second attempt
 /// needs a scope of its own (as booking "anyone" does): see PublicBookingEndpoints.
 /// </remarks>
-sealed class Bookings(SchedulingDbContext db, IPublishEndpoint publish)
+sealed class Bookings(SchedulingDbContext db, IPublishEndpoint publish, IServiceScopeFactory scopes) : IBookings
 {
     /// <summary>
     /// Adds the booking, unless another confirmed booking of the same staff member overlaps it.
@@ -33,6 +35,30 @@ sealed class Bookings(SchedulingDbContext db, IPublishEndpoint publish)
             db.Entry(booking).State = EntityState.Detached;
             return BookingResult.SlotTaken;
         }
+    }
+
+    /// <summary>
+    /// Books the first staff member the database accepts. Each attempt gets a scope of its own: after
+    /// a refused save, the outbox messages stay in that scope's DbContext, so they can't go out
+    /// with the next attempt.
+    /// </summary>
+    public async Task<Booking?> AddFirstAsync(
+        BusinessId businessId, IEnumerable<StaffMemberId> staff, Func<StaffMemberId, Booking> book,
+        Action<BookingResult> attempted, CancellationToken cancellation)
+    {
+        foreach (var staffMemberId in staff)
+        {
+            await using var attempt = scopes.CreateAsyncScope();
+            attempt.ServiceProvider.GetRequiredService<BusinessScope>().BusinessId = businessId;
+            var booking = book(staffMemberId);
+            var result = await attempt.ServiceProvider.GetRequiredService<Bookings>().AddAsync(booking, cancellation);
+            attempted(result);
+            if (result == BookingResult.Booked)
+            {
+                return booking;
+            }
+        }
+        return null;
     }
 
     /// <summary>
