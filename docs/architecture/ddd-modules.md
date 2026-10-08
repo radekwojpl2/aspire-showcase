@@ -28,6 +28,7 @@ The attendee is a value object, Attendee { UserId?, Name, Email }. That covers p
 
 Covers sign-up and sign-in, email verification, and roles per business (owner, and staff from v2).
 Publishes AccountDeleted. Each module anonymizes its own data in response, rather than Identity reaching into other modules' tables.
+For now Scheduling forgets a deleted client itself, in the same request that deletes the account (V1-8): it's the only module holding clients' data, and Identity has no outbox to publish AccountDeleted reliably. When a second module keeps personal data, AccountDeleted takes over.
 
 4. Notifications (supporting): purely reactive
 

@@ -240,10 +240,11 @@ The Scheduling module, `AspireShowcase.Scheduling`, in `src/Modules/Scheduling/A
 |---|---|---|
 | `bookings.attempts` | Counter | Attempts to book (`result` tag: `booked`, `slot_taken`; `source` tag: `client`, `sample`) |
 | `bookings.cancellations` | Counter | Bookings cancelled (`by` tag: `client`, `business`) |
+| `accounts.deletions` | Counter | Clients deleting their account (`result` tag: `deleted`, `owner`, `unavailable`) |
 | `time_off.changes` | Counter | Time off added and removed (`result` tag: `added`, `removed`, `invalid`) |
 | `bookings.reschedules` | Counter | Attempts to move a booking (`result` tag: `rescheduled`, `slot_taken`, `too_late`; `by` tag: `client`, `business`) |
 
-Its `bookings.book` span is a booking, by the client or by the owner for someone who phoned (`booking.booked_by`, with the service's `service.buffer_minutes`), `bookings.cancel` a cancellation, `availability.slots` says how many free slots were found, `bookings.calendar` which view was read and how many bookings it had, `bookings.sample` how many sample bookings were made and refused, `time_off.add` how many bookings were already in the blocked time, `bookings.reschedule` a booking moved to another time, and `cancellation_policy.set` the new notice in hours. Client names and emails are never recorded.
+Its `bookings.book` span is a booking, by the client or by the owner for someone who phoned (`booking.booked_by`, with the service's `service.buffer_minutes`), `bookings.cancel` a cancellation, `availability.slots` says how many free slots were found, `bookings.calendar` which view was read and how many bookings it had, `bookings.sample` how many sample bookings were made and refused, `time_off.add` how many bookings were already in the blocked time, `bookings.reschedule` a booking moved to another time, `cancellation_policy.set` the new notice in hours, and `accounts.delete` a client deleting their account (V1-8) with how many bookings were kept without them and how many cancelled. Client names and emails are never recorded.
 
 The notifications service, in `src/AspireShowcase.Notifications/NotificationTelemetry.cs`:
 
