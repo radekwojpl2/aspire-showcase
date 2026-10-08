@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Infrastructure;
 
 /// <summary>How the <see cref="TimeOff"/> aggregate is stored in app-db.</summary>
 sealed class TimeOffConfiguration : IEntityTypeConfiguration<TimeOff>

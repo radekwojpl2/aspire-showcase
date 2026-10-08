@@ -16,7 +16,8 @@ public class ModuleBoundaryTests
     {
         ["AspireShowcase.BusinessSetup.Infrastructure"] = ["BusinessSetupModule"],
         ["AspireShowcase.BusinessSetup.Web"] = ["BusinessSetupWeb"],
-        ["AspireShowcase.Scheduling"] = ["SchedulingModule"],
+        ["AspireShowcase.Scheduling.Infrastructure"] = ["SchedulingModule"],
+        ["AspireShowcase.Scheduling.Web"] = ["SchedulingWeb"],
         // Identity's assembly is also what other modules use of it, until it has a PublicClient.
         ["AspireShowcase.Identity"] =
         [

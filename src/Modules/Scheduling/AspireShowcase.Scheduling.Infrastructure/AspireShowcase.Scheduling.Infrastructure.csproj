@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Scheduling's infrastructure: its DbContext, EF Core mappings and migrations, the
+       transactional outbox and the bus consumer, and AddScheduling, the only place its services
+       are registered. Public: AddScheduling, AddSchedulingMessaging and MigrateSchedulingAsync. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.6.0" />
+    <PackageReference Include="MassTransit" Version="8.5.11" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.5.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AspireShowcase.Scheduling.Application\AspireShowcase.Scheduling.Application.csproj" />
+    <ProjectReference Include="..\AspireShowcase.Scheduling.Domain\AspireShowcase.Scheduling.Domain.csproj" />
+    <ProjectReference Include="..\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj" />
+    <ProjectReference Include="..\..\BusinessSetup\AspireShowcase.BusinessSetup.PublicClient\AspireShowcase.BusinessSetup.PublicClient.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Infrastructure\AspireShowcase.BuildingBlocks.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+    <Using Include="Microsoft.Extensions.Hosting" />
+    <Using Include="AspireShowcase.Scheduling.Domain" />
+  </ItemGroup>
+
+</Project>

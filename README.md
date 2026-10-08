@@ -116,7 +116,7 @@ The API's modules, `bff` and the notifications service apply their EF Core migra
 ```
 dotnet tool restore
 dotnet ef migrations add <Name> --project src/Modules/BusinessSetup/AspireShowcase.BusinessSetup.Infrastructure --startup-project src/AspireShowcase.Api --context BusinessSetupDbContext
-dotnet ef migrations add <Name> --project src/Modules/Scheduling/AspireShowcase.Scheduling --startup-project src/AspireShowcase.Api --context SchedulingDbContext
+dotnet ef migrations add <Name> --project src/Modules/Scheduling/AspireShowcase.Scheduling.Infrastructure --startup-project src/AspireShowcase.Api --context SchedulingDbContext
 dotnet ef migrations add <Name> --project src/AspireShowcase.Bff
 dotnet ef migrations add <Name> --project src/AspireShowcase.Notifications
 ```
@@ -230,7 +230,7 @@ The API's Business Setup module, `AspireShowcase.BusinessSetup`, in `src/Modules
 
 Its `businesses.create` span carries a `business.created` or `business.rejected` event, `businesses.opening_hours.set` an `opening_hours.saved` or `opening_hours.invalid` one, the `businesses.services.*` spans a `service.<result>` one, and the `businesses.staff.*` spans a `staff_member.<result>` one.
 
-The Scheduling module, `AspireShowcase.Scheduling`, in `src/Modules/Scheduling/AspireShowcase.Scheduling/SchedulingTelemetry.cs`:
+The Scheduling module, `AspireShowcase.Scheduling`, in `src/Modules/Scheduling/AspireShowcase.Scheduling.Application/SchedulingTelemetry.cs`:
 
 | Metric | Kind | Measures |
 |---|---|---|

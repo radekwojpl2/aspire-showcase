@@ -26,7 +26,7 @@ Run from the repository root.
 | Logs and traces | `aspire logs <resource>`, `aspire otel traces <resource>` |
 | Build and test the .NET projects | `dotnet build`, `dotnet test` (the integration tests need Docker running) |
 | Lint and build the React app | `npm run lint`, `npm run build` in `src/AspireShowcase.Web` |
-| Add an EF Core migration | `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/<Module>/AspireShowcase.<Module> --startup-project src/AspireShowcase.Api --context <Module>DbContext` (or `--project src/AspireShowcase.Bff` alone) |
+| Add an EF Core migration | `dotnet tool restore`, then `dotnet ef migrations add <Name> --project src/Modules/<Module>/AspireShowcase.<Module>.Infrastructure --startup-project src/AspireShowcase.Api --context <Module>DbContext` (or `--project src/AspireShowcase.Bff` alone) |
 
 ## Layout
 

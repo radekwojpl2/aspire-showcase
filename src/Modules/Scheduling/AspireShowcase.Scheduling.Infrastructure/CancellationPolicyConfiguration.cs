@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Infrastructure;
 
 /// <summary>How the <see cref="CancellationPolicy"/> aggregate is stored in app-db: one row per business.</summary>
 sealed class CancellationPolicyConfiguration : IEntityTypeConfiguration<CancellationPolicy>

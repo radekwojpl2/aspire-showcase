@@ -2,7 +2,7 @@ using AspireShowcase.Scheduling.Application.Notices;
 using AspireShowcase.Scheduling.PublicClient;
 using MassTransit;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Infrastructure;
 
 /// <summary>
 /// Publishes a <see cref="BookingNotice"/> for each booking event, for the notifications service;

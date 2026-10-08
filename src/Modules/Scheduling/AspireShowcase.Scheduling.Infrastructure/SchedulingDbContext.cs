@@ -4,7 +4,7 @@ using AspireShowcase.Scheduling.Application;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Infrastructure;
 
 /// <summary>
 /// Scheduling's own view of app-db: only its tables, in the scheduling schema, with its migration
