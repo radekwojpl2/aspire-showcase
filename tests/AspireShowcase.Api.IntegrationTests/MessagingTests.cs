@@ -51,6 +51,43 @@ public sealed class MessagingTests(ApiFactory api)
     }
 
     [Fact]
+    public async Task A_booking_made_online_publishes_that_the_client_booked_with_an_account()
+    {
+        var business = await TestBusiness.StartAsync(api);
+
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
+            await business.BookAsync(api, TestUser.Client(), TestBusiness.FirstSlot));
+
+        var confirmed = await ConsumedAsync<BookingConfirmed>(message => message.BookingId == booked.Id);
+        var notice = await ConsumedAsync<BookingNotice>(message => message.BookingId == booked.Id);
+        Assert.Equal("client", confirmed.BookedBy);
+        Assert.Equal(("client", true), (notice.BookedBy, notice.ClientHasAccount));
+    }
+
+    [Fact]
+    public async Task Cancelling_a_booking_of_a_client_without_an_account_still_says_they_have_none()
+    {
+        // Their cancellation email then points to the business, not to bookings they can't open.
+        var business = await TestBusiness.StartAsync(api);
+        var owner = api.CreateClient(business.Owner);
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(await owner.PostAsJsonAsync(
+            "/api/businesses/mine/bookings", new
+            {
+                serviceId = business.ServiceId,
+                startsAt = TestBusiness.FirstSlot,
+                clientName = "Paula Phone",
+                clientEmail = "paula@example.com",
+            }));
+
+        await owner.PostAsync($"/api/businesses/mine/bookings/{booked.Id}/cancel", null);
+
+        var notice = await ConsumedAsync<BookingNotice>(message => message.BookingId == booked.Id && message.Kind == "cancelled");
+        Assert.Equal(
+            ("business", false, "hello@salon.example"),
+            (notice.CancelledBy, notice.ClientHasAccount, notice.BusinessContactEmail));
+    }
+
+    [Fact]
     public async Task A_booking_notice_has_what_the_emails_need()
     {
         var business = await TestBusiness.StartAsync(api);
