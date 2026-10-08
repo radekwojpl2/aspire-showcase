@@ -126,6 +126,69 @@ public sealed class MessagingTests(ApiFactory api)
             (notice.RescheduledBy, notice.PreviousDate, notice.PreviousStart, notice.Start));
     }
 
+    // The calendar invite (V1-7) of a moved booking replaces the one the client has: the same
+    // booking, at its new time, dated when it was moved.
+    [Fact]
+    public async Task A_notice_of_a_moved_booking_has_the_new_instants_and_when_it_was_moved()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        var client = TestUser.Client();
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
+            await business.BookAsync(api, client, TestBusiness.FirstSlot));
+
+        await TestBusiness.ReadAsync<BookingConfirmation>(await api.CreateClient(client).PostAsJsonAsync(
+            $"/api/me/bookings/{booked.Id}/reschedule", new { startsAt = TestBusiness.FirstSlot.AddHours(2) }));
+
+        var moved = await ConsumedAsync<BookingRescheduled>(message => message.BookingId == booked.Id);
+        var notice = await ConsumedAsync<BookingNotice>(message => message.BookingId == booked.Id && message.Kind == "rescheduled");
+        Assert.Equal(
+            (TestBusiness.FirstSlot.AddHours(2), TestBusiness.FirstSlot.AddHours(3), moved.OccurredAt),
+            (notice.StartsAt, notice.EndsAt, notice.OccurredAt));
+    }
+
+    [Fact]
+    public async Task A_notice_of_a_cancelled_booking_has_what_its_calendar_invite_needs()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        var client = TestUser.Client();
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
+            await business.BookAsync(api, client, TestBusiness.FirstSlot));
+
+        await api.CreateClient(client).PostAsync($"/api/me/bookings/{booked.Id}/cancel", null);
+
+        var cancelled = await ConsumedAsync<BookingCancelled>(message => message.BookingId == booked.Id);
+        var notice = await ConsumedAsync<BookingNotice>(message => message.BookingId == booked.Id && message.Kind == "cancelled");
+        Assert.Equal(
+            (TestBusiness.FirstSlot, TestBusiness.FirstSlot.AddHours(1), cancelled.OccurredAt),
+            (notice.StartsAt, notice.EndsAt, notice.OccurredAt));
+    }
+
+    [Fact]
+    public async Task A_booking_notice_has_the_address_of_the_business_for_the_calendar_invite()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        await TestBusiness.ReadAsync<object>(await api.CreateClient(business.Owner).PutAsJsonAsync(
+            "/api/businesses/mine/page", new { address = "Main Street 1\n00-001 Warsaw" }));
+
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
+            await business.BookAsync(api, TestUser.Client(), TestBusiness.FirstSlot));
+
+        var notice = await ConsumedAsync<BookingNotice>(message => message.BookingId == booked.Id);
+        Assert.Equal("Main Street 1\n00-001 Warsaw", notice.BusinessAddress);
+    }
+
+    [Fact]
+    public async Task A_booking_notice_of_a_business_without_an_address_has_none()
+    {
+        var business = await TestBusiness.StartAsync(api);
+
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
+            await business.BookAsync(api, TestUser.Client(), TestBusiness.FirstSlot));
+
+        var notice = await ConsumedAsync<BookingNotice>(message => message.BookingId == booked.Id);
+        Assert.Null(notice.BusinessAddress);
+    }
+
     /// <summary>
     /// Waits for a message to reach its consumer (for <see cref="BookingNotice"/>, the
     /// <see cref="NotificationsStandIn"/>). The outbox sends on its own schedule, and the harness's
