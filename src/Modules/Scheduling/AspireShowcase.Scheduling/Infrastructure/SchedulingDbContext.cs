@@ -1,18 +1,10 @@
 using AspireShowcase.BuildingBlocks.Infrastructure;
 using AspireShowcase.BusinessSetup.PublicClient;
+using AspireShowcase.Scheduling.Application;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 namespace AspireShowcase.Scheduling;
-
-/// <summary>
-/// The business a request works for. Set once per request, before any query: Scheduling's
-/// queries only ever see that business's bookings.
-/// </summary>
-sealed class BusinessScope
-{
-    public BusinessId? BusinessId { get; set; }
-}
 
 /// <summary>
 /// Scheduling's own view of app-db: only its tables, in the scheduling schema, with its migration
@@ -24,7 +16,8 @@ sealed class BusinessScope
 /// is found. "My bookings across all businesses" (MVP-7) crosses businesses on purpose; it will
 /// get its own query path instead of switching the filter off.
 /// </remarks>
-sealed class SchedulingDbContext(DbContextOptions<SchedulingDbContext> options, BusinessScope scope) : DbContext(options)
+sealed class SchedulingDbContext(DbContextOptions<SchedulingDbContext> options, BusinessScope scope)
+    : DbContext(options), ISchedulingDbContext
 {
     public const string Schema = "scheduling";
 
@@ -34,10 +27,6 @@ sealed class SchedulingDbContext(DbContextOptions<SchedulingDbContext> options, 
 
     public DbSet<CancellationPolicy> CancellationPolicies => Set<CancellationPolicy>();
 
-    /// <summary>The business's policy, or none if it hasn't set one. The business must be in scope.</summary>
-    public async Task<CancellationPolicy> PolicyOfAsync(BusinessId businessId, CancellationToken cancellation) =>
-        await CancellationPolicies.SingleOrDefaultAsync(policy => policy.BusinessId == businessId, cancellation)
-            ?? CancellationPolicy.None(businessId);
 
     // A property of the context, so EF Core reads it anew for every query.
     BusinessId? ScopedBusinessId => scope.BusinessId;

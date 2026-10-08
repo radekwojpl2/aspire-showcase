@@ -1,7 +1,7 @@
 using AspireShowcase.BusinessSetup.PublicClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Application;
 
 /// <summary>What can be booked: a business's service, and the staff who do it.</summary>
 /// <param name="Staff">Everyone who does the service, or the one staff member asked for.</param>
@@ -16,7 +16,7 @@ sealed record Offer(BusinessInfo Business, ServiceInfo Service, IReadOnlyList<St
 /// of staff hours and services, built from Business Setup's events, because this is the hot path;
 /// that comes with the event plumbing.
 /// </remarks>
-sealed class Availability(IBusinessDirectory directory, SchedulingDbContext db, BusinessScope scope, TimeProvider time)
+sealed class Availability(IBusinessDirectory directory, ISchedulingDbContext db, BusinessScope scope, TimeProvider time)
 {
     /// <summary>How far ahead clients can book (MVP-1: the next 4 weeks).</summary>
     public const int DaysAhead = 28;

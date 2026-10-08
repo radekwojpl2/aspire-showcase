@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Scheduling's use cases: one handler each, working on the domain through
+       ISchedulingDbContext and IBookings. No ASP.NET Core, no bus, no PostgreSQL. Internal: only
+       the module's own projects and tests see it. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.Abstractions" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AspireShowcase.Scheduling.Domain\AspireShowcase.Scheduling.Domain.csproj" />
+    <ProjectReference Include="..\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj" />
+    <ProjectReference Include="..\..\BusinessSetup\AspireShowcase.BusinessSetup.PublicClient\AspireShowcase.BusinessSetup.PublicClient.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Application\AspireShowcase.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\Identity\AspireShowcase.Identity\AspireShowcase.Identity.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="AspireShowcase.Scheduling.Domain" />
+    <Using Include="AspireShowcase.BuildingBlocks.Application" />
+    <Using Include="AspireShowcase.BusinessSetup.PublicClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="AspireShowcase.Scheduling" />
+    <InternalsVisibleTo Include="AspireShowcase.Scheduling.Tests" />
+  </ItemGroup>
+
+</Project>

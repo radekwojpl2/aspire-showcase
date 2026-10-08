@@ -54,6 +54,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.BusinessSetu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Scheduling.Domain", "src\Modules\Scheduling\AspireShowcase.Scheduling.Domain\AspireShowcase.Scheduling.Domain.csproj", "{FB4620F2-29AD-4C02-993C-2ECB4FB15F00}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspireShowcase.Scheduling.Application", "src\Modules\Scheduling\AspireShowcase.Scheduling.Application\AspireShowcase.Scheduling.Application.csproj", "{5822BE55-1C73-4465-8304-55B6FE449885}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -352,6 +354,18 @@ Global
 		{FB4620F2-29AD-4C02-993C-2ECB4FB15F00}.Release|x64.Build.0 = Release|Any CPU
 		{FB4620F2-29AD-4C02-993C-2ECB4FB15F00}.Release|x86.ActiveCfg = Release|Any CPU
 		{FB4620F2-29AD-4C02-993C-2ECB4FB15F00}.Release|x86.Build.0 = Release|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Debug|x64.Build.0 = Debug|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Debug|x86.Build.0 = Debug|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Release|x64.ActiveCfg = Release|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Release|x64.Build.0 = Release|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Release|x86.ActiveCfg = Release|Any CPU
+		{5822BE55-1C73-4465-8304-55B6FE449885}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -382,5 +396,6 @@ Global
 		{74FE8542-E8B5-4F57-AB2E-107220C10BF4} = {EC447DCF-ABFA-6E24-52A5-D7FD48A5C558}
 		{8B30104B-61F5-4B63-A57A-7214E3DA610C} = {EC447DCF-ABFA-6E24-52A5-D7FD48A5C558}
 		{FB4620F2-29AD-4C02-993C-2ECB4FB15F00} = {EC447DCF-ABFA-6E24-52A5-D7FD48A5C558}
+		{5822BE55-1C73-4465-8304-55B6FE449885} = {EC447DCF-ABFA-6E24-52A5-D7FD48A5C558}
 	EndGlobalSection
 EndGlobal

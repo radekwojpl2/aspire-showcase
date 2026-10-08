@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Application;
 
 /// <summary>
 /// Custom telemetry for Scheduling: a span per operation, and counters for attempts to book and
@@ -10,7 +10,8 @@ namespace AspireShowcase.Scheduling;
 /// </summary>
 sealed class SchedulingTelemetry
 {
-    const string Name = SchedulingModule.TelemetryName;
+    /// <summary>The name of the module's spans and metrics, which the module subscribes to.</summary>
+    public const string Name = "AspireShowcase.Scheduling";
 
     static readonly ActivitySource Source = new(Name);
 
