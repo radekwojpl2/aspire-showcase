@@ -2,7 +2,7 @@
 
 User stories for the booking SaaS in [the proposed architecture](README.md), in three phases. Each phase is usable on its own: the MVP lets a small business and its staff take bookings, v1 makes it work for the day-to-day of a real shop, and v2 adds what keeps businesses on the platform.
 
-Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 12 of 14 MVP stories (all but MVP-3 and MVP-6) and part of MVP-3; V1-1 to V1-4 of v1 and part of V1-5; none of v2.
+Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 12 of 14 MVP stories (all but MVP-3 and MVP-6) and part of MVP-3; V1-1 to V1-4 and V1-6 of v1, and part of V1-5; none of v2.
 
 People in the stories:
 
@@ -119,7 +119,7 @@ As an owner, I want to add a booking myself for someone who phoned, so that all 
 - ✅ The client can be a name and email without an account; they get the confirmation.
 - ❌ They get the reminder: reminders (MVP-6) aren't built yet.
 
-**V1-6. Business page**
+**V1-6. Business page** ✅
 As an owner, I want my booking page to show my address, description and logo, so that clients know they're in the right place.
 
 **V1-7. Add to calendar**
