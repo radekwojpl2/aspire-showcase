@@ -52,7 +52,10 @@ sealed class BuildBookingNotice(ISchedulingDbContext db, IBusinessDirectory dire
             new BookingParty(booking.Attendee.Name, booking.Attendee.Email),
             new BookingParty(owner?.Name ?? business.Name, owner?.Email),
             ClientHasAccount: booking.Attendee.UserId is not null,
-            BusinessContactEmail: business.ContactEmail);
+            BusinessContactEmail: business.ContactEmail,
+            StartsAt: booking.Start,
+            EndsAt: booking.End,
+            BusinessAddress: business.Address);
     }
 
     /// <summary>For a booking moved to another time (V1-4): where it was, as well as where it is.</summary>
