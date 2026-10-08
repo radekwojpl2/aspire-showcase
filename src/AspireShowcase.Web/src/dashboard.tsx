@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { apiFetch, readProblem } from './api.ts';
 import { BookingsPage } from './bookings.tsx';
+import { BusinessPagePage } from './business-page.tsx';
 import { cancelBooking, confirmCancel, fetchCalendar, type Calendar, type CalendarBooking } from './calendar-api.ts';
 import { OpeningHoursPage } from './hours.tsx';
 import { CancellationPolicyCard } from './policy.tsx';
@@ -21,6 +22,7 @@ const tabs = [
   { path: '/staff', label: 'Staff' },
   { path: '/hours', label: 'Hours & policy' },
   { path: '/time-off', label: 'Time off' },
+  { path: '/business-page', label: 'Business page' },
 ] as const;
 
 type Tab = (typeof tabs)[number]['path'];
@@ -78,6 +80,7 @@ export function OwnerDashboard({ business }: { business: OwnedBusiness }) {
         </>
       )}
       {tab === '/time-off' && <TimeOffPage />}
+      {tab === '/business-page' && <BusinessPagePage />}
     </div>
   );
 }
