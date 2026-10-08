@@ -3,8 +3,12 @@ namespace AspireShowcase.Scheduling.PublicClient;
 // The messages Scheduling publishes over the message bus. IDs are plain GUIDs here: these cross
 // process boundaries, so they're a wire format, not a domain model.
 
-/// <summary>A client booked (user story MVP-4). Published with the booking, through the outbox.</summary>
-public sealed record BookingConfirmed(Guid BookingId, Guid BusinessId, DateTimeOffset OccurredAt);
+/// <summary>
+/// A client booked (user story MVP-4), or the business booked them (V1-5). Published with the
+/// booking, through the outbox.
+/// </summary>
+/// <param name="BookedBy">client or business; client in messages from before the business could book.</param>
+public sealed record BookingConfirmed(Guid BookingId, Guid BusinessId, DateTimeOffset OccurredAt, string BookedBy = "client");
 
 /// <summary>A booking was cancelled, by the client (MVP-7) or the business (MVP-14).</summary>
 /// <param name="CancelledBy">client or business.</param>
