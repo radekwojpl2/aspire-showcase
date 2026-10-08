@@ -1,4 +1,4 @@
-namespace AspireShowcase.Identity;
+namespace AspireShowcase.Identity.PublicClient;
 
 /// <summary>
 /// Who a user is, for other modules: what their account says, by their subject ID (the sub

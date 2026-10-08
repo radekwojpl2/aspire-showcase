@@ -1,5 +1,5 @@
 using System.Net.Http.Headers;
-using AspireShowcase.Identity;
+using AspireShowcase.Identity.PublicClient;
 using MassTransit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;

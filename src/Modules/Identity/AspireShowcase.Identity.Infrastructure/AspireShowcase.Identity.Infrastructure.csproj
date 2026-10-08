@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Identity & Access: the anti-corruption layer over Logto. Public: AddIdentityAccess, the
-       owner policy, and IOwnerRoles; everything that knows about Logto is internal. -->
+  <!-- Identity & Access: the anti-corruption layer over Logto. Public: AddIdentityAccess, which
+       sets up sign-in, the owner policy and Identity.PublicClient's services; everything that
+       knows about Logto is internal. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -11,6 +12,10 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AspireShowcase.Identity.PublicClient\AspireShowcase.Identity.PublicClient.csproj" />
   </ItemGroup>
 
 </Project>

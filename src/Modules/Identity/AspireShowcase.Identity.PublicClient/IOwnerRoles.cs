@@ -1,4 +1,4 @@
-namespace AspireShowcase.Identity;
+namespace AspireShowcase.Identity.PublicClient;
 
 /// <summary>
 /// What other modules may ask of Identity &amp; Access about roles. Users are their subject ID

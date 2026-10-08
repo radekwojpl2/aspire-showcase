@@ -1,3 +1,4 @@
+using AspireShowcase.Identity.PublicClient;
 using System.Security.Claims;
 using AspireShowcase.BuildingBlocks.Web;
 using AspireShowcase.Scheduling.Application;
@@ -29,13 +30,9 @@ static class PublicBookingEndpoints
         // MVP-4: booking needs a signed-in client, whose account the booking is tied to (MVP-3).
         business.MapPost("/bookings", async (
             string slug, BookSlot request, ClaimsPrincipal user, BookSlotHandler handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(slug, request, user.FindFirstValue("sub"), cancellation))
+            (await handler.HandleAsync(slug, request, Users.IdOf(user), cancellation))
                 .ToHttp(booked => Results.Created($"/api/public/businesses/{slug}/bookings/{booked.Id}", booked)))
         .RequireAuthorization()
         .WithName("BookSlot");
     }
-
-    /// <summary>The signed-in user's ID, which every endpoint that needs sign-in has.</summary>
-    public static string UserId(ClaimsPrincipal user) =>
-        user.FindFirstValue("sub") ?? throw new InvalidOperationException("The access token has no sub claim.");
 }

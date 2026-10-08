@@ -1,3 +1,4 @@
+using AspireShowcase.Identity.PublicClient;
 using System.Security.Claims;
 using AspireShowcase.BuildingBlocks.Web;
 using AspireShowcase.Scheduling.Application;
@@ -19,23 +20,23 @@ static class ClientBookingEndpoints
 
         // Upcoming only: past and cancelled bookings aren't listed.
         mine.MapGet("/", (ClaimsPrincipal user, ListMyBookings handler, CancellationToken cancellation) =>
-            handler.HandleAsync(PublicBookingEndpoints.UserId(user), cancellation))
+            handler.HandleAsync(Users.IdOf(user), cancellation))
         .WithName("GetMyBookings");
 
         // Frees the time at once.
         mine.MapPost("/{id:guid}/cancel", async (
             Guid id, ClaimsPrincipal user, CancelMyBooking handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(id, PublicBookingEndpoints.UserId(user), cancellation)).ToHttp())
+            (await handler.HandleAsync(id, Users.IdOf(user), cancellation)).ToHttp())
         .WithName("CancelMyBooking");
 
         mine.MapGet("/{id:guid}/slots", async (
             Guid id, Guid? staffMemberId, ClaimsPrincipal user, GetMyBookingSlots handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(id, staffMemberId, PublicBookingEndpoints.UserId(user), cancellation)).ToHttp(Results.Ok))
+            (await handler.HandleAsync(id, staffMemberId, Users.IdOf(user), cancellation)).ToHttp(Results.Ok))
         .WithName("GetMyBookingSlots");
 
         mine.MapPost("/{id:guid}/reschedule", async (
             Guid id, RescheduleBody request, ClaimsPrincipal user, RescheduleMyBooking handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(id, request, PublicBookingEndpoints.UserId(user), cancellation)).ToHttp(Results.Ok))
+            (await handler.HandleAsync(id, request, Users.IdOf(user), cancellation)).ToHttp(Results.Ok))
         .WithName("RescheduleMyBooking");
     }
 }

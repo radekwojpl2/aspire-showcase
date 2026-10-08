@@ -3,8 +3,9 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AspireShowcase.Identity.PublicClient;
 
-namespace AspireShowcase.Identity;
+namespace AspireShowcase.Identity.Infrastructure;
 
 /// <summary>The machine-to-machine application web calls Logto's Management API as.</summary>
 sealed class LogtoManagementSettings

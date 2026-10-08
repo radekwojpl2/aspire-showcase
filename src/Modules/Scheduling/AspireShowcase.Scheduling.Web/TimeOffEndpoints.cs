@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using AspireShowcase.BuildingBlocks.Web;
-using AspireShowcase.Identity;
+using AspireShowcase.Identity.PublicClient;
 using AspireShowcase.Scheduling.Application;
 using AspireShowcase.Scheduling.Application.Policies;
 using AspireShowcase.Scheduling.Application.TimeOffs;
@@ -16,33 +16,33 @@ static class TimeOffEndpoints
 {
     public static void Map(IEndpointRouteBuilder api)
     {
-        var timeOff = api.MapGroup("/businesses/mine/time-off").RequireAuthorization(IdentityAccess.OwnerPolicy);
+        var timeOff = api.MapGroup("/businesses/mine/time-off").RequireAuthorization(Policies.Owner);
 
         // What hasn't ended yet, with the bookings still in it.
         timeOff.MapGet("/", async (ClaimsPrincipal user, ListTimeOff handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(PublicBookingEndpoints.UserId(user), cancellation)).ToHttp(Results.Ok))
+            (await handler.HandleAsync(Users.IdOf(user), cancellation)).ToHttp(Results.Ok))
         .WithName("GetTimeOff");
 
         timeOff.MapPost("/", async (
             TimeOffBody request, ClaimsPrincipal user, AddTimeOff handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(request, PublicBookingEndpoints.UserId(user), cancellation))
+            (await handler.HandleAsync(request, Users.IdOf(user), cancellation))
                 .ToHttp(added => Results.Created($"/api/businesses/mine/time-off/{added.Id}", added)))
         .WithName("AddTimeOff");
 
         timeOff.MapDelete("/{id:guid}", async (
             Guid id, ClaimsPrincipal user, RemoveTimeOff handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(id, PublicBookingEndpoints.UserId(user), cancellation)).ToHttp())
+            (await handler.HandleAsync(id, Users.IdOf(user), cancellation)).ToHttp())
         .WithName("RemoveTimeOff");
 
-        var policy = api.MapGroup("/businesses/mine/cancellation-policy").RequireAuthorization(IdentityAccess.OwnerPolicy);
+        var policy = api.MapGroup("/businesses/mine/cancellation-policy").RequireAuthorization(Policies.Owner);
 
         policy.MapGet("/", async (ClaimsPrincipal user, GetCancellationPolicy handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(PublicBookingEndpoints.UserId(user), cancellation)).ToHttp(Results.Ok))
+            (await handler.HandleAsync(Users.IdOf(user), cancellation)).ToHttp(Results.Ok))
         .WithName("GetCancellationPolicy");
 
         policy.MapPut("/", async (
             CancellationPolicyBody request, ClaimsPrincipal user, SetCancellationPolicy handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(request, PublicBookingEndpoints.UserId(user), cancellation)).ToHttp(Results.Ok))
+            (await handler.HandleAsync(request, Users.IdOf(user), cancellation)).ToHttp(Results.Ok))
         .WithName("SetCancellationPolicy");
     }
 }

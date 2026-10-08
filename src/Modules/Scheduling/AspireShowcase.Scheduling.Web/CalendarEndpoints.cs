@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using AspireShowcase.BuildingBlocks.Web;
-using AspireShowcase.Identity;
+using AspireShowcase.Identity.PublicClient;
 using AspireShowcase.Scheduling.Application;
 using AspireShowcase.Scheduling.Application.Calendar;
 using AspireShowcase.Scheduling.Application.Rescheduling;
@@ -16,29 +16,29 @@ static class CalendarEndpoints
 {
     public static void Map(IEndpointRouteBuilder api)
     {
-        var bookings = api.MapGroup("/businesses/mine/bookings").RequireAuthorization(IdentityAccess.OwnerPolicy);
+        var bookings = api.MapGroup("/businesses/mine/bookings").RequireAuthorization(Policies.Owner);
 
         bookings.MapGet("/", async (
             string? view, string? date, Guid? staffMemberId, ClaimsPrincipal user, GetCalendar handler,
             CancellationToken cancellation) =>
-            (await handler.HandleAsync(view, date, staffMemberId, PublicBookingEndpoints.UserId(user), cancellation))
+            (await handler.HandleAsync(view, date, staffMemberId, Users.IdOf(user), cancellation))
                 .ToHttp(Results.Ok))
         .WithName("GetCalendar");
 
         // For sickness or emergencies; the client's time is free again at once.
         bookings.MapPost("/{id:guid}/cancel", async (
             Guid id, ClaimsPrincipal user, CancelBooking handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(id, PublicBookingEndpoints.UserId(user), cancellation)).ToHttp())
+            (await handler.HandleAsync(id, Users.IdOf(user), cancellation)).ToHttp())
         .WithName("CancelBooking");
 
         bookings.MapGet("/{id:guid}/slots", async (
             Guid id, Guid? staffMemberId, ClaimsPrincipal user, GetBookingSlots handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(id, staffMemberId, PublicBookingEndpoints.UserId(user), cancellation)).ToHttp(Results.Ok))
+            (await handler.HandleAsync(id, staffMemberId, Users.IdOf(user), cancellation)).ToHttp(Results.Ok))
         .WithName("GetBookingSlots");
 
         bookings.MapPost("/{id:guid}/reschedule", async (
             Guid id, RescheduleBody request, ClaimsPrincipal user, RescheduleBooking handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(id, request, PublicBookingEndpoints.UserId(user), cancellation)).ToHttp(Results.Ok))
+            (await handler.HandleAsync(id, request, Users.IdOf(user), cancellation)).ToHttp(Results.Ok))
         .WithName("RescheduleBooking");
     }
 }
