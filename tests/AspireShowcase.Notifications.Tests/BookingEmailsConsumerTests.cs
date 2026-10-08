@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json.Serialization;
 using AspireShowcase.Scheduling.PublicClient;
 using MassTransit;
 using MassTransit.Testing;
@@ -11,6 +13,7 @@ namespace AspireShowcase.Notifications.Tests;
 /// <summary>
 /// What the consumer does with Resend's answers: an email Resend refuses for good is skipped,
 /// and the booking's other emails still go out; anything else fails the message, so it's retried.
+/// The client's email also carries the calendar invite (V1-7).
 /// </summary>
 public class BookingEmailsConsumerTests
 {
@@ -29,6 +32,25 @@ public class BookingEmailsConsumerTests
         Assert.Null(consumed.Exception);
         Assert.Equal(["cleo@example.com", "olivia@salon.test"], resend.Requests);
         Assert.Equal(["olivia@salon.test"], resend.Accepted);
+    }
+
+    [Fact]
+    public async Task The_client_gets_the_calendar_invite_as_a_file_and_the_owner_does_not()
+    {
+        var resend = new StubResend(_ => HttpStatusCode.OK);
+        var notice = Notice("cleo@salon.test") with
+        {
+            StartsAt = new DateTimeOffset(2026, 11, 3, 10, 0, 0, TimeSpan.Zero),
+            EndsAt = new DateTimeOffset(2026, 11, 3, 11, 0, 0, TimeSpan.Zero),
+            OccurredAt = new DateTimeOffset(2026, 10, 8, 12, 0, 0, TimeSpan.Zero),
+        };
+
+        await ConsumeAsync(resend, notice);
+
+        var invite = Assert.Single(resend.Attachments["cleo@salon.test"]);
+        Assert.Equal(("booking.ics", "text/calendar; charset=utf-8; method=REQUEST"), (invite.Filename, invite.ContentType));
+        Assert.StartsWith("BEGIN:VCALENDAR\r\n", invite.Text);
+        Assert.Empty(resend.Attachments["olivia@salon.test"]);
     }
 
     [Fact]
@@ -68,15 +90,21 @@ public class BookingEmailsConsumerTests
     {
         readonly ConcurrentQueue<string> _requests = new();
         readonly ConcurrentQueue<string> _accepted = new();
+        readonly ConcurrentDictionary<string, SentAttachment[]> _attachments = new();
 
         public string[] Requests => [.. _requests];
 
         public string[] Accepted => [.. _accepted];
 
+        /// <summary>The files sent to each recipient, as Resend got them.</summary>
+        public IReadOnlyDictionary<string, SentAttachment[]> Attachments => _attachments;
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var to = (await request.Content!.ReadFromJsonAsync<SentEmail>(cancellationToken))!.To.Single();
+            var sent = (await request.Content!.ReadFromJsonAsync<SentEmail>(cancellationToken))!;
+            var to = sent.To.Single();
             _requests.Enqueue(to);
+            _attachments[to] = sent.Attachments ?? [];
             var status = answer(to);
             if (status == HttpStatusCode.OK)
             {
@@ -85,6 +113,12 @@ public class BookingEmailsConsumerTests
             return new HttpResponseMessage(status) { Content = new StringContent("""{"message":"refused by the stub"}""") };
         }
 
-        sealed record SentEmail(string[] To);
+        sealed record SentEmail(string[] To, SentAttachment[]? Attachments);
+    }
+
+    /// <param name="Content">Base64, as Resend takes it.</param>
+    sealed record SentAttachment(string Filename, string Content, [property: JsonPropertyName("content_type")] string ContentType)
+    {
+        public string Text => Encoding.UTF8.GetString(Convert.FromBase64String(Content));
     }
 }
