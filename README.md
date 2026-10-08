@@ -125,11 +125,13 @@ dotnet ef migrations add <Name> --project src/AspireShowcase.Notifications
 
 ## Notifications
 
-A second ASP.NET Core service (`notifications`) that sends the booking emails (user stories MVP-5, MVP-7, MVP-13 and MVP-14) through [Resend](https://resend.com). It hears about bookings over a message bus, [MassTransit](https://masstransit.io) on RabbitMQ (`messaging`), never by being called:
+A second ASP.NET Core service (`notifications`) that sends the booking emails (user stories MVP-5, MVP-7, MVP-13, MVP-14, V1-4 and V1-5) through [Resend](https://resend.com). It hears about bookings over a message bus, [MassTransit](https://masstransit.io) on RabbitMQ (`messaging`), never by being called:
 
 1. Booking or cancelling publishes `BookingConfirmed` or `BookingCancelled` through MassTransit's transactional outbox in Scheduling's schema: the message is saved in the same transaction as the booking and sent afterwards, so neither exists without the other.
 2. A consumer in `web` looks up what the emails need (names, local times, the owner's email from Logto) and publishes a `BookingNotice`. Keeping that out of the request means booking doesn't fail when Logto is slow.
 3. `notifications` consumes it through MassTransit's inbox in `notifications-db`, so a redelivered message sends nothing twice, and sends the emails with an idempotency key that Resend checks too. A failed message is retried with growing waits, then lands in an `_error` queue in RabbitMQ.
+
+The client's emails come with the booking as `booking.ics` (V1-7), a calendar invite with the same UID every time and a sequence that grows with each change, so their calendar adds the booking once, then moves or removes that event.
 
 The message contracts are in `AspireShowcase.Scheduling.PublicClient`. Locally the `messaging` resource links to RabbitMQ's management UI, to watch the queues. Emails need two settings:
 
@@ -241,7 +243,7 @@ The Scheduling module, `AspireShowcase.Scheduling`, in `src/Modules/AspireShowca
 | `time_off.changes` | Counter | Time off added and removed (`result` tag: `added`, `removed`, `invalid`) |
 | `bookings.reschedules` | Counter | Attempts to move a booking (`result` tag: `rescheduled`, `slot_taken`, `too_late`; `by` tag: `client`, `business`) |
 
-Its `bookings.book` span is a client booking (with the service's `service.buffer_minutes`), `bookings.cancel` a cancellation, `availability.slots` says how many free slots were found, `bookings.calendar` which view was read and how many bookings it had, `bookings.sample` how many sample bookings were made and refused, `time_off.add` how many bookings were already in the blocked time, `bookings.reschedule` a booking moved to another time, and `cancellation_policy.set` the new notice in hours. Client names and emails are never recorded.
+Its `bookings.book` span is a booking, by the client or by the owner for someone who phoned (`booking.booked_by`, with the service's `service.buffer_minutes`), `bookings.cancel` a cancellation, `availability.slots` says how many free slots were found, `bookings.calendar` which view was read and how many bookings it had, `bookings.sample` how many sample bookings were made and refused, `time_off.add` how many bookings were already in the blocked time, `bookings.reschedule` a booking moved to another time, and `cancellation_policy.set` the new notice in hours. Client names and emails are never recorded.
 
 The notifications service, in `src/AspireShowcase.Notifications/NotificationTelemetry.cs`:
 
