@@ -2,7 +2,7 @@
 
 User stories for the booking SaaS in [the proposed architecture](README.md), in three phases. Each phase is usable on its own: the MVP lets a small business and its staff take bookings, v1 makes it work for the day-to-day of a real shop, and v2 adds what keeps businesses on the platform.
 
-Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 12 of 14 MVP stories (all but MVP-3 and MVP-6) and part of MVP-3; V1-1 to V1-4 and V1-6 of v1, and part of V1-5; none of v2.
+Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 12 of 14 MVP stories (all but MVP-3 and MVP-6) and part of MVP-3; V1-1 to V1-4, V1-6 and V1-7 of v1, and part of V1-5; none of v2.
 
 People in the stories:
 
@@ -122,7 +122,7 @@ As an owner, I want to add a booking myself for someone who phoned, so that all 
 **V1-6. Business page** ✅
 As an owner, I want my booking page to show my address, description and logo, so that clients know they're in the right place.
 
-**V1-7. Add to calendar**
+**V1-7. Add to calendar** ✅
 As a client, I want to add my booking to my calendar, so that it shows up next to everything else.
 - The confirmation email has an `.ics` attachment, updated on reschedule or cancel.
 
