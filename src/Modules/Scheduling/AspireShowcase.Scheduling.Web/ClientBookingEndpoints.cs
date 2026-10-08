@@ -4,7 +4,7 @@ using AspireShowcase.Scheduling.Application;
 using AspireShowcase.Scheduling.Application.ClientBookings;
 using AspireShowcase.Scheduling.Application.Rescheduling;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Web;
 
 /// <summary>
 /// A client's own bookings (user story MVP-7), under /me/bookings: every business they booked

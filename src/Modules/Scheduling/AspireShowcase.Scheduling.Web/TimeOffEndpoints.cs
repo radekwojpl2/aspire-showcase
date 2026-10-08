@@ -5,7 +5,7 @@ using AspireShowcase.Scheduling.Application;
 using AspireShowcase.Scheduling.Application.Policies;
 using AspireShowcase.Scheduling.Application.TimeOffs;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Web;
 
 /// <summary>
 /// The owner's settings that only Scheduling enforces: time off (user story V1-1), under

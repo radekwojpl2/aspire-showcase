@@ -1,6 +1,6 @@
 using AspireShowcase.Scheduling.Application.Development;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Web;
 
 /// <summary>
 /// Development only: /dev/sample-bookings fills the next 7 days of every business with made-up

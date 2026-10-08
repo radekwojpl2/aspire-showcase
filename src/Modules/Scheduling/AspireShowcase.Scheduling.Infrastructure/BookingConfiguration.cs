@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Npgsql;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Infrastructure;
 
 /// <summary>How the <see cref="Booking"/> aggregate is stored in app-db.</summary>
 sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>

@@ -3,7 +3,7 @@ using AspireShowcase.BuildingBlocks.Web;
 using AspireShowcase.Scheduling.Application;
 using AspireShowcase.Scheduling.Application.PublicBooking;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Web;
 
 /// <summary>
 /// The public booking page's API, under /public/businesses/{slug} (user stories MVP-1 to MVP-4):

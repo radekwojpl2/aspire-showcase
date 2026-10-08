@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="AspireShowcase.Scheduling" />
     <InternalsVisibleTo Include="AspireShowcase.Scheduling.Application" />
+    <InternalsVisibleTo Include="AspireShowcase.Scheduling.Infrastructure" />
     <InternalsVisibleTo Include="AspireShowcase.Scheduling.Tests" />
   </ItemGroup>
 

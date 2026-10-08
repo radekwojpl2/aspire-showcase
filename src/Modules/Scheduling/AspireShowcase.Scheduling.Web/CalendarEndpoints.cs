@@ -5,7 +5,7 @@ using AspireShowcase.Scheduling.Application;
 using AspireShowcase.Scheduling.Application.Calendar;
 using AspireShowcase.Scheduling.Application.Rescheduling;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Web;
 
 /// <summary>
 /// The owner's bookings, under /businesses/mine/bookings: the calendar (user story MVP-12) with

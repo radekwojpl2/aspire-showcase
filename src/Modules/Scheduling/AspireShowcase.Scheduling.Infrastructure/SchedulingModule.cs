@@ -7,6 +7,7 @@ using AspireShowcase.Scheduling.Application.Policies;
 using AspireShowcase.Scheduling.Application.PublicBooking;
 using AspireShowcase.Scheduling.Application.Rescheduling;
 using AspireShowcase.Scheduling.Application.TimeOffs;
+using AspireShowcase.Scheduling.Infrastructure;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -84,19 +85,6 @@ public static class SchedulingModule
             outbox.UseBusOutbox();
         });
         bus.AddConsumer<BookingNoticeConsumer, BookingNoticeConsumerDefinition>();
-    }
-
-    /// <param name="includeDevelopmentTools">Also maps /dev/sample-bookings; only ever in Development.</param>
-    public static void MapScheduling(this IEndpointRouteBuilder api, bool includeDevelopmentTools)
-    {
-        CalendarEndpoints.Map(api);
-        TimeOffEndpoints.Map(api);
-        PublicBookingEndpoints.Map(api);
-        ClientBookingEndpoints.Map(api);
-        if (includeDevelopmentTools)
-        {
-            SampleBookings.Map(api);
-        }
     }
 
     /// <summary>

@@ -3,7 +3,7 @@ using AspireShowcase.Scheduling.Application;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Infrastructure;
 
 /// <summary>
 /// Saves bookings and publishes what happened to them, together: the events a booking recorded go
