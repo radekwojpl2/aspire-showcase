@@ -98,7 +98,7 @@ sealed class Bookings(SchedulingDbContext db, IPublishEndpoint publish, IService
             booking.Id.Value, booking.BusinessId.Value, rescheduled.By.ToString().ToLowerInvariant(),
             rescheduled.PreviousStart, rescheduled.OccurredAt),
         BookingConfirmed confirmed => new PublicClient.BookingConfirmed(
-            booking.Id.Value, booking.BusinessId.Value, confirmed.OccurredAt),
+            booking.Id.Value, booking.BusinessId.Value, confirmed.OccurredAt, confirmed.By.ToString().ToLowerInvariant()),
         _ => throw new InvalidOperationException($"No message for {bookingEvent.GetType().Name}."),
     };
 }
