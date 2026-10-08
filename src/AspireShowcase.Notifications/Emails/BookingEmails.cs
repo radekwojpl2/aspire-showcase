@@ -8,7 +8,7 @@ sealed record OutgoingEmail(string Recipient, string Kind, EmailMessage Message)
 
 /// <summary>
 /// Which emails a booking event sends, and what they say (user stories MVP-5, MVP-7, MVP-13,
-/// MVP-14 and V1-4). Someone without an email address gets none.
+/// MVP-14, V1-4 and V1-5). Someone without an email address gets none.
 /// </summary>
 static class BookingEmails
 {
@@ -18,9 +18,25 @@ static class BookingEmails
         var when = $"{Day(booking.Date)}, {booking.Start}–{booking.End} ({booking.TimeZone.Replace('_', ' ')})";
         var what = $"{booking.ServiceName} with {booking.StaffName}";
         var before = booking.PreviousDate is { } previousDate ? $"{Day(previousDate)}, {booking.PreviousStart}" : "";
+        // A client the business booked by name and email (V1-5) can't sign in to their bookings,
+        // so their emails point to the business instead.
+        var yourBookings = booking.ClientHasAccount
+            ? ("See or change your bookings", $"{app}/my-bookings")
+            : booking.BusinessContactEmail is { } contact
+                ? ($"To change it, contact {booking.BusinessName}", $"mailto:{contact}")
+                : ($"About {booking.BusinessName}", $"{app}/book/{booking.BusinessSlug}");
 
         IEnumerable<OutgoingEmail> emails = (booking.Kind, booking.CancelledBy) switch
         {
+            // V1-5: the business booked someone who phoned; the owner made it, so only the client hears.
+            ("confirmed", _) when booking.BookedBy == "business" =>
+            [
+                Email(booking.Client, "client", "confirmation-by-business",
+                    $"Booked: {booking.ServiceName} at {booking.BusinessName}, {Day(booking.Date)} {booking.Start}",
+                    $"Hi {booking.Client.Name},",
+                    [$"{booking.BusinessName} booked you in:", what, when],
+                    yourBookings),
+            ],
             // MVP-5 and MVP-13.
             ("confirmed", _) =>
             [
@@ -56,7 +72,7 @@ static class BookingEmails
                     $"Moved: {booking.ServiceName} at {booking.BusinessName}, now {Day(booking.Date)} {booking.Start}",
                     $"Hi {booking.Client.Name},",
                     [$"Your booking at {booking.BusinessName} is moved:", what, when, $"It was {before}."],
-                    ("See or change your bookings", $"{app}/my-bookings")),
+                    yourBookings),
                 Email(booking.Owner, "owner", "rescheduled-by-client",
                     $"Moved by {booking.Client.Name}: {booking.ServiceName}, now {Day(booking.Date)} {booking.Start}",
                     $"Hi {booking.Owner.Name},",
@@ -70,7 +86,7 @@ static class BookingEmails
                     $"{booking.BusinessName} moved your booking: {booking.ServiceName}, now {Day(booking.Date)} {booking.Start}",
                     $"Hi {booking.Client.Name},",
                     [$"{booking.BusinessName} moved your booking from {before} to:", what, when],
-                    ("See or change your bookings", $"{app}/my-bookings")),
+                    yourBookings),
             ],
             // MVP-14: the business cancelled; the client hears about it.
             ("cancelled", _) =>

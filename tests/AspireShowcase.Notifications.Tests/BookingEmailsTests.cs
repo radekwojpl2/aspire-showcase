@@ -3,8 +3,8 @@ using AspireShowcase.Scheduling.PublicClient;
 namespace AspireShowcase.Notifications.Tests;
 
 /// <summary>
-/// Which emails a booking notice sends, to whom, and what they say (MVP-5, MVP-7, MVP-13, MVP-14
-/// and V1-4).
+/// Which emails a booking notice sends, to whom, and what they say (MVP-5, MVP-7, MVP-13, MVP-14,
+/// V1-4 and V1-5).
 /// </summary>
 public class BookingEmailsTests
 {
@@ -59,6 +59,32 @@ public class BookingEmailsTests
 
         Assert.Equal(("client", "rescheduled-by-business"), (email.Recipient, email.Kind));
         Assert.StartsWith("Anna Hair moved your booking", email.Message.Subject);
+    }
+
+    [Fact]
+    public void A_booking_made_by_the_business_confirms_only_to_the_client()
+    {
+        var notice = Notice("confirmed") with { BookedBy = "business", ClientHasAccount = false };
+
+        var email = Assert.Single(BookingEmails.For(notice, AppUrl));
+
+        Assert.Equal(("client", "confirmation-by-business"), (email.Recipient, email.Kind));
+        Assert.Contains("Anna Hair booked you in:", email.Message.Text);
+    }
+
+    [Fact]
+    public void A_client_without_an_account_is_pointed_to_the_business_instead_of_their_bookings()
+    {
+        var notice = Notice("rescheduled") with
+        {
+            RescheduledBy = "business", PreviousDate = "2026-11-02", PreviousStart = "09:00",
+            ClientHasAccount = false, BusinessContactEmail = "hello@anna-hair.example",
+        };
+
+        var email = Assert.Single(BookingEmails.For(notice, AppUrl));
+
+        Assert.Contains("mailto:hello@anna-hair.example", email.Message.Html);
+        Assert.DoesNotContain("/my-bookings", email.Message.Text);
     }
 
     [Fact]

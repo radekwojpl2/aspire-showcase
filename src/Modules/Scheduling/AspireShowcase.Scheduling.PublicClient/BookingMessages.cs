@@ -33,10 +33,15 @@ public sealed record BookingRescheduled(
 /// <param name="RescheduledBy">client or business, for a booking moved to another time (V1-4).</param>
 /// <param name="PreviousDate">For a moved booking, its date before, yyyy-MM-dd.</param>
 /// <param name="PreviousStart">For a moved booking, its start before, HH:mm.</param>
+/// <param name="BookedBy">client or business, for a new booking: the business books clients who phoned (V1-5).</param>
+/// <param name="ClientHasAccount">False for a client the business booked by name and email (V1-5),
+/// who can't sign in to see their bookings.</param>
+/// <param name="BusinessContactEmail">Where the client can reach the business; null if it has none yet.</param>
 public sealed record BookingNotice(
     string Kind, string? CancelledBy, Guid BookingId, string BusinessName, string BusinessSlug, string ServiceName,
     string StaffName, string Date, string Start, string End, string TimeZone, BookingParty Client, BookingParty Owner,
-    string? RescheduledBy = null, string? PreviousDate = null, string? PreviousStart = null);
+    string? RescheduledBy = null, string? PreviousDate = null, string? PreviousStart = null, string BookedBy = "client",
+    bool ClientHasAccount = true, string? BusinessContactEmail = null);
 
 /// <param name="Email">Null when their account has none: then they get no email.</param>
 public sealed record BookingParty(string Name, string? Email);
