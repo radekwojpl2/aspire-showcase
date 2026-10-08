@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Scheduling's domain: bookings, time off, the cancellation policy and how free slots are
+       worked out. No EF Core, no ASP.NET Core, no bus. Internal: only the module's own projects and
+       tests see it. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Domain\AspireShowcase.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\BusinessSetup\AspireShowcase.BusinessSetup.PublicClient\AspireShowcase.BusinessSetup.PublicClient.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="AspireShowcase.Scheduling" />
+    <InternalsVisibleTo Include="AspireShowcase.Scheduling.Tests" />
+  </ItemGroup>
+
+</Project>

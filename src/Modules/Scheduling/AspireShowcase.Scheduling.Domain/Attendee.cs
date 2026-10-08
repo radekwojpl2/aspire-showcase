@@ -1,7 +1,7 @@
 using System.Net.Mail;
 using AspireShowcase.BuildingBlocks.Domain;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Domain;
 
 /// <summary>
 /// Who a booking is for. A value object rather than a link to a Clients module: it also covers
