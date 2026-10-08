@@ -2,7 +2,7 @@
 
 User stories for the booking SaaS in [the proposed architecture](README.md), in three phases. Each phase is usable on its own: the MVP lets a small business and its staff take bookings, v1 makes it work for the day-to-day of a real shop, and v2 adds what keeps businesses on the platform.
 
-Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 12 of 14 MVP stories (all but MVP-3 and MVP-6) and part of MVP-3; V1-1 to V1-4 of v1; none of v2.
+Stories marked ✅ are built; 🟡 means partly built, with ✅ and ❌ on each acceptance criterion. So far: 12 of 14 MVP stories (all but MVP-3 and MVP-6) and part of MVP-3; V1-1 to V1-4 of v1 and part of V1-5; none of v2.
 
 People in the stories:
 
@@ -114,9 +114,10 @@ As a client, I want to move my booking to another free time, so that I don't hav
 - Same rules as cancelling; the old slot frees only once the new one is booked.
 - The owner can move a booking too, at any time and to another staff member, such as out of time off (V1-1).
 
-**V1-5. Book for a client**
+**V1-5. Book for a client** 🟡
 As an owner, I want to add a booking myself for someone who phoned, so that all bookings are in one calendar.
-- The client can be a name and email without an account; they get the confirmation and reminder.
+- ✅ The client can be a name and email without an account; they get the confirmation.
+- ❌ They get the reminder: reminders (MVP-6) aren't built yet.
 
 **V1-6. Business page**
 As an owner, I want my booking page to show my address, description and logo, so that clients know they're in the right place.
