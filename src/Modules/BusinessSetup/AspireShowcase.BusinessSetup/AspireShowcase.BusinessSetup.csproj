@@ -19,6 +19,8 @@
     <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Domain\AspireShowcase.BuildingBlocks.Domain.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Infrastructure\AspireShowcase.BuildingBlocks.Infrastructure.csproj" />
     <ProjectReference Include="..\AspireShowcase.BusinessSetup.Domain\AspireShowcase.BusinessSetup.Domain.csproj" />
+    <ProjectReference Include="..\AspireShowcase.BusinessSetup.Application\AspireShowcase.BusinessSetup.Application.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Web\AspireShowcase.BuildingBlocks.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Application;
 
 /// <summary>
 /// Custom telemetry for Business Setup: a span per operation, and counters for businesses
@@ -13,7 +13,8 @@ namespace AspireShowcase.BusinessSetup;
 /// </remarks>
 sealed class BusinessTelemetry
 {
-    const string Name = BusinessSetupModule.TelemetryName;
+    /// <summary>The name of the module's spans and metrics, which the module subscribes to.</summary>
+    public const string Name = "AspireShowcase.BusinessSetup";
 
     static readonly ActivitySource Source = new(Name);
 

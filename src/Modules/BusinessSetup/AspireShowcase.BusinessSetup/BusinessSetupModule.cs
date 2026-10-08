@@ -1,3 +1,7 @@
+using AspireShowcase.BusinessSetup.Application;
+using AspireShowcase.BusinessSetup.Application.Businesses;
+using AspireShowcase.BusinessSetup.Application.Services;
+using AspireShowcase.BusinessSetup.Application.Staff;
 using AspireShowcase.BusinessSetup.PublicClient;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
@@ -13,7 +17,7 @@ namespace AspireShowcase.BusinessSetup;
 public static class BusinessSetupModule
 {
     /// <summary>The name of the module's spans and metrics.</summary>
-    public const string TelemetryName = "AspireShowcase.BusinessSetup";
+    public const string TelemetryName = BusinessTelemetry.Name;
 
     /// <param name="connectionName">The database the AppHost passes in, holding the module's tables.</param>
     public static void AddBusinessSetup(this IHostApplicationBuilder builder, string connectionName)
@@ -22,7 +26,24 @@ public static class BusinessSetupModule
         builder.AddNpgsqlDbContext<BusinessSetupDbContext>(
             connectionName, configureDbContextOptions: BusinessSetupDbContext.Configure);
 
+        builder.Services.AddScoped<IBusinessSetupDbContext>(services => services.GetRequiredService<BusinessSetupDbContext>());
         builder.Services.AddSingleton<BusinessTelemetry>();
+
+        // The use cases, one handler each.
+        builder.Services.AddScoped<GetMyBusiness>();
+        builder.Services.AddScoped<CheckSlug>();
+        builder.Services.AddScoped<StartBusinessHandler>();
+        builder.Services.AddScoped<SetContact>();
+        builder.Services.AddScoped<GetOpeningHours>();
+        builder.Services.AddScoped<SetOpeningHours>();
+        builder.Services.AddScoped<ListServices>();
+        builder.Services.AddScoped<AddService>();
+        builder.Services.AddScoped<ChangeService>();
+        builder.Services.AddScoped<SetServiceVisibility>();
+        builder.Services.AddScoped<ListStaff>();
+        builder.Services.AddScoped<AddStaffMember>();
+        builder.Services.AddScoped<ChangeStaffMember>();
+
         builder.Services.AddScoped<IBusinessDirectory, BusinessDirectory>();
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing.AddSource(TelemetryName))
