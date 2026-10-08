@@ -3,7 +3,7 @@ using AspireShowcase.BuildingBlocks.Web;
 using AspireShowcase.BusinessSetup.Application;
 using AspireShowcase.BusinessSetup.Application.Staff;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Web;
 
 /// <summary>
 /// The owner's staff (user story MVP-11), under /businesses/mine/staff. Every request is scoped to

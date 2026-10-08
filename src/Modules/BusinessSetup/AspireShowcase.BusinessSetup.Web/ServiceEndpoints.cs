@@ -3,7 +3,7 @@ using AspireShowcase.BuildingBlocks.Web;
 using AspireShowcase.BusinessSetup.Application;
 using AspireShowcase.BusinessSetup.Application.Services;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Web;
 
 /// <summary>
 /// The owner's services (user story MVP-10), under /businesses/mine/services. Every request is

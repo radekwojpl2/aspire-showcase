@@ -1,7 +1,7 @@
 using AspireShowcase.BusinessSetup.PublicClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Infrastructure;
 
 /// <summary>Answers <see cref="IBusinessDirectory"/> from Business Setup's own tables.</summary>
 sealed class BusinessDirectory(BusinessSetupDbContext db) : IBusinessDirectory

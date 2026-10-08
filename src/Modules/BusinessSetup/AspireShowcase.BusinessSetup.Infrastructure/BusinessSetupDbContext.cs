@@ -4,7 +4,7 @@ using AspireShowcase.BusinessSetup.PublicClient;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Infrastructure;
 
 /// <summary>
 /// Business Setup's own view of app-db: only its tables, all in the business_setup schema.

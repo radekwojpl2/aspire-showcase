@@ -1,4 +1,5 @@
 ﻿using System;
+using AspireShowcase.BusinessSetup.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
