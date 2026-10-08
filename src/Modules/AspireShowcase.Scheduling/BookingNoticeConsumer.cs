@@ -25,7 +25,7 @@ sealed class BookingNoticeConsumer(
     {
         if (await BuildAsync(context.Message.BookingId, "confirmed", null, context.CancellationToken) is { } notice)
         {
-            await context.Publish(notice with { BookedBy = context.Message.BookedBy });
+            await context.Publish(notice with { BookedBy = context.Message.BookedBy, OccurredAt = context.Message.OccurredAt });
         }
     }
 
@@ -34,7 +34,7 @@ sealed class BookingNoticeConsumer(
         var message = context.Message;
         if (await BuildAsync(message.BookingId, "cancelled", message.CancelledBy, context.CancellationToken) is { } notice)
         {
-            await context.Publish(notice);
+            await context.Publish(notice with { OccurredAt = message.OccurredAt });
         }
     }
 
@@ -48,6 +48,7 @@ sealed class BookingNoticeConsumer(
             await context.Publish(notice with
             {
                 RescheduledBy = message.RescheduledBy,
+                OccurredAt = message.OccurredAt,
                 PreviousDate = before.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 PreviousStart = before.ToString("HH:mm", CultureInfo.InvariantCulture),
             });
@@ -88,7 +89,10 @@ sealed class BookingNoticeConsumer(
             new BookingParty(booking.Attendee.Name, booking.Attendee.Email),
             new BookingParty(owner?.Name ?? business.Name, owner?.Email),
             ClientHasAccount: booking.Attendee.UserId is not null,
-            BusinessContactEmail: business.ContactEmail);
+            BusinessContactEmail: business.ContactEmail,
+            StartsAt: booking.Start,
+            EndsAt: booking.End,
+            BusinessAddress: business.Address);
     }
 }
 

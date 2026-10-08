@@ -63,6 +63,9 @@ public sealed class MessagingTests(ApiFactory api)
             ("confirmed", "Haircut", "2026-11-02", "09:00", TestBusiness.TimeZone),
             (notice.Kind, notice.ServiceName, notice.Date, notice.Start, notice.TimeZone));
         Assert.Equal(new BookingParty("Cleo Client", "cleo@example.com"), notice.Client);
+        // The calendar invite (V1-7) needs the instants, and when it happened to order its updates.
+        Assert.Equal((TestBusiness.FirstSlot, TestBusiness.FirstSlot.AddHours(1)), (notice.StartsAt, notice.EndsAt));
+        Assert.NotNull(notice.OccurredAt);
         // The owner's email comes from Logto, through Identity.
         Assert.Equal(FakeUserProfiles.EmailOf(business.Owner.Id), notice.Owner.Email);
     }
