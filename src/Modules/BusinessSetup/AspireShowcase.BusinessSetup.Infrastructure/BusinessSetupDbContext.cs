@@ -34,6 +34,8 @@ sealed class BusinessSetupDbContext(DbContextOptions<BusinessSetupDbContext> opt
 
     public DbSet<StaffMember> StaffMembers => Set<StaffMember>();
 
+    public DbSet<BusinessLogo> Logos => Set<BusinessLogo>();
+
     /// <summary>Provider settings that go with the model, for AddNpgsqlDbContext.</summary>
     public static void Configure(DbContextOptionsBuilder options) =>
         options.UseNpgsql(npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "public"));

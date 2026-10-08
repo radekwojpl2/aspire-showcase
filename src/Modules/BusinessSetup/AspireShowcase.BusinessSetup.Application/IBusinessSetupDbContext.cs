@@ -11,6 +11,9 @@ interface IBusinessSetupDbContext
 
     DbSet<StaffMember> StaffMembers { get; }
 
+    /// <summary>The booking pages' logos (V1-6), apart from the businesses so loading one doesn't load its image.</summary>
+    DbSet<BusinessLogo> Logos { get; }
+
     /// <exception cref="AlreadyExistsException">A unique rule was broken, such as a taken booking link.</exception>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

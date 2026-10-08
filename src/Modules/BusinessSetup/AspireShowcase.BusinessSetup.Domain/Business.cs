@@ -11,6 +11,8 @@ sealed class Business
 {
     public const int MinNameLength = 2;
     public const int MaxNameLength = 100;
+    public const int MaxAddressLength = 300;
+    public const int MaxDescriptionLength = 1000;
 
     // For EF Core.
     Business()
@@ -38,6 +40,19 @@ sealed class Business
 
     /// <summary>Closed every day until the owner sets them.</summary>
     public WeeklyHours OpeningHours { get; private set; } = WeeklyHours.Closed;
+
+    /// <summary>Where the business is, as the booking page shows it (V1-6); null for none.</summary>
+    public string? Address { get; private set; }
+
+    /// <summary>What the business is about, on the booking page (V1-6); null for none.</summary>
+    public string? Description { get; private set; }
+
+    /// <summary>
+    /// Goes up with each new logo (V1-6), so its address changes and browsers don't keep showing
+    /// the last one; null when there's none. The image is a <see cref="BusinessLogo"/>, kept apart
+    /// so loading the business doesn't load it.
+    /// </summary>
+    public int? LogoVersion { get; private set; }
 
     public DateTimeOffset CreatedAt { get; private set; }
 
@@ -113,6 +128,40 @@ sealed class Business
 
         ContactEmail = contactEmail!.Trim();
     }
+
+    /// <summary>
+    /// Changes what the booking page says about the business (user story V1-6), so clients know
+    /// they're in the right place. Either can be left empty.
+    /// </summary>
+    /// <exception cref="DomainValidationException">The address or description is too long.</exception>
+    public void ChangePage(string? address, string? description)
+    {
+        var trimmedAddress = Normalize(address);
+        var trimmedDescription = Normalize(description);
+        var errors = new DomainErrors();
+        if (trimmedAddress?.Length > MaxAddressLength)
+        {
+            errors.Add("address", $"Use at most {MaxAddressLength} characters.");
+        }
+        if (trimmedDescription?.Length > MaxDescriptionLength)
+        {
+            errors.Add("description", $"Use at most {MaxDescriptionLength} characters.");
+        }
+        errors.ThrowIfAny();
+
+        Address = trimmedAddress;
+        Description = trimmedDescription;
+
+        // Blank is none; line breaks stay, as an address is usually on several lines.
+        static string? Normalize(string? text) =>
+            text?.Trim() is { Length: > 0 } trimmed ? trimmed.ReplaceLineEndings("\n") : null;
+    }
+
+    /// <summary>A new logo was saved (V1-6): its address changes with the version.</summary>
+    public void LogoChanged() => LogoVersion = (LogoVersion ?? 0) + 1;
+
+    /// <summary>The logo was removed (V1-6).</summary>
+    public void LogoRemoved() => LogoVersion = null;
 
     static void CheckContactEmail(string? contactEmail, DomainErrors errors)
     {
