@@ -48,6 +48,17 @@ public class BookingTests
             Attendee.Create(null, "Ola Nowak", "ola.nowak@example.com"), DateTimeOffset.UtcNow));
     }
 
+    [Fact]
+    public void A_booking_made_by_the_business_says_so_in_its_event()
+    {
+        var booking = Booking.Book(
+            BusinessId.New(), StaffMemberId.New(), ServiceId.New(), DateTimeOffset.UtcNow.AddDays(1), TimeSpan.FromMinutes(30),
+            TimeSpan.Zero, TimeSpan.Zero, Attendee.Create(null, "Ola Nowak", "ola.nowak@example.com"), DateTimeOffset.UtcNow,
+            BookedBy.Business);
+
+        Assert.Equal(BookedBy.Business, Assert.IsType<BookingConfirmed>(Assert.Single(booking.Events)).By);
+    }
+
     static Booking BookingAt(DateTimeOffset start) => Booking.Book(
         BusinessId.New(), StaffMemberId.New(), ServiceId.New(), start, TimeSpan.FromMinutes(30), TimeSpan.Zero, TimeSpan.Zero,
         Attendee.Create("client-1", "Ola Nowak", "ola.nowak@example.com"), start.AddDays(-7));

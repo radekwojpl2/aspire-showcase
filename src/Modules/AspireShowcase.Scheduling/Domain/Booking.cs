@@ -17,6 +17,16 @@ enum BookingStatus
     Cancelled,
 }
 
+/// <summary>
+/// Who made a booking: the client online (MVP-4), or the business for them, such as for someone
+/// who phoned (V1-5).
+/// </summary>
+enum BookedBy
+{
+    Client,
+    Business,
+}
+
 /// <summary>Who moved a booking to another time (V1-4): the client, or the business for them.</summary>
 enum RescheduledBy
 {
@@ -165,10 +175,11 @@ sealed class Booking
     /// <summary>Books a staff member for a service. Whether the time is free is the database's call.</summary>
     /// <param name="buffer">The service's time kept free after it; zero for none.</param>
     /// <param name="changeNotice">The business's cancellation notice, kept with the booking.</param>
+    /// <param name="by">Who made it. Only the news about it differs: the same rules apply either way.</param>
     /// <exception cref="DomainValidationException">The duration isn't positive, or the buffer is negative.</exception>
     public static Booking Book(
         BusinessId businessId, StaffMemberId staffMemberId, ServiceId serviceId, DateTimeOffset start, TimeSpan duration,
-        TimeSpan buffer, TimeSpan changeNotice, Attendee attendee, DateTimeOffset now)
+        TimeSpan buffer, TimeSpan changeNotice, Attendee attendee, DateTimeOffset now, BookedBy by = BookedBy.Client)
     {
         var errors = new DomainErrors();
         if (duration <= TimeSpan.Zero)
@@ -195,7 +206,7 @@ sealed class Booking
             Status = BookingStatus.Confirmed,
             CreatedAt = now,
         };
-        booking._events.Add(new BookingConfirmed(booking.Id, now));
+        booking._events.Add(new BookingConfirmed(booking.Id, now, by));
         return booking;
     }
 
@@ -236,8 +247,9 @@ sealed class Booking
 /// </summary>
 abstract record BookingEvent(BookingId BookingId, DateTimeOffset OccurredAt);
 
-/// <summary>A client booked (user story MVP-4).</summary>
-sealed record BookingConfirmed(BookingId BookingId, DateTimeOffset OccurredAt) : BookingEvent(BookingId, OccurredAt);
+/// <summary>A client booked (user story MVP-4), or the business booked them (V1-5).</summary>
+sealed record BookingConfirmed(BookingId BookingId, DateTimeOffset OccurredAt, BookedBy By)
+    : BookingEvent(BookingId, OccurredAt);
 
 /// <summary>The client (MVP-7) or the business (MVP-14) cancelled.</summary>
 sealed record BookingCancelled(BookingId BookingId, DateTimeOffset OccurredAt, CancelledBy By)
