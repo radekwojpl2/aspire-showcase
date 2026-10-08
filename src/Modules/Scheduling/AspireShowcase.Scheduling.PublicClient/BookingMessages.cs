@@ -37,11 +37,16 @@ public sealed record BookingRescheduled(
 /// <param name="ClientHasAccount">False for a client the business booked by name and email (V1-5),
 /// who can't sign in to see their bookings.</param>
 /// <param name="BusinessContactEmail">Where the client can reach the business; null if it has none yet.</param>
+/// <param name="StartsAt">When it starts, as an instant, for the calendar invite (V1-7); like
+/// <paramref name="EndsAt"/> and <paramref name="OccurredAt"/>, null in notices from before it.</param>
+/// <param name="OccurredAt">When what the notice is about happened: a later change makes a newer invite.</param>
+/// <param name="BusinessAddress">Where the business is (V1-6), the invite's location; null for none.</param>
 public sealed record BookingNotice(
     string Kind, string? CancelledBy, Guid BookingId, string BusinessName, string BusinessSlug, string ServiceName,
     string StaffName, string Date, string Start, string End, string TimeZone, BookingParty Client, BookingParty Owner,
     string? RescheduledBy = null, string? PreviousDate = null, string? PreviousStart = null, string BookedBy = "client",
-    bool ClientHasAccount = true, string? BusinessContactEmail = null);
+    bool ClientHasAccount = true, string? BusinessContactEmail = null, DateTimeOffset? StartsAt = null,
+    DateTimeOffset? EndsAt = null, DateTimeOffset? OccurredAt = null, string? BusinessAddress = null);
 
 /// <param name="Email">Null when their account has none: then they get no email.</param>
 public sealed record BookingParty(string Name, string? Email);

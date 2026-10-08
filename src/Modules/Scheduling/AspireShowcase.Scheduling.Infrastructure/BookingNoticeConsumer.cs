@@ -16,7 +16,7 @@ sealed class BookingNoticeConsumer(BuildBookingNotice notices)
     {
         if (await notices.HandleAsync(context.Message.BookingId, "confirmed", null, context.CancellationToken) is { } notice)
         {
-            await context.Publish(notice with { BookedBy = context.Message.BookedBy });
+            await context.Publish(notice with { BookedBy = context.Message.BookedBy, OccurredAt = context.Message.OccurredAt });
         }
     }
 
@@ -25,7 +25,7 @@ sealed class BookingNoticeConsumer(BuildBookingNotice notices)
         var message = context.Message;
         if (await notices.HandleAsync(message.BookingId, "cancelled", message.CancelledBy, context.CancellationToken) is { } notice)
         {
-            await context.Publish(notice);
+            await context.Publish(notice with { OccurredAt = message.OccurredAt });
         }
     }
 
@@ -36,7 +36,7 @@ sealed class BookingNoticeConsumer(BuildBookingNotice notices)
         if (await notices.RescheduledAsync(
                 message.BookingId, message.RescheduledBy, message.PreviousStart, context.CancellationToken) is { } notice)
         {
-            await context.Publish(notice);
+            await context.Publish(notice with { OccurredAt = message.OccurredAt });
         }
     }
 }
