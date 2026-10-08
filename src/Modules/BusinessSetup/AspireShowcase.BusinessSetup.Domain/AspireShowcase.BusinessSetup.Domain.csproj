@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="AspireShowcase.BusinessSetup" />
+    <InternalsVisibleTo Include="AspireShowcase.BusinessSetup.Application" />
     <InternalsVisibleTo Include="AspireShowcase.BusinessSetup.Tests" />
   </ItemGroup>
 

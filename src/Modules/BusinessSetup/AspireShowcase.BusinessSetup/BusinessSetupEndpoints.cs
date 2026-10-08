@@ -1,156 +1,43 @@
-using System.Globalization;
 using System.Security.Claims;
+using AspireShowcase.BuildingBlocks.Web;
+using AspireShowcase.BusinessSetup.Application;
+using AspireShowcase.BusinessSetup.Application.Businesses;
 using AspireShowcase.Identity;
-using AspireShowcase.BuildingBlocks.Domain;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace AspireShowcase.BusinessSetup;
 
-/// <param name="OwnerName">The owner's name as their staff member, as clients will see it.</param>
-record StartBusiness(string? Name, string? Slug, string? TimeZone, string? ContactEmail, string? OwnerName);
-
-/// <param name="ContactEmail">Null for a business started before it was required, until the owner adds one.</param>
-record BusinessResponse(Guid Id, string Name, string Slug, string TimeZone, string? ContactEmail, DateTimeOffset CreatedAt);
-
-record ContactBody(string? ContactEmail);
-
-/// <param name="Problem">Why the link can't be used, when it can't.</param>
-record SlugAvailability(string Slug, bool Available, string? Problem);
-
-/// <summary>Opening hours as the API sends and takes them: weekdays by name, times as HH:mm.</summary>
-record OpeningHoursBody(string? TimeZone, List<OpeningPeriodBody>? Periods);
-
-record OpeningPeriodBody(string? Day, string? Opens, string? Closes);
-
 static class BusinessSetupEndpoints
 {
-    const string SlugTaken = "This link is taken. Try another one.";
-
     /// <summary>
     /// The Business Setup module's endpoints: what an owner configures about their business.
     /// Only for signed-in users: every endpoint needs a Logto access token for this API, which bff
-    /// adds (401 without one).
+    /// adds (401 without one). Each one hands its request to a use case in Application.
     /// </summary>
     public static void MapEndpoints(IEndpointRouteBuilder api)
     {
         var businesses = api.MapGroup("/businesses").RequireAuthorization();
 
         // The signed-in user's business, or 404 when they haven't started one.
-        businesses.MapGet("/mine", async (ClaimsPrincipal user, BusinessSetupDbContext db, CancellationToken cancellation) =>
-            await FindMineAsync(db.Businesses.AsNoTracking(), user, cancellation) is { } business
-                ? Results.Ok(ToResponse(business))
-                : Results.NotFound())
+        businesses.MapGet("/mine", async (ClaimsPrincipal user, GetMyBusiness handler, CancellationToken cancellation) =>
+            (await handler.HandleAsync(UserId(user), cancellation)).ToHttp(Results.Ok))
         .WithName("GetMyBusiness");
 
         // Checked while the user types, so they hear about a taken link before submitting.
-        businesses.MapGet("/slug-availability", async (string? slug, BusinessSetupDbContext db, CancellationToken cancellation) =>
-        {
-            if (BookingSlug.Problem(slug) is { } problem)
-            {
-                return new SlugAvailability(slug ?? "", false, problem);
-            }
-
-            var taken = await db.Businesses.AnyAsync(b => b.Slug == slug, cancellation);
-            return new SlugAvailability(slug!, !taken, taken ? SlugTaken : null);
-        })
+        businesses.MapGet("/slug-availability", (string? slug, CheckSlug handler, CancellationToken cancellation) =>
+            handler.HandleAsync(slug, cancellation))
         .WithName("GetSlugAvailability");
 
         // User story MVP-8.
         businesses.MapPost("/", async (
-            StartBusiness request, ClaimsPrincipal user, BusinessSetupDbContext db, IOwnerRoles ownerRoles,
-            BusinessTelemetry telemetry, TimeProvider time, ILogger<Business> logger, CancellationToken cancellation) =>
-        {
-            using var activity = telemetry.StartActivity("businesses.create");
-
-            Business business;
-            try
-            {
-                business = Business.Start(
-                    request.Name, request.Slug, request.TimeZone, request.ContactEmail, UserId(user), time.GetUtcNow());
-            }
-            catch (DomainValidationException exception)
-            {
-                telemetry.Rejected(activity, "invalid");
-                return Results.ValidationProblem(exception.Errors.ToDictionary());
-            }
-
-            try
-            {
-                // The execution strategy retries transient database failures, which needs the
-                // whole transaction inside it. Giving the role twice does nothing.
-                await db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
-                {
-                    db.ChangeTracker.Clear();
-                    await using var transaction = await db.Database.BeginTransactionAsync(cancellation);
-                    db.Businesses.Add(business);
-                    // The owner is the business's first staff member, so a one-person business
-                    // can be booked without setting anything else up (user story MVP-11).
-                    db.StaffMembers.Add(StaffMember.ForOwner(business.Id, business.OwnerId, request.OwnerName, time.GetUtcNow()));
-                    await db.SaveChangesAsync(cancellation);
-                    // Only once the business is saved, and before it's committed: if Identity
-                    // can't give the role, the business is rolled back and the user can try again.
-                    await ownerRoles.AssignOwnerRoleAsync(business.OwnerId, cancellation);
-                    await transaction.CommitAsync(cancellation);
-                });
-            }
-            catch (DbUpdateException exception) when (
-                exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } unique)
-            {
-                if (unique.ConstraintName == BusinessConfiguration.SlugIndex)
-                {
-                    telemetry.Rejected(activity, "slug_taken");
-                    return Results.ValidationProblem(
-                        new Dictionary<string, string[]> { ["slug"] = [SlugTaken] },
-                        statusCode: StatusCodes.Status409Conflict);
-                }
-
-                telemetry.Rejected(activity, "already_owner");
-                return Results.Problem(
-                    title: "You already have a business.",
-                    statusCode: StatusCodes.Status409Conflict);
-            }
-            catch (OwnerRoleUnavailableException exception)
-            {
-                telemetry.Rejected(activity, "logto_unavailable");
-                logger.LogError(exception, "Could not give the owner role; the business was not created");
-                return Results.Problem(
-                    title: "Your business couldn't be set up right now. Please try again.",
-                    statusCode: StatusCodes.Status503ServiceUnavailable);
-            }
-
-            telemetry.Created(activity, business);
-            logger.LogInformation("Business {BusinessId} started", business.Id);
-            return Results.Created("/api/businesses/mine", ToResponse(business));
-        })
+            StartBusiness request, ClaimsPrincipal user, StartBusinessHandler handler, CancellationToken cancellation) =>
+            (await handler.HandleAsync(request, UserId(user), cancellation))
+                .ToHttp(business => Results.Created("/api/businesses/mine", business)))
         .WithName("CreateBusiness");
 
         // Where clients can reach the business (V1-3); also how an older business gets one.
         businesses.MapPut("/mine/contact", async (
-            ContactBody request, ClaimsPrincipal user, BusinessSetupDbContext db, BusinessTelemetry telemetry,
-            CancellationToken cancellation) =>
-        {
-            using var activity = telemetry.StartActivity("businesses.contact.set");
-
-            if (await FindMineAsync(db.Businesses, user, cancellation) is not { } business)
-            {
-                return Results.NotFound();
-            }
-
-            try
-            {
-                business.ChangeContactEmail(request.ContactEmail);
-            }
-            catch (DomainValidationException exception)
-            {
-                telemetry.ContactChanged(activity, null, "invalid");
-                return Results.ValidationProblem(exception.Errors.ToDictionary());
-            }
-
-            await db.SaveChangesAsync(cancellation);
-            telemetry.ContactChanged(activity, business, "saved");
-            return Results.Ok(ToResponse(business));
-        })
+            ContactBody request, ClaimsPrincipal user, SetContact handler, CancellationToken cancellation) =>
+            (await handler.HandleAsync(request, UserId(user), cancellation)).ToHttp(Results.Ok))
         .RequireAuthorization(IdentityAccess.OwnerPolicy)
         .WithName("SetContact");
 
@@ -158,44 +45,14 @@ static class BusinessSetupEndpoints
         var openingHours = businesses.MapGroup("/mine/opening-hours")
             .RequireAuthorization(IdentityAccess.OwnerPolicy);
 
-        openingHours.MapGet("/", async (ClaimsPrincipal user, BusinessSetupDbContext db, CancellationToken cancellation) =>
-            await FindMineAsync(db.Businesses.AsNoTracking(), user, cancellation) is { } business
-                ? Results.Ok(ToBody(business))
-                : Results.NotFound())
+        openingHours.MapGet("/", async (ClaimsPrincipal user, GetOpeningHours handler, CancellationToken cancellation) =>
+            (await handler.HandleAsync(UserId(user), cancellation)).ToHttp(Results.Ok))
         .WithName("GetOpeningHours");
 
         // Replaces the whole week at once: the hours are one value object.
         openingHours.MapPut("/", async (
-            OpeningHoursBody request, ClaimsPrincipal user, BusinessSetupDbContext db, BusinessTelemetry telemetry,
-            ILogger<Business> logger, CancellationToken cancellation) =>
-        {
-            using var activity = telemetry.StartActivity("businesses.opening_hours.set");
-
-            if (await FindMineAsync(db.Businesses, user, cancellation) is not { } business)
-            {
-                return Results.NotFound();
-            }
-
-            try
-            {
-                // Only the hours of the staff who have their own, not the staff members themselves.
-                var staffHours = (await db.StaffMembers.AsNoTracking()
-                        .Where(member => member.BusinessId == business.Id && member.WorkingHours != null)
-                        .ToListAsync(cancellation))
-                    .Select(member => new StaffHours(member.Name, member.WorkingHours!));
-                business.SetOpeningHours(ParseWeeklyHours(request.Periods), request.TimeZone, staffHours);
-            }
-            catch (DomainValidationException exception)
-            {
-                telemetry.OpeningHoursChanged(activity, null, "invalid");
-                return Results.ValidationProblem(exception.Errors.ToDictionary());
-            }
-
-            await db.SaveChangesAsync(cancellation);
-            telemetry.OpeningHoursChanged(activity, business, "saved");
-            logger.LogInformation("Opening hours of business {BusinessId} changed", business.Id);
-            return Results.Ok(ToBody(business));
-        })
+            OpeningHoursBody request, ClaimsPrincipal user, SetOpeningHours handler, CancellationToken cancellation) =>
+            (await handler.HandleAsync(request, UserId(user), cancellation)).ToHttp(Results.Ok))
         .WithName("SetOpeningHours");
 
         // User story MVP-10.
@@ -205,57 +62,6 @@ static class BusinessSetupEndpoints
         StaffEndpoints.Map(businesses.MapGroup("/mine/staff").RequireAuthorization(IdentityAccess.OwnerPolicy));
     }
 
-    /// <summary>The signed-in user's business: everything under /businesses/mine is scoped to it.</summary>
-    internal static Task<Business?> FindMineAsync(IQueryable<Business> businesses, ClaimsPrincipal user, CancellationToken cancellation)
-    {
-        var userId = UserId(user);
-        return businesses.SingleOrDefaultAsync(b => b.OwnerId == userId, cancellation);
-    }
-
     internal static string UserId(ClaimsPrincipal user) =>
         user.FindFirstValue("sub") ?? throw new InvalidOperationException("The access token has no sub claim.");
-
-    /// <summary>
-    /// Turns the request into weekly hours, for opening hours and working hours alike. Malformed days and times are reported the same way as
-    /// the domain's own rules, under the day they belong to.
-    /// </summary>
-    internal static WeeklyHours ParseWeeklyHours(List<OpeningPeriodBody>? periods)
-    {
-        var errors = new DomainErrors();
-        var parsed = new List<WeeklyPeriod>();
-        foreach (var period in periods ?? [])
-        {
-            // Exact names only: Enum.TryParse would also take "1" or "monday,tuesday".
-            if (Enum.GetValues<DayOfWeek>().Cast<DayOfWeek?>()
-                    .FirstOrDefault(weekday => WeeklyHours.FieldName(weekday!.Value) == period.Day) is not { } day)
-            {
-                errors.Add("periods", $"\"{period.Day}\" isn't a weekday.");
-                continue;
-            }
-            if (!TryParseTime(period.Opens, out var opens) || !TryParseTime(period.Closes, out var closes))
-            {
-                errors.Add(WeeklyHours.FieldName(day), "Enter both times as HH:mm.");
-                continue;
-            }
-            parsed.Add(new WeeklyPeriod(day, opens, closes));
-        }
-        errors.ThrowIfAny();
-        return WeeklyHours.Create(parsed);
-    }
-
-    static bool TryParseTime(string? value, out TimeOnly time) =>
-        TimeOnly.TryParseExact(value, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out time);
-
-    static BusinessResponse ToResponse(Business business) =>
-        new(business.Id.Value, business.Name, business.Slug, business.TimeZone, business.ContactEmail, business.CreatedAt);
-
-    static OpeningHoursBody ToBody(Business business) => new(business.TimeZone, ToPeriodBodies(business.OpeningHours));
-
-    internal static List<OpeningPeriodBody> ToPeriodBodies(WeeklyHours hours) =>
-        hours.Periods
-            .Select(period => new OpeningPeriodBody(
-                WeeklyHours.FieldName(period.Day),
-                period.Opens.ToString("HH:mm", CultureInfo.InvariantCulture),
-                period.Closes.ToString("HH:mm", CultureInfo.InvariantCulture)))
-            .ToList();
 }
