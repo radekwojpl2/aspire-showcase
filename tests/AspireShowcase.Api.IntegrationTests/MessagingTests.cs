@@ -29,6 +29,24 @@ public sealed class MessagingTests(ApiFactory api)
     }
 
     [Fact]
+    public async Task A_booking_made_by_the_owner_publishes_who_made_it()
+    {
+        var business = await TestBusiness.StartAsync(api);
+
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(await api.CreateClient(business.Owner)
+            .PostAsJsonAsync("/api/businesses/mine/bookings", new
+            {
+                serviceId = business.ServiceId,
+                startsAt = TestBusiness.FirstSlot,
+                clientName = "Paula Phone",
+                clientEmail = "paula@example.com",
+            }));
+
+        var confirmed = await ConsumedAsync<BookingConfirmed>(message => message.BookingId == booked.Id);
+        Assert.Equal("business", confirmed.BookedBy);
+    }
+
+    [Fact]
     public async Task A_booking_notice_has_what_the_emails_need()
     {
         var business = await TestBusiness.StartAsync(api);

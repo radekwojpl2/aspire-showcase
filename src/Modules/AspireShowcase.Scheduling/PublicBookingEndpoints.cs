@@ -106,58 +106,77 @@ static class PublicBookingEndpoints
                 return Results.NotFound();
             }
 
-            Attendee attendee;
-            try
-            {
-                attendee = Attendee.Create(user.FindFirstValue("sub"), request.ClientName, request.ClientEmail);
-            }
-            catch (DomainValidationException exception)
-            {
-                return Results.ValidationProblem(exception.Errors.ToDictionary());
-            }
-            if (request.StartsAt is not { } startsAt)
-            {
-                return Results.ValidationProblem(new Dictionary<string, string[]> { ["startsAt"] = ["Choose a time."] });
-            }
-
-            activity?.SetTag("service.buffer_minutes", (int)offer.Service.Buffer.TotalMinutes);
-
-            // Only a slot that's free right now, on the grid and within someone's hours, can be booked.
-            var day = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(startsAt, offer.TimeZone).DateTime);
-            var slot = (await availability.FreeSlotsAsync(offer, day, 1, cancellation))
-                .SingleOrDefault(free => free.Start == startsAt.ToUniversalTime());
-            // The booking keeps the policy the client saw (V1-3).
-            var notice = (await db.PolicyOfAsync(found.Id, cancellation)).Notice;
-
-            // "Anyone" takes whoever is free; if the database refuses one (someone booked them a
-            // moment ago), the next one is tried. Each attempt gets a scope of its own, so a refused
-            // one leaves no outbox message behind for the next to send.
-            foreach (var staffMemberId in slot?.FreeStaff ?? [])
-            {
-                await using var attempt = scopes.CreateAsyncScope();
-                attempt.ServiceProvider.GetRequiredService<BusinessScope>().BusinessId = found.Id;
-                var booking = Booking.Book(
-                    found.Id, staffMemberId, offer.Service.Id, startsAt, offer.Service.Duration, offer.Service.Buffer, notice,
-                    attendee, time.GetUtcNow());
-                var result = await attempt.ServiceProvider.GetRequiredService<Bookings>().AddAsync(booking, cancellation);
-                telemetry.Booking(result, "client");
-                if (result == BookingResult.Booked)
-                {
-                    activity?.SetTag("booking.id", booking.Id.Value);
-                    return Results.Created(
-                        $"/api/public/businesses/{slug}/bookings/{booking.Id}", ToConfirmation(booking, offer, staffMemberId));
-                }
-            }
-
-            // Nobody to try at all is a taken slot too; refused attempts were counted above.
-            if (slot is null || slot.FreeStaff.Count == 0)
-            {
-                telemetry.Booking(BookingResult.SlotTaken, "client");
-            }
-            return Results.Problem(title: SlotTaken, statusCode: StatusCodes.Status409Conflict);
+            return await BookAsync(
+                offer, request, user.FindFirstValue("sub"), BookedBy.Client,
+                id => $"/api/public/businesses/{slug}/bookings/{id}",
+                availability, db, scopes, telemetry, activity, time, cancellation);
         })
         .RequireAuthorization()
         .WithName("BookSlot");
+    }
+
+    /// <summary>
+    /// Books a free slot of the offer, for the client online or for the business on their behalf
+    /// (V1-5): the same rules either way. Answers 201 with the confirmation, 400 when the attendee
+    /// or time is missing, or 409 when the slot isn't free.
+    /// </summary>
+    /// <param name="userId">The client's user ID; null for someone without an account.</param>
+    /// <param name="location">Where the new booking can be found, for the 201's Location header.</param>
+    public static async Task<IResult> BookAsync(
+        Offer offer, BookSlot request, string? userId, BookedBy by, Func<BookingId, string> location,
+        Availability availability, SchedulingDbContext db, IServiceScopeFactory scopes, SchedulingTelemetry telemetry,
+        System.Diagnostics.Activity? activity, TimeProvider time, CancellationToken cancellation)
+    {
+        var source = by.ToString().ToLowerInvariant();
+        Attendee attendee;
+        try
+        {
+            attendee = Attendee.Create(userId, request.ClientName, request.ClientEmail);
+        }
+        catch (DomainValidationException exception)
+        {
+            return Results.ValidationProblem(exception.Errors.ToDictionary());
+        }
+        if (request.StartsAt is not { } startsAt)
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["startsAt"] = ["Choose a time."] });
+        }
+
+        activity?.SetTag("service.buffer_minutes", (int)offer.Service.Buffer.TotalMinutes);
+        activity?.SetTag("booking.booked_by", source);
+
+        // Only a slot that's free right now, on the grid and within someone's hours, can be booked.
+        var day = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(startsAt, offer.TimeZone).DateTime);
+        var slot = (await availability.FreeSlotsAsync(offer, day, 1, cancellation))
+            .SingleOrDefault(free => free.Start == startsAt.ToUniversalTime());
+        // The booking keeps the policy the client saw (V1-3).
+        var notice = (await db.PolicyOfAsync(offer.Business.Id, cancellation)).Notice;
+
+        // "Anyone" takes whoever is free; if the database refuses one (someone booked them a
+        // moment ago), the next one is tried. Each attempt gets a scope of its own, so a refused
+        // one leaves no outbox message behind for the next to send.
+        foreach (var staffMemberId in slot?.FreeStaff ?? [])
+        {
+            await using var attempt = scopes.CreateAsyncScope();
+            attempt.ServiceProvider.GetRequiredService<BusinessScope>().BusinessId = offer.Business.Id;
+            var booking = Booking.Book(
+                offer.Business.Id, staffMemberId, offer.Service.Id, startsAt, offer.Service.Duration, offer.Service.Buffer,
+                notice, attendee, time.GetUtcNow(), by);
+            var result = await attempt.ServiceProvider.GetRequiredService<Bookings>().AddAsync(booking, cancellation);
+            telemetry.Booking(result, source);
+            if (result == BookingResult.Booked)
+            {
+                activity?.SetTag("booking.id", booking.Id.Value);
+                return Results.Created(location(booking.Id), ToConfirmation(booking, offer, staffMemberId));
+            }
+        }
+
+        // Nobody to try at all is a taken slot too; refused attempts were counted above.
+        if (slot is null || slot.FreeStaff.Count == 0)
+        {
+            telemetry.Booking(BookingResult.SlotTaken, source);
+        }
+        return Results.Problem(title: SlotTaken, statusCode: StatusCodes.Status409Conflict);
     }
 
     public static StaffMemberId? ToStaffId(Guid? id) => id is { } value ? new StaffMemberId(value) : null;
