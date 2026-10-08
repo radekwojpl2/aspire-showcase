@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { apiFetch, readProblem } from './api.ts';
 import { BookingsPage } from './bookings.tsx';
 import { BusinessPagePage } from './business-page.tsx';
@@ -40,17 +40,39 @@ const tabFromAddress = (): Tab => tabs.find((tab) => tab.path === window.locatio
 // The owner's home: everything about the business on one page, a tab apart.
 export function OwnerDashboard({ business }: { business: OwnedBusiness }) {
   const [tab, setTab] = useState<Tab>(tabFromAddress);
+  const panel = useRef<HTMLDivElement>(null);
+  // The height the previous tab took, kept while the new one shows only "Loading...": without it
+  // the page would shrink to that one line and grow back, making it jump on every switch.
+  const [heldHeight, setHeldHeight] = useState<number>();
+
+  const switchTo = useCallback((path: Tab) => {
+    setHeldHeight(panel.current?.offsetHeight);
+    setTab(path);
+  }, []);
 
   useEffect(() => {
-    const onBack = () => setTab(tabFromAddress());
+    const onBack = () => switchTo(tabFromAddress());
     window.addEventListener('popstate', onBack);
     return () => window.removeEventListener('popstate', onBack);
-  }, []);
+  }, [switchTo]);
+
+  // Every tab shows a .status line until its data comes; once it's gone, the page can take its real height.
+  useEffect(() => {
+    const element = panel.current;
+    if (heldHeight === undefined || !element) return;
+    const release = () => {
+      if (!element.querySelector(':scope > .status')) setHeldHeight(undefined);
+    };
+    const observer = new MutationObserver(release);
+    observer.observe(element, { childList: true });
+    release();
+    return () => observer.disconnect();
+  }, [heldHeight, tab]);
 
   const go = (path: Tab) => {
     if (path === tab) return;
     window.history.pushState(null, '', path);
-    setTab(path);
+    switchTo(path);
   };
 
   return (
@@ -77,18 +99,20 @@ export function OwnerDashboard({ business }: { business: OwnedBusiness }) {
         </nav>
       </div>
 
-      {tab === '/' && <Today business={business} go={go} />}
-      {tab === '/bookings' && <BookingsPage />}
-      {tab === '/services' && <ServicesPage />}
-      {tab === '/staff' && <StaffPage />}
-      {tab === '/hours' && (
-        <>
-          <OpeningHoursPage />
-          <CancellationPolicyCard />
-        </>
-      )}
-      {tab === '/time-off' && <TimeOffPage />}
-      {tab === '/business-page' && <BusinessPagePage />}
+      <div ref={panel} className="dashboard-panel" style={heldHeight ? { minHeight: heldHeight } : undefined}>
+        {tab === '/' && <Today business={business} go={go} />}
+        {tab === '/bookings' && <BookingsPage />}
+        {tab === '/services' && <ServicesPage />}
+        {tab === '/staff' && <StaffPage />}
+        {tab === '/hours' && (
+          <>
+            <OpeningHoursPage />
+            <CancellationPolicyCard />
+          </>
+        )}
+        {tab === '/time-off' && <TimeOffPage />}
+        {tab === '/business-page' && <BusinessPagePage />}
+      </div>
     </div>
   );
 }
