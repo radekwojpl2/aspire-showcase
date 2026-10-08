@@ -18,6 +18,8 @@ sealed class BusinessConfiguration : IEntityTypeConfiguration<Business>
         business.Property(b => b.OwnerId).HasMaxLength(64);
         business.Property(b => b.TimeZone).HasMaxLength(BusinessTimeZone.MaxLength);
         business.Property(b => b.ContactEmail).HasMaxLength(ContactEmail.MaxLength);
+        business.Property(b => b.Address).HasMaxLength(Business.MaxAddressLength);
+        business.Property(b => b.Description).HasMaxLength(Business.MaxDescriptionLength);
         business.Property(b => b.OpeningHours).StoredAsJson();
 
         // The database is what guarantees both, even when two requests race.
