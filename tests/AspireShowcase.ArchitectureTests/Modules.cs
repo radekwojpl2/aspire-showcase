@@ -36,7 +36,7 @@ static class Modules
         string.Join('.', assembly.Name!.Split('.').Skip(2));
 
     // Recorded by the project file at build time.
-    static string RepositoryRoot() =>
+    public static string RepositoryRoot() =>
         typeof(Modules).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
             .Single(attribute => attribute.Key == "RepositoryRoot").Value!;
 }
