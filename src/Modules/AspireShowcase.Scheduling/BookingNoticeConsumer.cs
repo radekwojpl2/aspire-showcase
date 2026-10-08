@@ -25,7 +25,7 @@ sealed class BookingNoticeConsumer(
     {
         if (await BuildAsync(context.Message.BookingId, "confirmed", null, context.CancellationToken) is { } notice)
         {
-            await context.Publish(notice);
+            await context.Publish(notice with { BookedBy = context.Message.BookedBy });
         }
     }
 
@@ -86,7 +86,9 @@ sealed class BookingNoticeConsumer(
             end.ToString("HH:mm", CultureInfo.InvariantCulture),
             business.TimeZone,
             new BookingParty(booking.Attendee.Name, booking.Attendee.Email),
-            new BookingParty(owner?.Name ?? business.Name, owner?.Email));
+            new BookingParty(owner?.Name ?? business.Name, owner?.Email),
+            ClientHasAccount: booking.Attendee.UserId is not null,
+            BusinessContactEmail: business.ContactEmail);
     }
 }
 
