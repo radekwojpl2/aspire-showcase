@@ -30,6 +30,19 @@ public class ModuleBoundaryTests
             Assert.Contains(Modules.Assemblies, assembly => Modules.ModuleOf(assembly.GetName()) == module));
     }
 
+    // The project file lists the modules' projects one by one, so a new one could be left out
+    // and never checked.
+    [Fact]
+    public void Every_project_of_a_module_is_checked()
+    {
+        var projects = Directory
+            .GetFiles(Path.Combine(Modules.RepositoryRoot(), "src", "Modules"), "*.csproj", SearchOption.AllDirectories)
+            .Select(Path.GetFileNameWithoutExtension);
+
+        Assert.All(projects, project =>
+            Assert.Contains(Modules.Assemblies, assembly => assembly.GetName().Name == project));
+    }
+
     [Theory]
     [MemberData(nameof(ModuleAssemblies))]
     public void A_module_uses_another_module_only_through_its_public_client(string assemblyName)

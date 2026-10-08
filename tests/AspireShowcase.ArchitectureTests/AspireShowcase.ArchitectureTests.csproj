@@ -23,8 +23,26 @@
     <AssemblyMetadata Include="RepositoryRoot" Value="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../..'))" />
   </ItemGroup>
 
+  <!-- One by one, not with a wildcard: Visual Studio and Rider don't load a wildcard project
+       reference, and then show no tests here. Every_project_of_a_module_is_checked fails when a
+       project under src/Modules is missing from this list. -->
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Modules\**\*.csproj" />
+    <ProjectReference Include="..\..\src\Modules\BuildingBlocks\AspireShowcase.BuildingBlocks.Application\AspireShowcase.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\BuildingBlocks\AspireShowcase.BuildingBlocks.Domain\AspireShowcase.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\BuildingBlocks\AspireShowcase.BuildingBlocks.Infrastructure\AspireShowcase.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\BuildingBlocks\AspireShowcase.BuildingBlocks.Web\AspireShowcase.BuildingBlocks.Web.csproj" />
+    <ProjectReference Include="..\..\src\Modules\BusinessSetup\AspireShowcase.BusinessSetup.Application\AspireShowcase.BusinessSetup.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\BusinessSetup\AspireShowcase.BusinessSetup.Domain\AspireShowcase.BusinessSetup.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\BusinessSetup\AspireShowcase.BusinessSetup.Infrastructure\AspireShowcase.BusinessSetup.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\BusinessSetup\AspireShowcase.BusinessSetup.PublicClient\AspireShowcase.BusinessSetup.PublicClient.csproj" />
+    <ProjectReference Include="..\..\src\Modules\BusinessSetup\AspireShowcase.BusinessSetup.Web\AspireShowcase.BusinessSetup.Web.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\AspireShowcase.Identity.Infrastructure\AspireShowcase.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\AspireShowcase.Identity.PublicClient\AspireShowcase.Identity.PublicClient.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Scheduling\AspireShowcase.Scheduling.Application\AspireShowcase.Scheduling.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Scheduling\AspireShowcase.Scheduling.Domain\AspireShowcase.Scheduling.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Scheduling\AspireShowcase.Scheduling.Infrastructure\AspireShowcase.Scheduling.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Scheduling\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Scheduling\AspireShowcase.Scheduling.Web\AspireShowcase.Scheduling.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>
