@@ -2,16 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { apiFetch, readProblem } from './api.ts';
 import { signInUrl, useSession } from './session.ts';
 import { OwnerDashboard } from './dashboard.tsx';
+import { useMyBusiness, type MyBusiness as Business } from './my-business.ts';
 import { ErrorMessage } from './ui.tsx';
-
-type Business = {
-  id: string;
-  name: string;
-  slug: string;
-  timeZone: string;
-  contactEmail: string | null;
-  createdAt: string;
-};
 
 type Availability =
   | { state: 'idle' | 'checking' | 'available' }
@@ -32,30 +24,6 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, '')
     .slice(0, maxSlugLength)
     .replace(/-+$/, '');
-}
-
-// The signed-in user's business: undefined while loading, null when they have none.
-function useMyBusiness(enabled: boolean) {
-  const [business, setBusiness] = useState<Business | null>();
-  const [error, setError] = useState<string>();
-
-  useEffect(() => {
-    if (!enabled) return;
-    let current = true;
-    apiFetch('/api/businesses/mine')
-      .then(async (response) => {
-        if (response.status === 404) return null;
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return (await response.json()) as Business;
-      })
-      .then((result) => current && setBusiness(result))
-      .catch((err) => current && setError(err instanceof Error ? err.message : 'Failed to call the API'));
-    return () => {
-      current = false;
-    };
-  }, [enabled]);
-
-  return { business, error };
 }
 
 function BusinessCard({ business }: { business: Business }) {
