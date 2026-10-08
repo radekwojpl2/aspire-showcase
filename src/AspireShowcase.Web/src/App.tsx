@@ -6,8 +6,8 @@ import { BookingPage } from './book.tsx';
 import { MyBookingsPage } from './my-bookings.tsx';
 
 // A few pages, so no router: the path picks the page. bff serves index.html for every path that
-// isn't /api or /bff. The owner's pages (/, /bookings, /services, /staff, /hours, /time-off) are tabs of one
-// dashboard, which switches between them without reloading.
+// isn't /api or /bff. The owner's pages (/, /bookings, /services, /staff, /hours, /time-off,
+// /business-page) are tabs of one dashboard, which switches between them without reloading.
 function Page() {
   // The public booking page of a business: /book/{slug}.
   const booking = window.location.pathname.match(/^\/book\/([^/]+)\/?$/);

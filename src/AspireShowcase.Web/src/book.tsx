@@ -15,7 +15,17 @@ type Service = {
   staff: Staff[];
 };
 
-type Business = { name: string; slug: string; timeZone: string; cancellationNoticeHours: number; services: Service[] };
+type Business = {
+  name: string;
+  slug: string;
+  timeZone: string;
+  cancellationNoticeHours: number;
+  services: Service[];
+  // V1-6: null when the owner hasn't set them.
+  address: string | null;
+  description: string | null;
+  logoUrl: string | null;
+};
 
 // Local date and time in the business's time zone, and the instant to book it with.
 type Slot = { start: string; startsAt: string };
@@ -205,7 +215,15 @@ export function BookingPage({ slug }: { slug: string }) {
   return (
     <>
       <section className="card" aria-labelledby="business-heading">
-        <h2 id="business-heading" className="section-title">{business.name}</h2>
+        {/* V1-6: so clients know they're in the right place. */}
+        <div className="business-intro">
+          {business.logoUrl && <img className="business-logo" src={business.logoUrl} alt="" />}
+          <div>
+            <h2 id="business-heading" className="section-title">{business.name}</h2>
+            {business.address && <p className="business-address">{business.address}</p>}
+          </div>
+        </div>
+        {business.description && <p className="business-description">{business.description}</p>}
         {business.services.length === 0 ? (
           <p className="hint">Nothing can be booked here yet.</p>
         ) : (
