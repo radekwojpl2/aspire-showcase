@@ -32,21 +32,25 @@ export function SlotPicker({
   const [shown, setShown] = useState(daysShown);
   const [timeZone, setTimeZone] = useState('');
   const [error, setError] = useState<string>();
+  const [loading, setLoading] = useState(false);
 
+  // The previous times stay on screen, disabled, until the new ones come: clearing them would
+  // collapse the list and make the page jump on every change of service or staff.
   useEffect(() => {
     let current = true;
-    setDays(undefined);
-    setError(undefined);
-    setShown(daysShown);
+    setLoading(true);
     apiFetch(url)
       .then(async (response) => {
         if (!response.ok) throw new Error((await readProblem(response)).title ?? `HTTP error! status: ${response.status}`);
         const body = (await response.json()) as { timeZone: string; days: Day[] };
         if (!current) return;
+        setError(undefined);
+        setShown(daysShown);
         setTimeZone(body.timeZone);
         setDays(body.days);
       })
-      .catch((err) => current && setError(err instanceof Error ? err.message : 'Failed to call the API'));
+      .catch((err) => current && setError(err instanceof Error ? err.message : 'Failed to call the API'))
+      .finally(() => current && setLoading(false));
     return () => {
       current = false;
     };
@@ -59,7 +63,7 @@ export function SlotPicker({
   return (
     <>
       <p className="hint">Times in {timeZone.replace(/_/g, ' ')}</p>
-      <div className="slot-days">
+      <div className="slot-days" aria-busy={loading}>
         {days.slice(0, shown).map((day) => (
           <div key={day.date} className="slot-day">
             <h4 className="calendar-day-name">{dayLabel(day.date)}</h4>
@@ -70,6 +74,7 @@ export function SlotPicker({
                   type="button"
                   className={`button button-secondary slot ${slot.startsAt === startsAt ? 'active' : ''}`}
                   aria-pressed={slot.startsAt === startsAt}
+                  disabled={loading}
                   onClick={() => onChoose(slot.startsAt)}
                 >
                   {slot.start}
