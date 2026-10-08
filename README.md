@@ -70,7 +70,7 @@ src/
 ├── AspireShowcase.ServiceDefaults/  # telemetry, health checks
 ├── AspireShowcase.Bff/              # backend for frontend: sign-in, sessions, proxy; serves the UI in Azure
 ├── AspireShowcase.Api/              # API host (resource "web"), reachable only from bff
-├── Modules/
+├── Modules/                         # clean architecture: Domain, Application, Infrastructure, Web per module
 │   ├── BusinessSetup/                 # business, booking link, hours, services, staff
 │   ├── Scheduling/                    # bookings and the owner's calendar
 │   ├── Identity/                      # anti-corruption layer over Logto
@@ -79,8 +79,10 @@ src/
 └── AspireShowcase.Web/              # React + Vite
 tests/
 ├── AspireShowcase.Api.IntegrationTests/ # the API against PostgreSQL in a container
+├── AspireShowcase.ArchitectureTests/    # the modules' boundaries and layers
 ├── AspireShowcase.Bff.IntegrationTests/ # bff, with web replaced by a stub
 ├── AspireShowcase.BusinessSetup.Tests/  # Business Setup's domain rules
+├── AspireShowcase.Notifications.Tests/  # which emails a booking notice sends
 └── AspireShowcase.Scheduling.Tests/     # Scheduling's domain rules
 ```
 

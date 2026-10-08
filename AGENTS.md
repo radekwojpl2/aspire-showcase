@@ -36,19 +36,21 @@ src/
 ├── AspireShowcase.ServiceDefaults/  # telemetry, health checks, service discovery
 ├── AspireShowcase.Bff/              # backend for frontend (resource "bff"): sign-in, sessions, proxy to web; serves the React app in Azure
 ├── AspireShowcase.Api/              # API host (resource "web"), reachable only from bff; composes the modules
-├── Modules/                         # a folder per module of docs/architecture/ddd-modules.md
-│   ├── BusinessSetup/
-│   │   ├── AspireShowcase.BusinessSetup/  # business, booking link, hours, services, staff; own DbContext and migrations
-│   │   └── AspireShowcase.BusinessSetup.PublicClient/  # contracts other modules use to talk to Business Setup
-│   ├── Scheduling/
-│   │   ├── AspireShowcase.Scheduling/     # bookings and the owner's calendar; own DbContext and migrations
-│   │   └── AspireShowcase.Scheduling.PublicClient/  # the messages Scheduling publishes on the bus
-│   ├── Identity/AspireShowcase.Identity/  # anti-corruption layer over Logto
-│   └── BuildingBlocks/AspireShowcase.BuildingBlocks.Domain/  # what every module's domain may use
+├── Modules/                         # a folder per module of docs/architecture/ddd-modules.md, in clean architecture
+│   ├── BusinessSetup/               # business, booking link, hours, services, staff
+│   │   ├── AspireShowcase.BusinessSetup.Domain/          # aggregates and their rules; no EF Core, no ASP.NET Core
+│   │   ├── AspireShowcase.BusinessSetup.Application/     # use cases, one handler each, over IBusinessSetupDbContext
+│   │   ├── AspireShowcase.BusinessSetup.Infrastructure/  # DbContext, EF mappings, migrations; AddBusinessSetup registers everything
+│   │   ├── AspireShowcase.BusinessSetup.Web/             # endpoints that call the handlers; MapBusinessSetup
+│   │   └── AspireShowcase.BusinessSetup.PublicClient/    # contracts other modules use to talk to Business Setup
+│   ├── Scheduling/                  # bookings, time off, the policy, the calendar; the same five projects
+│   ├── Identity/                    # anti-corruption layer over Logto: PublicClient and Infrastructure
+│   └── BuildingBlocks/              # what every module may use: Domain, Application (Result), Infrastructure, Web
 ├── AspireShowcase.Notifications/    # notifications service: booking emails (MassTransit consumer, Resend), with a Quartz.NET job
 └── AspireShowcase.Web/              # React + Vite (resource "frontend")
 tests/
 ├── AspireShowcase.Api.IntegrationTests/ # the API over HTTP against PostgreSQL in a container (Testcontainers)
+├── AspireShowcase.ArchitectureTests/    # the modules' boundaries and layers, checked on the compiled assemblies
 ├── AspireShowcase.Bff.IntegrationTests/ # bff over HTTP, with web replaced by a stub (Testcontainers)
 ├── AspireShowcase.BusinessSetup.Tests/  # xUnit tests of Business Setup's domain rules
 ├── AspireShowcase.Notifications.Tests/  # xUnit tests of which emails a booking notice sends
@@ -59,7 +61,8 @@ tests/
 
 - Stop the AppHost (`aspire stop`) when you finish a task that started it, unless the user wants it left running.
 - Never print secrets: user secrets, tokens, connection strings.
-- API code belongs to a module project in `src/Modules`, not to the host. Keep a module's domain and storage `internal`, and use another module only through its public client project (`<Module>.PublicClient`), never the module itself; don't add `InternalsVisibleTo` except for its tests.
+- API code belongs to a module in `src/Modules`, not to the host, which only calls each module's `Add…` and `Map…`. Within a module: the domain in `Domain`; a use case is a handler in `Application`, working on the domain through the module's `DbContext` interface and returning a `Result`; `Infrastructure` has the storage, the bus and the module's only DI registration (`Add<Module>`); an endpoint in `Web` only calls a handler and turns its result into an HTTP answer.
+- Keep everything `internal` except a module's entry points (`Add…`, `Map…`) and its `PublicClient`; its own projects see each other through `InternalsVisibleTo`, never another module's. Use another module only through its `PublicClient`. Migrations are `internal` too: make a new one `internal` after generating it. `AspireShowcase.ArchitectureTests` checks all of this.
 - An aggregate refers to another only by its typed ID (`BusinessId`, `ServiceId`...), never by object: no navigation properties, and no aggregate as a method argument. When a rule needs another aggregate's data, pass the values (as `StaffMember.Change` takes the opening hours, not the `Business`).
 - `main` is protected. Changes go on a branch and through a pull request, with the CI checks `build` and `web` passing.
 - Deploying is manual (`gh workflow run Deploy`) and creates billable Azure resources. Do it only when asked.
