@@ -29,7 +29,9 @@ sealed class GetPublicBusiness(IBusinessDirectory directory, ISchedulingDbContex
         // V1-3: clients see the policy before they book.
         scope.BusinessId = found.Id;
         var policy = await db.PolicyOfAsync(found.Id, cancellation);
-        return new PublicBusiness(found.Name, found.Slug, found.TimeZone, (int)policy.Notice.TotalHours, services);
+        return new PublicBusiness(
+            found.Name, found.Slug, found.TimeZone, (int)policy.Notice.TotalHours, services, found.Address,
+            found.Description, found.LogoUrl);
     }
 }
 

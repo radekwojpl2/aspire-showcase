@@ -10,8 +10,11 @@ record PublicService(
     Guid Id, string Name, int DurationMinutes, decimal Price, string Currency, IReadOnlyList<PublicStaff> Staff);
 
 /// <param name="CancellationNoticeHours">Clients can cancel or move a booking up to this many hours before it; 0 for until it starts.</param>
+/// <param name="Address">Where it is (V1-6), one line per line of the address; like <paramref name="Description"/>
+/// and <paramref name="LogoUrl"/>, null for none.</param>
 record PublicBusiness(
-    string Name, string Slug, string TimeZone, int CancellationNoticeHours, IReadOnlyList<PublicService> Services);
+    string Name, string Slug, string TimeZone, int CancellationNoticeHours, IReadOnlyList<PublicService> Services,
+    string? Address, string? Description, string? LogoUrl);
 
 /// <param name="Start">The local time, HH:mm.</param>
 /// <param name="StartsAt">The instant, to book it with.</param>

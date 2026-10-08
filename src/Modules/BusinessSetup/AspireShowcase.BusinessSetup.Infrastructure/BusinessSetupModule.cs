@@ -1,5 +1,6 @@
 using AspireShowcase.BusinessSetup.Application;
 using AspireShowcase.BusinessSetup.Application.Businesses;
+using AspireShowcase.BusinessSetup.Application.Page;
 using AspireShowcase.BusinessSetup.Application.Services;
 using AspireShowcase.BusinessSetup.Application.Staff;
 using AspireShowcase.BusinessSetup.Infrastructure;
@@ -36,6 +37,10 @@ public static class BusinessSetupModule
         builder.Services.AddScoped<CheckSlug>();
         builder.Services.AddScoped<StartBusinessHandler>();
         builder.Services.AddScoped<SetContact>();
+        builder.Services.AddScoped<SetPage>();
+        builder.Services.AddScoped<SetLogo>();
+        builder.Services.AddScoped<RemoveLogo>();
+        builder.Services.AddScoped<GetLogo>();
         builder.Services.AddScoped<GetOpeningHours>();
         builder.Services.AddScoped<SetOpeningHours>();
         builder.Services.AddScoped<ListServices>();
