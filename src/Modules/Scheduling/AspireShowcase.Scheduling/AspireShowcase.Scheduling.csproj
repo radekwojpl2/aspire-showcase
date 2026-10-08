@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Domain\AspireShowcase.BuildingBlocks.Domain.csproj" />
     <ProjectReference Include="..\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Infrastructure\AspireShowcase.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\AspireShowcase.Scheduling.Domain\AspireShowcase.Scheduling.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +33,7 @@
     <Using Include="Microsoft.Extensions.DependencyInjection" />
     <Using Include="Microsoft.Extensions.Hosting" />
     <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="AspireShowcase.Scheduling.Domain" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.BuildingBlocks.Domain;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Domain;
 
 /// <summary>
 /// How late clients may still cancel or move a booking themselves (user stories V1-3 and V1-4):

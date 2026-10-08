@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Modules\Scheduling\AspireShowcase.Scheduling\AspireShowcase.Scheduling.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Scheduling\AspireShowcase.Scheduling.Domain\AspireShowcase.Scheduling.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

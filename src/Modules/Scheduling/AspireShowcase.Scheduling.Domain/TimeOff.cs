@@ -1,7 +1,7 @@
 using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.BuildingBlocks.Domain;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Domain;
 
 /// <summary>The ID of a blocked time.</summary>
 readonly record struct TimeOffId(Guid Value)

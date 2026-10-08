@@ -1,4 +1,4 @@
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Domain;
 
 enum CalendarView
 {

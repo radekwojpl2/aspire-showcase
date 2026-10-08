@@ -1,6 +1,6 @@
 using AspireShowcase.BusinessSetup.PublicClient;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Domain;
 
 /// <summary>When a staff member works: periods of weekdays, in the business's local time.</summary>
 sealed record StaffSchedule(StaffMemberId StaffMemberId, IReadOnlyList<WorkingPeriod> WorkingHours);

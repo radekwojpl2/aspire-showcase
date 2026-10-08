@@ -1,7 +1,7 @@
 using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.BuildingBlocks.Domain;
 
-namespace AspireShowcase.Scheduling;
+namespace AspireShowcase.Scheduling.Domain;
 
 /// <summary>The ID of a booking.</summary>
 readonly record struct BookingId(Guid Value)
@@ -218,7 +218,7 @@ sealed class Booking
             errors.Add("booking", "It has already started, so it can't be cancelled.");
             errors.ThrowIfAny();
         }
-        if (by == Scheduling.CancelledBy.Client)
+        if (by == Domain.CancelledBy.Client)
         {
             ThrowIfTooLateForClient(now, "cancel");
         }

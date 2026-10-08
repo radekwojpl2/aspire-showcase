@@ -1,5 +1,5 @@
 using AspireShowcase.BusinessSetup.PublicClient;
-using AspireShowcase.Scheduling;
+using AspireShowcase.Scheduling.Domain;
 using AspireShowcase.BuildingBlocks.Domain;
 
 namespace AspireShowcase.Scheduling.Tests;
