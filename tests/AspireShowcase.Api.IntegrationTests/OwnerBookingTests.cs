@@ -94,10 +94,85 @@ public sealed class OwnerBookingTests(ApiFactory api)
         Assert.Contains("clientEmail", problem.Errors.Keys);
     }
 
-    Task<HttpResponseMessage> BookAsOwnerAsync(TestBusiness business, TestUser user, DateTimeOffset startsAt) =>
+    [Fact]
+    public async Task An_owner_can_book_the_staff_member_the_client_asked_for()
+    {
+        var business = await TestBusiness.StartAsync(api, moreStaff: 1);
+        var stylist = (await PublicBusinessAsync(business)).Services.Single().Staff.Single(member => member.Name == "Stylist 1");
+
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
+            await BookAsOwnerAsync(business, business.Owner, TestBusiness.FirstSlot, stylist.Id));
+
+        Assert.Equal("Stylist 1", booked.StaffName);
+    }
+
+    [Fact]
+    public async Task An_owner_cannot_book_a_time_when_the_business_is_closed()
+    {
+        var business = await TestBusiness.StartAsync(api);
+
+        // Open Mondays 09:00 to 12:00 only: Tuesday isn't offered on the phone either.
+        var response = await BookAsOwnerAsync(business, business.Owner, TestBusiness.FirstSlot.AddDays(1));
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task An_owner_cannot_book_a_service_the_business_does_not_have()
+    {
+        var business = await TestBusiness.StartAsync(api);
+
+        var response = await api.CreateClient(business.Owner).PostAsJsonAsync("/api/businesses/mine/bookings", new
+        {
+            serviceId = Guid.NewGuid(),
+            startsAt = TestBusiness.FirstSlot,
+            clientName = "Paula Phone",
+            clientEmail = "paula@example.com",
+        });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_booking_by_the_owner_can_be_moved_and_cancelled_like_any_other()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        var owner = api.CreateClient(business.Owner);
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
+            await BookAsOwnerAsync(business, business.Owner, TestBusiness.FirstSlot));
+
+        var moved = await TestBusiness.ReadAsync<BookingConfirmation>(await owner.PostAsJsonAsync(
+            $"/api/businesses/mine/bookings/{booked.Id}/reschedule", new { startsAt = TestBusiness.FirstSlot.AddHours(2) }));
+        var cancelled = await owner.PostAsync($"/api/businesses/mine/bookings/{booked.Id}/cancel", null);
+
+        Assert.Equal("11:00", moved.Start);
+        Assert.Equal(HttpStatusCode.NoContent, cancelled.StatusCode);
+        var calendar = await TestBusiness.ReadAsync<Calendar>(
+            await owner.GetAsync("/api/businesses/mine/bookings?view=day&date=2026-11-02"));
+        Assert.Empty(calendar.Bookings);
+    }
+
+    [Fact]
+    public async Task A_booking_by_the_owner_is_not_among_the_bookings_of_the_owner_as_a_client()
+    {
+        var business = await TestBusiness.StartAsync(api);
+
+        await TestBusiness.ReadAsync<BookingConfirmation>(await BookAsOwnerAsync(business, business.Owner, TestBusiness.FirstSlot));
+
+        var mine = await TestBusiness.ReadAsync<List<ClientBooking>>(
+            await api.CreateClient(business.Owner).GetAsync("/api/me/bookings"));
+        Assert.Empty(mine);
+    }
+
+    async Task<PublicBusiness> PublicBusinessAsync(TestBusiness business) =>
+        await TestBusiness.ReadAsync<PublicBusiness>(await api.CreateClient().GetAsync($"/api/public/businesses/{business.Slug}"));
+
+    Task<HttpResponseMessage> BookAsOwnerAsync(
+        TestBusiness business, TestUser user, DateTimeOffset startsAt, Guid? staffMemberId = null) =>
         api.CreateClient(user).PostAsJsonAsync("/api/businesses/mine/bookings", new
         {
             serviceId = business.ServiceId,
+            staffMemberId,
             startsAt,
             clientName = "Paula Phone",
             clientEmail = "paula@example.com",
