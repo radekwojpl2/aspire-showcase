@@ -1029,3 +1029,55 @@ button.stat:hover {
   outline: 3px solid var(--focus-color);
   outline-offset: 2px;
 }
+
+/* The booking page's logo, address and description (V1-6) */
+.field-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.logo-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* The file input is hidden inside its label, so the label shows where focus is. */
+.logo-editor label:focus-within {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
+}
+
+.business-logo {
+  display: block;
+  max-width: 12rem;
+  max-height: 6rem;
+  object-fit: contain;
+}
+
+.business-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.business-intro p {
+  margin: 0.25rem 0 0;
+}
+
+.business-address {
+  white-space: pre-line;
+  color: var(--text-secondary);
+}
+
+.business-description {
+  white-space: pre-line;
+}
+
+@media (max-width: 480px) {
+  .business-intro {
+    flex-direction: column;
+  }
+}
