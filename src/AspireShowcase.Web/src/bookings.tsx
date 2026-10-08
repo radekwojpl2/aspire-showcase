@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AddBooking } from './add-booking.tsx';
 import {
   cancelBooking,
   confirmCancel,
@@ -31,7 +32,7 @@ function daysBetween(first: string, last: string): string[] {
 }
 
 // User story MVP-12: the owner sees bookings by day or week, for everyone or one staff member,
-// with the time off (V1-1) of those days.
+// with the time off (V1-1) of those days, and adds bookings for clients who phoned (V1-5).
 export function BookingsPage() {
   const { signInEnabled, user } = useSession();
   const [load, setLoad] = useState<Load>('loading');
@@ -46,6 +47,7 @@ export function BookingsPage() {
   const [cancelling, setCancelling] = useState<string>();
   const [cancelled, setCancelled] = useState<string>();
   const [moving, setMoving] = useState<CalendarBooking>();
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     if (signInEnabled && !user) window.location.replace(signInUrl('/bookings'));
@@ -154,6 +156,17 @@ export function BookingsPage() {
               <option key={member.id} value={member.id}>{member.name}</option>
             ))}
           </select>
+          <button
+            type="button"
+            className="button"
+            aria-expanded={adding}
+            onClick={() => {
+              setMoving(undefined);
+              setAdding(true);
+            }}
+          >
+            Add a booking
+          </button>
         </div>
       </div>
 
@@ -162,6 +175,18 @@ export function BookingsPage() {
       </p>
       <p className="field-hint" role="status">{cancelled ?? ''}</p>
       {error && <ErrorMessage message={error} />}
+      {adding && (
+        <AddBooking
+          onClose={() => setAdding(false)}
+          onBooked={(booked, clientName) => {
+            setAdding(false);
+            setCancelled(
+              `${clientName} is booked for ${booked.serviceName}, ${label(booked.date, { weekday: 'short', day: 'numeric', month: 'short' })} ${booked.start} with ${booked.staffName}; they get an email.`,
+            );
+            setReload((count) => count + 1);
+          }}
+        />
+      )}
       {moving && (
         // V1-4: the owner moves a booking, with whoever is free or someone else; the client gets an email.
         <MoveBooking
