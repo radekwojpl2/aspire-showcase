@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { apiFetch, readProblem } from './api.ts';
+import { useMyBusiness } from './my-business.ts';
 import { describePolicy } from './policy-text.ts';
 import { signInUrl, useSession } from './session.ts';
 import { ErrorMessage } from './ui.tsx';
@@ -75,6 +76,8 @@ function writeChoice(service: string, staff: string, start: string) {
 // User stories MVP-1 to MVP-4: anyone sees the free slots; signing in books one.
 export function BookingPage({ slug }: { slug: string }) {
   const { signInEnabled, user } = useSession();
+  // V1-6: the owner sees a way to change what this page says about them.
+  const { business: mine } = useMyBusiness(user !== null);
   const initial = readChoice();
   const [business, setBusiness] = useState<Business | null>();
   const [serviceId, setServiceId] = useState(initial.service);
@@ -224,6 +227,11 @@ export function BookingPage({ slug }: { slug: string }) {
           </div>
         </div>
         {business.description && <p className="business-description">{business.description}</p>}
+        {mine?.slug === business.slug && (
+          <p className="hint">
+            This is your business. <a href="/business-page">Edit the logo, address and description</a>
+          </p>
+        )}
         {business.services.length === 0 ? (
           <p className="hint">Nothing can be booked here yet.</p>
         ) : (
