@@ -239,6 +239,24 @@ sealed class Booking
         CancelledBy = by;
         _events.Add(new BookingCancelled(Id, now, by));
     }
+
+    /// <summary>
+    /// The client deleted their account (user story V1-8). An upcoming booking is cancelled, even
+    /// inside the cancellation notice (V1-3): deleting their data comes first. Every booking, past
+    /// ones too, stays for the business without their name, email or account. Doing it twice
+    /// changes nothing.
+    /// </summary>
+    public void ForgetClient(DateTimeOffset now)
+    {
+        if (Status == BookingStatus.Confirmed && Start > now)
+        {
+            Status = BookingStatus.Cancelled;
+            CancelledAt = now;
+            CancelledBy = Domain.CancelledBy.Client;
+            _events.Add(new BookingCancelled(Id, now, Domain.CancelledBy.Client));
+        }
+        Attendee = Attendee.Forgotten;
+    }
 }
 
 /// <summary>

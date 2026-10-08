@@ -47,9 +47,10 @@ record RescheduleBody(DateTimeOffset? StartsAt, Guid? StaffMemberId);
 
 /// <param name="Day">The local date, yyyy-MM-dd.</param>
 /// <param name="Start">The local time, HH:mm, in the business's time zone.</param>
+/// <param name="ClientEmail">Null once the client deleted their account (V1-8).</param>
 record CalendarBooking(
     Guid Id, string Day, string Start, string End, Guid StaffMemberId, string StaffName, string ServiceName,
-    string ClientName, string ClientEmail);
+    string ClientName, string? ClientEmail);
 
 record CalendarStaff(Guid Id, string Name);
 

@@ -12,7 +12,8 @@ export type CalendarBooking = {
   staffName: string;
   serviceName: string;
   clientName: string;
-  clientEmail: string;
+  // Null once the client deleted their account (V1-8).
+  clientEmail: string | null;
 };
 
 // The part of a time off (user story V1-1) on one day; end is "24:00" when it lasts all day.
