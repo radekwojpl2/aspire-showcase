@@ -1081,3 +1081,12 @@ button.stat:hover {
     flex-direction: column;
   }
 }
+
+/* The booking page card on the owner's Today tab (V1-6) */
+.page-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}

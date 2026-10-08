@@ -10,8 +10,16 @@ import { StaffPage } from './staff.tsx';
 import { TimeOffPage } from './time-off.tsx';
 import { ErrorMessage } from './ui.tsx';
 
-// contactEmail is null for a business started before it was required.
-export type OwnedBusiness = { name: string; slug: string; contactEmail: string | null };
+// contactEmail is null for a business started before it was required; the booking page's
+// address, description and logo (V1-6) are null until the owner sets them.
+export type OwnedBusiness = {
+  name: string;
+  slug: string;
+  contactEmail: string | null;
+  address: string | null;
+  description: string | null;
+  logoUrl: string | null;
+};
 
 // Each tab has its own address, so links, bookmarks and the back button work, but switching
 // tabs doesn't reload the page.
@@ -261,7 +269,17 @@ function Today({ business, go }: { business: OwnedBusiness; go: (tab: Tab) => vo
       </section>
 
       <section className="card" aria-labelledby="link-heading">
-        <h3 id="link-heading" className="section-title">Your booking link</h3>
+        <h3 id="link-heading" className="section-title">Your booking page</h3>
+        {/* V1-6: what clients see at the top of it, a click away from changing it. */}
+        <div className="page-summary">
+          {business.logoUrl && <img className="business-logo" src={business.logoUrl} alt="Your logo" />}
+          {!business.logoUrl && !business.address && !business.description && (
+            <p className="hint">No logo, address or description yet: add them so clients know they're in the right place.</p>
+          )}
+          <button type="button" className="button button-secondary" onClick={() => go('/business-page')}>
+            {business.logoUrl || business.address || business.description ? 'Edit logo and details' : 'Add logo and details'}
+          </button>
+        </div>
         <div className="link-row">
           <span className="booking-link">{link}</span>
           <button type="button" className="button button-secondary" onClick={() => void copy()}>Copy</button>
