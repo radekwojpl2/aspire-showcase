@@ -29,7 +29,7 @@ public sealed class MessagingTests(ApiFactory api)
     }
 
     [Fact]
-    public async Task A_booking_made_by_the_owner_publishes_who_made_it()
+    public async Task A_booking_made_by_the_owner_publishes_who_made_it_and_that_the_client_has_no_account()
     {
         var business = await TestBusiness.StartAsync(api);
 
@@ -43,7 +43,11 @@ public sealed class MessagingTests(ApiFactory api)
             }));
 
         var confirmed = await ConsumedAsync<BookingConfirmed>(message => message.BookingId == booked.Id);
+        var notice = await ConsumedAsync<BookingNotice>(message => message.BookingId == booked.Id);
         Assert.Equal("business", confirmed.BookedBy);
+        Assert.Equal(
+            ("business", false, "hello@salon.example"),
+            (notice.BookedBy, notice.ClientHasAccount, notice.BusinessContactEmail));
     }
 
     [Fact]

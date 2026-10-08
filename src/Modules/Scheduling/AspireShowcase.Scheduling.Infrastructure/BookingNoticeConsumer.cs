@@ -16,7 +16,7 @@ sealed class BookingNoticeConsumer(BuildBookingNotice notices)
     {
         if (await notices.HandleAsync(context.Message.BookingId, "confirmed", null, context.CancellationToken) is { } notice)
         {
-            await context.Publish(notice);
+            await context.Publish(notice with { BookedBy = context.Message.BookedBy });
         }
     }
 
