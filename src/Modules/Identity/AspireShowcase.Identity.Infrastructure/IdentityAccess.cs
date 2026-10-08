@@ -1,3 +1,5 @@
+using AspireShowcase.Identity.Infrastructure;
+using AspireShowcase.Identity.PublicClient;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -8,14 +10,11 @@ namespace AspireShowcase.Identity;
 
 /// <summary>
 /// Identity &amp; Access: the API's anti-corruption layer over Logto. Other modules see users as a
-/// subject ID, the <see cref="OwnerPolicy"/>, <see cref="IOwnerRoles"/> and <see cref="IUserProfiles"/>; only this module knows
-/// about Logto's tokens, scopes and Management API.
+/// subject ID, the <see cref="Policies.Owner"/> policy, <see cref="IOwnerRoles"/> and <see cref="IUserProfiles"/>, all
+/// in Identity.PublicClient; only this module knows about Logto's tokens, scopes and Management API.
 /// </summary>
 public static class IdentityAccess
 {
-    /// <summary>Authorization policy for owners: users with Logto's owner role.</summary>
-    public const string OwnerPolicy = "owner";
-
     /// <summary>The permission of the API resource that Logto's owner role grants.</summary>
     const string ManageBusinessScope = "manage:business";
 
@@ -41,7 +40,7 @@ public static class IdentityAccess
 
         // Logto puts the permissions the user's roles grant in the scope claim, space-separated.
         builder.Services.AddAuthorizationBuilder()
-            .AddPolicy(OwnerPolicy, policy => policy.RequireAssertion(context =>
+            .AddPolicy(Policies.Owner, policy => policy.RequireAssertion(context =>
                 context.User.FindFirst("scope")?.Value.Split(' ').Contains(ManageBusinessScope) == true));
 
         // Logto's Management API, for giving owners their role. Called as the machine-to-machine

@@ -1,5 +1,5 @@
 using System.Globalization;
-using AspireShowcase.Identity;
+using AspireShowcase.Identity.PublicClient;
 using AspireShowcase.Scheduling.PublicClient;
 using Microsoft.EntityFrameworkCore;
 

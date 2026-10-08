@@ -1,5 +1,5 @@
 using AspireShowcase.BuildingBlocks.Domain;
-using AspireShowcase.Identity;
+using AspireShowcase.Identity.PublicClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 

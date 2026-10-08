@@ -19,7 +19,7 @@
     <ProjectReference Include="..\AspireShowcase.Scheduling.PublicClient\AspireShowcase.Scheduling.PublicClient.csproj" />
     <ProjectReference Include="..\..\BusinessSetup\AspireShowcase.BusinessSetup.PublicClient\AspireShowcase.BusinessSetup.PublicClient.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Application\AspireShowcase.BuildingBlocks.Application.csproj" />
-    <ProjectReference Include="..\..\Identity\AspireShowcase.Identity\AspireShowcase.Identity.csproj" />
+    <ProjectReference Include="..\..\Identity\AspireShowcase.Identity.PublicClient\AspireShowcase.Identity.PublicClient.csproj" />
   </ItemGroup>
 
   <ItemGroup>

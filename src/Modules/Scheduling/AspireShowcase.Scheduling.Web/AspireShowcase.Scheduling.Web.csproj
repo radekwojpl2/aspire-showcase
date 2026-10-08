@@ -15,7 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AspireShowcase.Scheduling.Application\AspireShowcase.Scheduling.Application.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\AspireShowcase.BuildingBlocks.Web\AspireShowcase.BuildingBlocks.Web.csproj" />
-    <ProjectReference Include="..\..\Identity\AspireShowcase.Identity\AspireShowcase.Identity.csproj" />
+    <ProjectReference Include="..\..\Identity\AspireShowcase.Identity.PublicClient\AspireShowcase.Identity.PublicClient.csproj" />
   </ItemGroup>
 
   <ItemGroup>

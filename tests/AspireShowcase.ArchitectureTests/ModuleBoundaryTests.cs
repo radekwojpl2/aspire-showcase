@@ -18,16 +18,8 @@ public class ModuleBoundaryTests
         ["AspireShowcase.BusinessSetup.Web"] = ["BusinessSetupWeb"],
         ["AspireShowcase.Scheduling.Infrastructure"] = ["SchedulingModule"],
         ["AspireShowcase.Scheduling.Web"] = ["SchedulingWeb"],
-        // Identity's assembly is also what other modules use of it, until it has a PublicClient.
-        ["AspireShowcase.Identity"] =
-        [
-            "IdentityAccess", "IOwnerRoles", "OwnerRoleUnavailableException", "IUserProfiles", "UserProfile",
-            "UserProfilesUnavailableException",
-        ],
+        ["AspireShowcase.Identity.Infrastructure"] = ["IdentityAccess"],
     };
-
-    /// <summary>Assemblies other modules may use besides public clients, until they're split.</summary>
-    static readonly string[] SharedUntilSplit = ["AspireShowcase.Identity"];
 
     public static TheoryData<string> ModuleAssemblies() => [.. Modules.Assemblies.Select(assembly => assembly.GetName().Name!)];
 
@@ -47,7 +39,7 @@ public class ModuleBoundaryTests
 
         var forbidden = assembly.GetReferencedAssemblies()
             .Where(reference => Modules.ModuleOf(reference) is { } other && other != module && other != Modules.BuildingBlocks)
-            .Where(reference => Modules.PartOf(reference) != "PublicClient" && !SharedUntilSplit.Contains(reference.Name))
+            .Where(reference => Modules.PartOf(reference) != "PublicClient")
             .Select(reference => reference.Name);
 
         Assert.Empty(forbidden);

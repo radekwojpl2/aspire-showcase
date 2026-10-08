@@ -2,7 +2,7 @@ using System.Security.Claims;
 using AspireShowcase.BuildingBlocks.Web;
 using AspireShowcase.BusinessSetup.Application;
 using AspireShowcase.BusinessSetup.Application.Businesses;
-using AspireShowcase.Identity;
+using AspireShowcase.Identity.PublicClient;
 
 namespace AspireShowcase.BusinessSetup.Web;
 
@@ -19,7 +19,7 @@ static class BusinessSetupEndpoints
 
         // The signed-in user's business, or 404 when they haven't started one.
         businesses.MapGet("/mine", async (ClaimsPrincipal user, GetMyBusiness handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(UserId(user), cancellation)).ToHttp(Results.Ok))
+            (await handler.HandleAsync(Users.IdOf(user), cancellation)).ToHttp(Results.Ok))
         .WithName("GetMyBusiness");
 
         // Checked while the user types, so they hear about a taken link before submitting.
@@ -30,38 +30,35 @@ static class BusinessSetupEndpoints
         // User story MVP-8.
         businesses.MapPost("/", async (
             StartBusiness request, ClaimsPrincipal user, StartBusinessHandler handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(request, UserId(user), cancellation))
+            (await handler.HandleAsync(request, Users.IdOf(user), cancellation))
                 .ToHttp(business => Results.Created("/api/businesses/mine", business)))
         .WithName("CreateBusiness");
 
         // Where clients can reach the business (V1-3); also how an older business gets one.
         businesses.MapPut("/mine/contact", async (
             ContactBody request, ClaimsPrincipal user, SetContact handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(request, UserId(user), cancellation)).ToHttp(Results.Ok))
-        .RequireAuthorization(IdentityAccess.OwnerPolicy)
+            (await handler.HandleAsync(request, Users.IdOf(user), cancellation)).ToHttp(Results.Ok))
+        .RequireAuthorization(Policies.Owner)
         .WithName("SetContact");
 
         // User story MVP-9. Only owners: the owner role comes with starting a business.
         var openingHours = businesses.MapGroup("/mine/opening-hours")
-            .RequireAuthorization(IdentityAccess.OwnerPolicy);
+            .RequireAuthorization(Policies.Owner);
 
         openingHours.MapGet("/", async (ClaimsPrincipal user, GetOpeningHours handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(UserId(user), cancellation)).ToHttp(Results.Ok))
+            (await handler.HandleAsync(Users.IdOf(user), cancellation)).ToHttp(Results.Ok))
         .WithName("GetOpeningHours");
 
         // Replaces the whole week at once: the hours are one value object.
         openingHours.MapPut("/", async (
             OpeningHoursBody request, ClaimsPrincipal user, SetOpeningHours handler, CancellationToken cancellation) =>
-            (await handler.HandleAsync(request, UserId(user), cancellation)).ToHttp(Results.Ok))
+            (await handler.HandleAsync(request, Users.IdOf(user), cancellation)).ToHttp(Results.Ok))
         .WithName("SetOpeningHours");
 
         // User story MVP-10.
-        ServiceEndpoints.Map(businesses.MapGroup("/mine/services").RequireAuthorization(IdentityAccess.OwnerPolicy));
+        ServiceEndpoints.Map(businesses.MapGroup("/mine/services").RequireAuthorization(Policies.Owner));
 
         // User story MVP-11.
-        StaffEndpoints.Map(businesses.MapGroup("/mine/staff").RequireAuthorization(IdentityAccess.OwnerPolicy));
+        StaffEndpoints.Map(businesses.MapGroup("/mine/staff").RequireAuthorization(Policies.Owner));
     }
-
-    internal static string UserId(ClaimsPrincipal user) =>
-        user.FindFirstValue("sub") ?? throw new InvalidOperationException("The access token has no sub claim.");
 }
