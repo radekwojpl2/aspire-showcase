@@ -10,27 +10,31 @@ sealed class BusinessDirectory(BusinessSetupDbContext db) : IBusinessDirectory
         await db.Businesses.AsNoTracking()
             .Where(business => business.OwnerId == ownerId)
             .Select(business => new BusinessInfo(
-                business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId, business.ContactEmail))
+                business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId, business.ContactEmail,
+                business.Address, business.Description, business.LogoVersion))
             .SingleOrDefaultAsync(cancellation);
 
     public async Task<BusinessInfo?> FindAsync(BusinessId businessId, CancellationToken cancellation) =>
         await db.Businesses.AsNoTracking()
             .Where(business => business.Id == businessId)
             .Select(business => new BusinessInfo(
-                business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId, business.ContactEmail))
+                business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId, business.ContactEmail,
+                business.Address, business.Description, business.LogoVersion))
             .SingleOrDefaultAsync(cancellation);
 
     public async Task<BusinessInfo?> FindBySlugAsync(string slug, CancellationToken cancellation) =>
         await db.Businesses.AsNoTracking()
             .Where(business => business.Slug == slug)
             .Select(business => new BusinessInfo(
-                business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId, business.ContactEmail))
+                business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId, business.ContactEmail,
+                business.Address, business.Description, business.LogoVersion))
             .SingleOrDefaultAsync(cancellation);
 
     public async Task<IReadOnlyList<BusinessInfo>> ListAsync(CancellationToken cancellation) =>
         await db.Businesses.AsNoTracking()
             .Select(business => new BusinessInfo(
-                business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId, business.ContactEmail))
+                business.Id, business.Name, business.Slug, business.TimeZone, business.OwnerId, business.ContactEmail,
+                business.Address, business.Description, business.LogoVersion))
             .ToListAsync(cancellation);
 
     public async Task<IReadOnlyList<StaffInfo>> StaffAsync(BusinessId businessId, CancellationToken cancellation)

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Claims;
+using AspireShowcase.BusinessSetup.PublicClient;
 using AspireShowcase.Identity;
 using AspireShowcase.SharedKernel;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,10 @@ namespace AspireShowcase.BusinessSetup;
 record StartBusiness(string? Name, string? Slug, string? TimeZone, string? ContactEmail, string? OwnerName);
 
 /// <param name="ContactEmail">Null for a business started before it was required, until the owner adds one.</param>
-record BusinessResponse(Guid Id, string Name, string Slug, string TimeZone, string? ContactEmail, DateTimeOffset CreatedAt);
+/// <param name="Address">For the booking page (V1-6), like <paramref name="Description"/> and <paramref name="LogoUrl"/>; null for none.</param>
+record BusinessResponse(
+    Guid Id, string Name, string Slug, string TimeZone, string? ContactEmail, DateTimeOffset CreatedAt, string? Address,
+    string? Description, string? LogoUrl);
 
 record ContactBody(string? ContactEmail);
 
@@ -203,6 +207,9 @@ static class BusinessSetupEndpoints
 
         // User story MVP-11.
         StaffEndpoints.Map(businesses.MapGroup("/mine/staff").RequireAuthorization(IdentityAccess.OwnerPolicy));
+
+        // User story V1-6.
+        BusinessPageEndpoints.Map(businesses, api);
     }
 
     /// <summary>The signed-in user's business: everything under /businesses/mine is scoped to it.</summary>
@@ -246,8 +253,9 @@ static class BusinessSetupEndpoints
     static bool TryParseTime(string? value, out TimeOnly time) =>
         TimeOnly.TryParseExact(value, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out time);
 
-    static BusinessResponse ToResponse(Business business) =>
-        new(business.Id.Value, business.Name, business.Slug, business.TimeZone, business.ContactEmail, business.CreatedAt);
+    internal static BusinessResponse ToResponse(Business business) =>
+        new(business.Id.Value, business.Name, business.Slug, business.TimeZone, business.ContactEmail, business.CreatedAt,
+            business.Address, business.Description, BusinessInfo.LogoUrlOf(business.Slug, business.LogoVersion));
 
     static OpeningHoursBody ToBody(Business business) => new(business.TimeZone, ToPeriodBodies(business.OpeningHours));
 
