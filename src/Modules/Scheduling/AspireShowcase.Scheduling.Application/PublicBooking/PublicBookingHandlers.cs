@@ -57,8 +57,7 @@ sealed class GetFreeSlots(IBusinessDirectory directory, Availability availabilit
 
 /// <summary>Books a free slot for the signed-in client (MVP-4), whose account it's tied to (MVP-3).</summary>
 sealed class BookSlotHandler(
-    IBusinessDirectory directory, Availability availability, ISchedulingDbContext db, IBookings bookings,
-    SchedulingTelemetry telemetry, TimeProvider time)
+    IBusinessDirectory directory, Availability availability, MakeBooking makeBooking, SchedulingTelemetry telemetry)
 {
     public async Task<Result<BookingConfirmation>> HandleAsync(
         string slug, BookSlot request, string? userId, CancellationToken cancellation)
@@ -74,6 +73,23 @@ sealed class BookSlotHandler(
             return Result.NotFound();
         }
 
+        return await makeBooking.HandleAsync(offer, request, userId, BookedBy.Client, activity, cancellation);
+    }
+}
+
+/// <summary>
+/// Books a free slot of an offer: for the client online (MVP-4), or for someone the business
+/// books by name and email (V1-5). The same rules either way; only who made it differs.
+/// </summary>
+sealed class MakeBooking(
+    Availability availability, ISchedulingDbContext db, IBookings bookings, SchedulingTelemetry telemetry, TimeProvider time)
+{
+    /// <param name="userId">The client's account; null for someone without one.</param>
+    public async Task<Result<BookingConfirmation>> HandleAsync(
+        Offer offer, BookSlot request, string? userId, BookedBy by, System.Diagnostics.Activity? activity,
+        CancellationToken cancellation)
+    {
+        var source = by.ToString().ToLowerInvariant();
         Attendee attendee;
         try
         {
@@ -89,22 +105,24 @@ sealed class BookSlotHandler(
         }
 
         activity?.SetTag("service.buffer_minutes", (int)offer.Service.Buffer.TotalMinutes);
+        activity?.SetTag("booking.booked_by", source);
 
         // Only a slot that's free right now, on the grid and within someone's hours, can be booked.
         var day = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(startsAt, offer.TimeZone).DateTime);
         var slot = (await availability.FreeSlotsAsync(offer, day, 1, cancellation))
             .SingleOrDefault(free => free.Start == startsAt.ToUniversalTime());
         // The booking keeps the policy the client saw (V1-3).
-        var notice = (await db.PolicyOfAsync(found.Id, cancellation)).Notice;
+        var businessId = offer.Business.Id;
+        var notice = (await db.PolicyOfAsync(businessId, cancellation)).Notice;
 
         // "Anyone" takes whoever is free; if the database refuses one, the next one is tried.
         var booking = await bookings.AddFirstAsync(
-            found.Id,
+            businessId,
             slot?.FreeStaff ?? [],
             staffMemberId => Booking.Book(
-                found.Id, staffMemberId, offer.Service.Id, startsAt, offer.Service.Duration, offer.Service.Buffer, notice,
-                attendee, time.GetUtcNow()),
-            result => telemetry.Booking(result, "client"),
+                businessId, staffMemberId, offer.Service.Id, startsAt, offer.Service.Duration, offer.Service.Buffer,
+                notice, attendee, time.GetUtcNow(), by),
+            result => telemetry.Booking(result, source),
             cancellation);
         if (booking is not null)
         {
@@ -115,7 +133,7 @@ sealed class BookSlotHandler(
         // Nobody to try at all is a taken slot too; refused attempts were counted already.
         if (slot is null || slot.FreeStaff.Count == 0)
         {
-            telemetry.Booking(BookingResult.SlotTaken, "client");
+            telemetry.Booking(BookingResult.SlotTaken, source);
         }
         return Result.Conflict(Slots.Taken);
     }
