@@ -82,3 +82,27 @@ public sealed class FakeUserProfiles : IUserProfiles
     public Task<UserProfile?> FindAsync(string userId, CancellationToken cancellation) =>
         Task.FromResult<UserProfile?>(new UserProfile(userId, $"User {userId}", EmailOf(userId)));
 }
+
+/// <summary>Logto's accounts: which were deleted, or Logto being down for a user, as a test asks.</summary>
+public sealed class FakeAccounts : IAccounts
+{
+    readonly ConcurrentDictionary<string, bool> _deleted = new();
+    readonly ConcurrentDictionary<string, bool> _failing = new();
+
+    public bool IsDeleted(string userId) => _deleted.ContainsKey(userId);
+
+    /// <summary>Logto is down for this user until <see cref="Recover"/>.</summary>
+    public void FailFor(string userId) => _failing[userId] = true;
+
+    public void Recover(string userId) => _failing.TryRemove(userId, out _);
+
+    public Task DeleteAsync(string userId, CancellationToken cancellation)
+    {
+        if (_failing.ContainsKey(userId))
+        {
+            throw new AccountsUnavailableException("Logto is down in this test.");
+        }
+        _deleted[userId] = true;
+        return Task.CompletedTask;
+    }
+}

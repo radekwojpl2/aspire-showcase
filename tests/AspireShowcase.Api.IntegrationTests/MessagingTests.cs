@@ -88,6 +88,21 @@ public sealed class MessagingTests(ApiFactory api)
     }
 
     [Fact]
+    public async Task A_booking_cancelled_by_deleting_the_account_tells_only_the_owner_and_without_the_client()
+    {
+        var business = await TestBusiness.StartAsync(api);
+        var client = TestUser.Client();
+        var booked = await TestBusiness.ReadAsync<BookingConfirmation>(
+            await business.BookAsync(api, client, TestBusiness.FirstSlot));
+
+        await api.CreateClient(client).DeleteAsync("/api/me");
+
+        var notice = await ConsumedAsync<BookingNotice>(message => message.BookingId == booked.Id && message.Kind == "cancelled");
+        Assert.Equal(new BookingParty("A former client", null), notice.Client);
+        Assert.Equal(("client", false), (notice.CancelledBy, notice.ClientHasAccount));
+    }
+
+    [Fact]
     public async Task A_booking_notice_has_what_the_emails_need()
     {
         var business = await TestBusiness.StartAsync(api);

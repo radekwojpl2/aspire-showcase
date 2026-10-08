@@ -19,6 +19,7 @@ sealed class SchedulingTelemetry
     readonly Counter<long> _cancelled;
     readonly Counter<long> _timeOff;
     readonly Counter<long> _rescheduled;
+    readonly Counter<long> _accountsDeleted;
 
     public SchedulingTelemetry(IMeterFactory meterFactory)
     {
@@ -32,12 +33,14 @@ sealed class SchedulingTelemetry
             "Attempts to move a booking, by result (rescheduled, slot_taken, too_late) and who moved it (client, business).");
         _timeOff = meter.CreateCounter<long>(
             "time_off.changes", "{time_off}", "Time off added and removed, by result (added, removed, invalid).");
+        _accountsDeleted = meter.CreateCounter<long>(
+            "accounts.deletions", "{account}", "Clients deleting their account, by result (deleted, owner, unavailable).");
     }
 
     /// <summary>Starts a span for one operation, under the request's span.</summary>
     public Activity? StartActivity(string name) => Source.StartActivity(name);
 
-    /// <param name="source">Where the booking came from: client, or sample in development.</param>
+    /// <param name="source">Where the booking came from: client, business (V1-5), or sample in development.</param>
     public void Booking(BookingResult result, string source) => _booked.Add(1,
         new KeyValuePair<string, object?>("result", result == BookingResult.Booked ? "booked" : "slot_taken"),
         new KeyValuePair<string, object?>("source", source));
@@ -47,6 +50,18 @@ sealed class SchedulingTelemetry
     {
         _cancelled.Add(1, new KeyValuePair<string, object?>("by", by));
         activity?.SetTag("booking.id", booking.Id.Value);
+    }
+
+    /// <summary>A client deleted their account (V1-8), or tried to.</summary>
+    /// <param name="result">deleted, owner (refused: they own a business) or unavailable (Logto).</param>
+    /// <param name="bookings">How many of their bookings were kept without them.</param>
+    /// <param name="cancelled">How many of those were upcoming, and cancelled.</param>
+    public void AccountDeleted(Activity? activity, string result, int bookings = 0, int cancelled = 0)
+    {
+        _accountsDeleted.Add(1, new KeyValuePair<string, object?>("result", result));
+        activity?.SetTag("account.bookings_forgotten", bookings);
+        activity?.SetTag("account.bookings_cancelled", cancelled);
+        activity?.AddEvent(new ActivityEvent($"account.{result}"));
     }
 
     /// <param name="result">added, removed or invalid.</param>
