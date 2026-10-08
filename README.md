@@ -115,7 +115,7 @@ The API's modules, `bff` and the notifications service apply their EF Core migra
 
 ```
 dotnet tool restore
-dotnet ef migrations add <Name> --project src/Modules/BusinessSetup/AspireShowcase.BusinessSetup --startup-project src/AspireShowcase.Api --context BusinessSetupDbContext
+dotnet ef migrations add <Name> --project src/Modules/BusinessSetup/AspireShowcase.BusinessSetup.Infrastructure --startup-project src/AspireShowcase.Api --context BusinessSetupDbContext
 dotnet ef migrations add <Name> --project src/Modules/Scheduling/AspireShowcase.Scheduling --startup-project src/AspireShowcase.Api --context SchedulingDbContext
 dotnet ef migrations add <Name> --project src/AspireShowcase.Bff
 dotnet ef migrations add <Name> --project src/AspireShowcase.Notifications
@@ -218,7 +218,7 @@ On top of what ASP.NET Core, the HTTP clients and Npgsql record by themselves, t
 
 Two things are left out or renamed to keep the traces readable. Database queries outside any recorded request or message aren't recorded: MassTransit's inbox cleanup and the health checks run every few seconds and would otherwise start a trace each time (`BackgroundQueryFilter` in ServiceDefaults). And `bff` names a proxied request after its path, with IDs as `{id}` and booking links as `{slug}`, instead of its one proxy route, `/api/{**rest}`.
 
-The API's Business Setup module, `AspireShowcase.BusinessSetup`, in `src/Modules/BusinessSetup/AspireShowcase.BusinessSetup/BusinessTelemetry.cs`:
+The API's Business Setup module, `AspireShowcase.BusinessSetup`, in `src/Modules/BusinessSetup/AspireShowcase.BusinessSetup.Application/BusinessTelemetry.cs`:
 
 | Metric | Kind | Measures |
 |---|---|---|

@@ -4,7 +4,7 @@ using AspireShowcase.BusinessSetup.Application;
 using AspireShowcase.BusinessSetup.Application.Businesses;
 using AspireShowcase.Identity;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Web;
 
 static class BusinessSetupEndpoints
 {

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Infrastructure;
 
 /// <summary>
 /// How <see cref="WeeklyHours"/> are stored: the value object is always read and replaced as a

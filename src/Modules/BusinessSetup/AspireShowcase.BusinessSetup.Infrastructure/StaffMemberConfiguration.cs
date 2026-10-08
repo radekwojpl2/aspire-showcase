@@ -3,7 +3,7 @@ using AspireShowcase.BusinessSetup.PublicClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AspireShowcase.BusinessSetup;
+namespace AspireShowcase.BusinessSetup.Infrastructure;
 
 /// <summary>How the <see cref="StaffMember"/> aggregate is stored in app-db.</summary>
 sealed class StaffMemberConfiguration : IEntityTypeConfiguration<StaffMember>

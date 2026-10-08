@@ -27,7 +27,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="AspireShowcase.BusinessSetup" />
+    <InternalsVisibleTo Include="AspireShowcase.BusinessSetup.Infrastructure" />
+    <InternalsVisibleTo Include="AspireShowcase.BusinessSetup.Web" />
     <InternalsVisibleTo Include="AspireShowcase.BusinessSetup.Tests" />
   </ItemGroup>
 

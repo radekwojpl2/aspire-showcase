@@ -14,7 +14,8 @@ public class ModuleBoundaryTests
     /// </summary>
     static readonly Dictionary<string, string[]> AllowedPublicTypes = new()
     {
-        ["AspireShowcase.BusinessSetup"] = ["BusinessSetupModule"],
+        ["AspireShowcase.BusinessSetup.Infrastructure"] = ["BusinessSetupModule"],
+        ["AspireShowcase.BusinessSetup.Web"] = ["BusinessSetupWeb"],
         ["AspireShowcase.Scheduling"] = ["SchedulingModule"],
         // Identity's assembly is also what other modules use of it, until it has a PublicClient.
         ["AspireShowcase.Identity"] =

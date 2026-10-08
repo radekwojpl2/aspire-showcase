@@ -2,6 +2,7 @@ using AspireShowcase.BusinessSetup.Application;
 using AspireShowcase.BusinessSetup.Application.Businesses;
 using AspireShowcase.BusinessSetup.Application.Services;
 using AspireShowcase.BusinessSetup.Application.Staff;
+using AspireShowcase.BusinessSetup.Infrastructure;
 using AspireShowcase.BusinessSetup.PublicClient;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
@@ -11,8 +12,9 @@ namespace AspireShowcase.BusinessSetup;
 
 /// <summary>
 /// Business Setup, what an owner configures: the business, its booking link, opening hours,
-/// services and staff (user stories MVP-8 to MVP-11). This class is the module's whole public
-/// surface; other modules talk to it only through AspireShowcase.BusinessSetup.PublicClient.
+/// services and staff (user stories MVP-8 to MVP-11). With BusinessSetupWeb, this class is the
+/// module's whole public surface: everything the module needs is registered here, the endpoints
+/// are mapped there. Other modules talk to it only through AspireShowcase.BusinessSetup.PublicClient.
 /// </summary>
 public static class BusinessSetupModule
 {
@@ -49,9 +51,6 @@ public static class BusinessSetupModule
             .WithTracing(tracing => tracing.AddSource(TelemetryName))
             .WithMetrics(metrics => metrics.AddMeter(TelemetryName));
     }
-
-    /// <summary>Maps the module's endpoints, under /businesses.</summary>
-    public static void MapBusinessSetup(this IEndpointRouteBuilder api) => BusinessSetupEndpoints.MapEndpoints(api);
 
     /// <summary>
     /// Creates or updates the module's tables. Enough for a single instance; with several, run
