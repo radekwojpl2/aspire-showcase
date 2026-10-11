@@ -167,13 +167,13 @@ To tie that trace back to what caused it, the job's span carries a span link to 
 | `owner_calendar`, `owner_cancel_booking`, `owner_find_reschedule_slots`, `owner_reschedule_booking`, `owner_book_for_client` | An owner | The business's calendar, and its clients' bookings |
 | `list_time_off`, `add_time_off`, `remove_time_off` | An owner | The time off of the business and its staff |
 
-Every tool needs signing in, at `/mcp`, and only through the Native app registered for MCP clients in Logto: a token issued to any other application, including Logto's dynamic (CIMD) app, is refused. The server doesn't start until its Logto applications are set up, and its log says which parameters are missing; the steps are in the setup skill, `.claude/skills/setup/SKILL.md`, step 7. Then, with the Native app's ID:
+Every tool needs signing in, at `/mcp`, and only through the Native app registered for MCP clients in Logto: a token issued to any other application, including Logto's dynamic (CIMD) app, is refused. The server doesn't start until its Logto applications are set up, and its log says which parameters are missing. Then, with the Native app's ID:
 
 ```
 claude mcp add --transport http --client-id <native-app-id> --callback-port 33418 aspire-showcase http://localhost:5068/mcp
 ```
 
-and `/mcp` in Claude Code to sign in. Locally the dashboard links to `/mcp`.
+and `/mcp` in Claude Code to sign in. Locally the dashboard links to `/mcp`. [Use the MCP server](docs/mcp.md) has the Logto setup, connecting Claude Code, switching accounts, examples for every tool, and what to do when it doesn't work.
 
 **Signing in** follows the MCP authorization spec, with Logto as the authorization server. A request without a token gets a 401 pointing at `/.well-known/oauth-protected-resource/mcp`, which names Logto. The client signs the user in there for a token issued for the MCP server's own URL. The spec forbids passing that token on, so the server exchanges it at Logto for one for `web`'s API resource (RFC 8693 token exchange), as a machine-to-machine application of its own. Logto only exchanges tokens issued to first-party applications, which is one more reason clients use the registered Native app. In Azure, the API resource's identifier is `https://<mcp-fqdn>/mcp` (the Native app's redirect URI stays the same), and the apps go in `LOGTO_MCP_CLIENT_ID`, `LOGTO_MCP_APP_ID` and `LOGTO_MCP_APP_SECRET` on the `production` environment.
 
