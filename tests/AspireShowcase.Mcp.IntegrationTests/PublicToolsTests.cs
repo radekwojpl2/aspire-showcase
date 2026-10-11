@@ -19,11 +19,27 @@ public sealed class PublicToolsTests(McpFactory mcp) : IClassFixture<McpFactory>
 
         var tools = await client.ListToolsAsync();
 
-        foreach (var name in new[] { "get_business", "find_free_slots" })
+        foreach (var name in new[] { "list_businesses", "get_business", "find_free_slots" })
         {
             var tool = Assert.Single(tools, tool => tool.Name == name);
             Assert.True(tool.ProtocolTool.Annotations?.ReadOnlyHint);
         }
+    }
+
+    [Fact]
+    public async Task Businesses_are_found_by_text_in_their_name_with_their_booking_link()
+    {
+        mcp.Web.Answer(HttpMethod.Get, "/api/public/businesses?query=hair", new[]
+        {
+            new { name = "Anna's Hair", slug = "anna-hair", address = "Main Street 1", description = (string?)null, logoUrl = (string?)null },
+        });
+        await using var client = await mcp.ConnectAsync();
+
+        var result = await client.CallToolAsync("list_businesses", new Dictionary<string, object?> { ["query"] = "hair" });
+
+        Assert.NotEqual(true, result.IsError);
+        var business = Assert.Single(JsonDocument.Parse(Text(result)).RootElement.EnumerateArray());
+        Assert.Equal("anna-hair", business.GetProperty("slug").GetString());
     }
 
     [Fact]

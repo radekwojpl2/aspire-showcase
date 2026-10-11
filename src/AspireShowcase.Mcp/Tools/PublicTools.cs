@@ -8,7 +8,8 @@ namespace AspireShowcase.Mcp.Tools;
 
 /// <summary>
 /// What a business's public booking page shows (user stories MVP-1 and MVP-2): the business
-/// with its services and staff, and its free times. web needs no user for these, but the MCP
+/// with its services and staff, and its free times; and the list of businesses, to find one by
+/// name instead of knowing its booking link. web needs no user for these, but the MCP
 /// server only lets in signed-in users.
 /// </summary>
 [McpServerToolType]
@@ -18,7 +19,16 @@ sealed class PublicTools(WebApi web, TimeProvider time)
     // answer small enough for the model's context.
     const int DefaultDays = 7;
 
-    [McpServerTool(Name = "get_business", Title = "Get a business", ReadOnly = true, OpenWorld = false)]
+    [McpServerTool(Name = "list_businesses", Title = "Find businesses", ReadOnly = true, OpenWorld = false)]
+    [Description("The businesses on the platform, by name, with their booking link, address and description. " +
+        "Use get_business with a booking link for its services, prices and staff.")]
+    public Task<IReadOnlyList<BusinessListing>> ListBusinesses(
+        [Description("Text the business's name or description has in it, such as \"hair\"; leave out for every business.")]
+        string? query = null,
+        CancellationToken cancellation = default) =>
+        web.ListBusinessesAsync(query, cancellation);
+
+    [McpServerTool(Name = "get_business",Title = "Get a business", ReadOnly = true, OpenWorld = false)]
     [Description("A business's public booking page: its name, address, time zone, cancellation notice, " +
         "and its services with their duration, price and the staff who offer them. The IDs it returns are " +
         "what find_free_slots takes.")]
