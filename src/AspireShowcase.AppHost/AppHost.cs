@@ -14,8 +14,9 @@ var notifications = builder.AddNotifications().WithMessaging(messaging);
 web.WithNotifications(notifications);
 
 var bff = builder.AddBff(web);
+var mcp = builder.AddMcp(web);
 
-builder.AddAzureMonitoring(acaEnv, bff, web, notifications);
+builder.AddAzureMonitoring(acaEnv, bff, web, notifications, mcp);
 
 var postgres = builder.AddPostgresServer();
 web.WithAppDatabase(postgres);
