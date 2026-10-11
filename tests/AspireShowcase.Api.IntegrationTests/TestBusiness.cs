@@ -87,6 +87,10 @@ public sealed record BookingConfirmation(Guid Id, string ServiceName, string Sta
 
 public sealed record ClientBooking(Guid Id, string BusinessSlug, string Date, string Start);
 
+public sealed record Me(string Name, string? Email, OwnedBusiness? Business);
+
+public sealed record OwnedBusiness(string Name, string Slug);
+
 public sealed record Calendar(List<CalendarBooking> Bookings);
 
 public sealed record CalendarBooking(Guid Id, string Day, string Start, Guid StaffMemberId, string ClientName);
