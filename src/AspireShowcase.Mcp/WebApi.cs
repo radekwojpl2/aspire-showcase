@@ -19,9 +19,44 @@ sealed class WebApi(HttpClient http)
             (staffMemberId is { } staff ? $"&staffMemberId={staff}" : ""),
             cancellation);
 
+    // A client's own bookings (MVP-4, MVP-7, V1-4); web refuses them without a signed-in user.
+
+    public async Task<BookingConfirmation> BookAsync(string slug, BookSlot request, CancellationToken cancellation)
+    {
+        using var response = await http.PostAsJsonAsync(
+            $"/api/public/businesses/{Uri.EscapeDataString(slug)}/bookings", request, cancellation);
+        return await ReadAsync<BookingConfirmation>(response, cancellation);
+    }
+
+    public Task<IReadOnlyList<ClientBooking>> GetMyBookingsAsync(CancellationToken cancellation) =>
+        GetAsync<IReadOnlyList<ClientBooking>>("/api/me/bookings", cancellation);
+
+    public async Task CancelMyBookingAsync(Guid id, CancellationToken cancellation)
+    {
+        using var response = await http.PostAsync($"/api/me/bookings/{id}/cancel", null, cancellation);
+        await EnsureSuccessAsync(response, cancellation);
+    }
+
+    public Task<PublicSlots> GetMyBookingSlotsAsync(Guid id, Guid? staffMemberId, CancellationToken cancellation) =>
+        GetAsync<PublicSlots>(
+            $"/api/me/bookings/{id}/slots" + (staffMemberId is { } staff ? $"?staffMemberId={staff}" : ""), cancellation);
+
+    public async Task<BookingConfirmation> RescheduleMyBookingAsync(
+        Guid id, DateTimeOffset startsAt, Guid? staffMemberId, CancellationToken cancellation)
+    {
+        using var response = await http.PostAsJsonAsync(
+            $"/api/me/bookings/{id}/reschedule", new { startsAt, staffMemberId }, cancellation);
+        return await ReadAsync<BookingConfirmation>(response, cancellation);
+    }
+
     async Task<T> GetAsync<T>(string path, CancellationToken cancellation)
     {
         using var response = await http.GetAsync(path, cancellation);
+        return await ReadAsync<T>(response, cancellation);
+    }
+
+    static async Task<T> ReadAsync<T>(HttpResponseMessage response, CancellationToken cancellation)
+    {
         await EnsureSuccessAsync(response, cancellation);
         return (await response.Content.ReadFromJsonAsync<T>(cancellation))!;
     }
@@ -40,7 +75,7 @@ sealed class WebApi(HttpClient http)
         if ((int)response.StatusCode is >= 400 and < 500 && response.StatusCode is not HttpStatusCode.Unauthorized)
         {
             var problem = await ReadProblemAsync(response, cancellation);
-            throw new McpException(problem?.Title ?? (response.StatusCode == HttpStatusCode.NotFound
+            throw new McpException(problem?.Message ?? (response.StatusCode == HttpStatusCode.NotFound
                 ? "Not found."
                 : $"The request was refused ({(int)response.StatusCode})."));
         }
@@ -60,5 +95,11 @@ sealed class WebApi(HttpClient http)
         }
     }
 
-    sealed record Problem(string? Title);
+    /// <param name="Errors">What was wrong with each field, for a validation problem.</param>
+    sealed record Problem(string? Title, Dictionary<string, string[]>? Errors)
+    {
+        public string? Message => Errors is { Count: > 0 }
+            ? string.Join(" ", Errors.Select(error => $"{error.Key}: {string.Join(" ", error.Value)}"))
+            : Title;
+    }
 }
