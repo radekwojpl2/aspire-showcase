@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Time.Testing;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using ModelContextProtocol.Client;
@@ -31,6 +33,9 @@ public class McpFactory : WebApplicationFactory<Program>
     public StubWeb Web { get; } = new();
 
     public StubLogto Logto { get; } = new();
+
+    /// <summary>The MCP server's clock: Monday 2 November 2026, 08:00 in Warsaw.</summary>
+    public FakeTimeProvider Time { get; } = new(new DateTimeOffset(2026, 11, 2, 7, 0, 0, TimeSpan.Zero));
 
     /// <summary>
     /// An MCP client connected to /mcp, as Claude Code or the MCP Inspector would be, signed
@@ -74,6 +79,8 @@ public class McpFactory : WebApplicationFactory<Program>
         {
             services.AddHttpClient<WebApi>().ConfigurePrimaryHttpMessageHandler(() => Web);
             services.AddHttpClient<WebTokens>().ConfigurePrimaryHttpMessageHandler(() => Logto);
+            services.RemoveAll<TimeProvider>();
+            services.AddSingleton<TimeProvider>(Time);
             // Validates the test tokens, instead of fetching Logto's signing keys.
             services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
             {

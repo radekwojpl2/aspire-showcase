@@ -12,7 +12,7 @@ namespace AspireShowcase.Mcp.Tools;
 /// confirmed by the user, through <see cref="AskUser"/>, before web makes it.
 /// </summary>
 [McpServerToolType]
-sealed class ClientTools(WebApi web)
+sealed class ClientTools(WebApi web, TimeProvider time)
 {
     // As many free times as a form can offer in one list.
     const int MaxChoices = 20;
@@ -105,7 +105,7 @@ sealed class ClientTools(WebApi web)
         CancellationToken cancellation = default)
     {
         var slots = await web.GetMyBookingSlotsAsync(bookingId, staffMemberId, cancellation);
-        return slots with { Days = PublicTools.Window(slots.Days, from, days) };
+        return slots with { Days = PublicTools.Window(slots, from, days, time) };
     }
 
     [McpServerTool(Name = "reschedule_booking", Title = "Move a booking", ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false)]
