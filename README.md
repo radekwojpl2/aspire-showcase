@@ -7,7 +7,7 @@ React + ASP.NET Core with [Aspire](https://aspire.dev), deployed to Azure Contai
 
 ## What this shows
 
-One AppHost describes the whole system: a React app, a backend for frontend (`bff`) that the browser talks to, an ASP.NET Core API behind it, a notifications service, RabbitMQ as the message bus between the API and that service, [Logto](https://logto.io) for sign-in, and one PostgreSQL server holding the app's, `bff`'s, the notifications service's and Logto's databases. The same description is used twice:
+One AppHost describes the whole system: a React app, a backend for frontend (`bff`) that the browser talks to, an ASP.NET Core API behind it, an MCP server for AI agents, a notifications service, RabbitMQ as the message bus between the API and that service, [Logto](https://logto.io) for sign-in, and one PostgreSQL server holding the app's, `bff`'s, the notifications service's and Logto's databases. The same description is used twice:
 
 - **Locally**, `aspire run` starts everything on your machine (`bff`, the API and the notifications service as processes, Vite with hot reload, Logto, PostgreSQL and RabbitMQ as containers) and sends logs, traces and metrics to the Aspire dashboard.
 - **In Azure**, `aspire deploy` turns it into Container Apps, a PostgreSQL Flexible Server, Key Vault and Application Insights, from a GitHub Actions workflow.
@@ -20,7 +20,7 @@ The AppHost is the same code in both, but Aspire uses it differently. With `aspi
 
 | | Local | Azure |
 |---|---|---|
-| bff, API, notifications service | Processes | Container Apps; only `bff` is public |
+| bff, API, MCP server, notifications service | Processes | Container Apps; only `bff` and `mcp` are public |
 | React app | Vite dev server with hot reload, proxying to `bff` | Built into the `bff` container |
 | PostgreSQL | Container with a data volume | Flexible Server |
 | RabbitMQ | Container, with the management UI | Container App, one replica, no storage: a restart loses the messages still in its queues, `_error` queues included |
@@ -69,18 +69,20 @@ src/
 ├── AspireShowcase.AppHost/          # orchestration + Azure target
 ├── AspireShowcase.ServiceDefaults/  # telemetry, health checks
 ├── AspireShowcase.Bff/              # backend for frontend: sign-in, sessions, proxy; serves the UI in Azure
-├── AspireShowcase.Api/              # API host (resource "web"), reachable only from bff
+├── AspireShowcase.Api/              # API host (resource "web"), reachable only from bff and mcp
 ├── Modules/                         # clean architecture: Domain, Application, Infrastructure, Web per module
 │   ├── BusinessSetup/                 # business, booking link, hours, services, staff
 │   ├── Scheduling/                    # bookings and the owner's calendar
 │   ├── Identity/                      # anti-corruption layer over Logto
 │   └── BuildingBlocks/                # what every module may use
+├── AspireShowcase.Mcp/              # MCP server (resource "mcp"): booking tools for AI agents
 ├── AspireShowcase.Notifications/    # notifications service: booking emails
 └── AspireShowcase.Web/              # React + Vite
 tests/
 ├── AspireShowcase.Api.IntegrationTests/ # the API against PostgreSQL in a container
 ├── AspireShowcase.ArchitectureTests/    # the modules' boundaries and layers
 ├── AspireShowcase.Bff.IntegrationTests/ # bff, with web replaced by a stub
+├── AspireShowcase.Mcp.IntegrationTests/ # the MCP server through an MCP client, with web and Logto stubbed
 ├── AspireShowcase.BusinessSetup.Tests/  # Business Setup's domain rules
 ├── AspireShowcase.Notifications.Tests/  # which emails a booking notice sends
 └── AspireShowcase.Scheduling.Tests/     # Scheduling's domain rules
@@ -152,6 +154,31 @@ The sender's domain must be verified in Resend. Resend's test sender, `onboardin
 A [Quartz.NET](https://www.quartz-scheduler.net) job, `NotificationDigestJob`, runs every 30 seconds and logs a summary of the notifications recorded since its last run. It is there to show how work that runs outside a request looks in telemetry: a scheduled job has no request to belong to, so its span starts a trace of its own.
 
 To tie that trace back to what caused it, the job's span carries a span link to each `notifications.record` span it summed up. See [Span links](#span-links).
+
+## MCP server
+
+`mcp` lets AI agents such as Claude use the booking system through [MCP](https://modelcontextprotocol.io) tools, with the official C# SDK over Streamable HTTP. Like `bff`, it calls `web` and holds no rules of its own: a refusal from `web` reaches the model as the tool's error.
+
+| Tool | Needs | Does |
+|---|---|---|
+| `get_business`, `find_free_slots` | Nothing | A business's page, and its free times |
+| `book_slot`, `my_bookings`, `cancel_booking`, `find_reschedule_slots`, `reschedule_booking` | Signing in | A client's bookings |
+| `owner_calendar` | Signing in as an owner | The business's calendar |
+
+`/mcp` has every tool and, once Logto is set up, needs signing in; `/mcp/public` has the public ones without. Locally the dashboard links to `/mcp`, and starts the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) to call the tools by hand. To add it to Claude Code:
+
+```
+claude mcp add --transport http aspire-showcase http://localhost:5068/mcp
+```
+
+**Signing in** follows the MCP authorization spec, with Logto as the authorization server. A request without a token gets a 401 pointing at `/.well-known/oauth-protected-resource/mcp`, which names Logto. The client signs the user in there for a token issued for the MCP server's own URL. The spec forbids passing that token on, so the server exchanges it at Logto for one for `web`'s API resource (RFC 8693 token exchange), as a machine-to-machine application of its own. Logto only exchanges tokens issued to first-party applications, so MCP clients sign in as a Native app registered in the console rather than through dynamic registration; with that app's ID, `claude mcp add` takes `--client-id <id> --callback-port 33418`. The Logto steps are in the setup skill, `.claude/skills/setup/SKILL.md`, step 7. In Azure, the API resource's identifier is `https://<mcp-fqdn>/mcp` (the Native app's redirect URI stays the same), and the server's application goes in `LOGTO_MCP_APP_ID` and `LOGTO_MCP_APP_SECRET` on the `production` environment.
+
+**Asking the user.** Booking, cancelling and moving don't happen on the model's word: the tool asks the user first, in a form the client shows ([elicitation](https://modelcontextprotocol.io/specification/draft/client/elicitation)), such as Claude Code's dialog in the terminal. `book_slot` asks for the time, the name and the email, and the booking happens only if the user accepts. A client on the 2026-07-28 protocol revision is asked statelessly, with multi round-trip requests; an older one over its session. A client that can't show forms gets the values from the model, and its own approval of the tool call is the confirmation.
+
+**The slot picker.** In hosts that support [MCP Apps](https://modelcontextprotocol.io/extensions/apps), such as Claude Desktop and claude.ai, `find_free_slots` shows its result as a page of free times (`ui://aspire-showcase/slot-picker`), not as text. Picking a time sends the model a message to book it, so the booking still goes through `book_slot` and its confirmation. Claude Code, in a terminal, shows the text.
+
+- Local: a process on port 5068.
+- Azure: a public Container App. Its sessions live in memory, so it runs as one replica.
 
 ## Logto
 

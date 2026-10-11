@@ -1,6 +1,6 @@
 # Aspire Showcase: notes for AI assistants
 
-A showcase of [Aspire](https://aspire.dev): a React app, a backend for frontend (bff), an ASP.NET Core API, a notifications service, Logto for sign-in and PostgreSQL, all described by one AppHost. The README explains each part; this file holds what you need to work in the repo.
+A showcase of [Aspire](https://aspire.dev): a React app, a backend for frontend (bff), an ASP.NET Core API, an MCP server, a notifications service, Logto for sign-in and PostgreSQL, all described by one AppHost. The README explains each part; this file holds what you need to work in the repo.
 
 To set the project up for someone, follow `.claude/skills/setup/SKILL.md` (in Claude Code: `/setup`).
 
@@ -35,7 +35,7 @@ src/
 ├── AspireShowcase.AppHost/          # the system: resources, references, the Azure target
 ├── AspireShowcase.ServiceDefaults/  # telemetry, health checks, service discovery
 ├── AspireShowcase.Bff/              # backend for frontend (resource "bff"): sign-in, sessions, proxy to web; serves the React app in Azure
-├── AspireShowcase.Api/              # API host (resource "web"), reachable only from bff; composes the modules
+├── AspireShowcase.Api/              # API host (resource "web"), reachable only from bff and mcp; composes the modules
 ├── Modules/                         # a folder per module of docs/architecture/ddd-modules.md, in clean architecture
 │   ├── BusinessSetup/               # business, booking link, hours, services, staff
 │   │   ├── AspireShowcase.BusinessSetup.Domain/          # aggregates and their rules; no EF Core, no ASP.NET Core
@@ -46,12 +46,14 @@ src/
 │   ├── Scheduling/                  # bookings, time off, the policy, the calendar; the same five projects
 │   ├── Identity/                    # anti-corruption layer over Logto: PublicClient and Infrastructure
 │   └── BuildingBlocks/              # what every module may use: Domain, Application (Result), Infrastructure, Web
+├── AspireShowcase.Mcp/              # MCP server (resource "mcp"): tools over web, Logto sign-in, elicitation, the slot picker MCP App
 ├── AspireShowcase.Notifications/    # notifications service: booking emails (MassTransit consumer, Resend), with a Quartz.NET job
 └── AspireShowcase.Web/              # React + Vite (resource "frontend")
 tests/
 ├── AspireShowcase.Api.IntegrationTests/ # the API over HTTP against PostgreSQL in a container (Testcontainers)
 ├── AspireShowcase.ArchitectureTests/    # the modules' boundaries and layers, checked on the compiled assemblies
 ├── AspireShowcase.Bff.IntegrationTests/ # bff over HTTP, with web replaced by a stub (Testcontainers)
+├── AspireShowcase.Mcp.IntegrationTests/ # the MCP server through an MCP client, with web and Logto replaced by stubs
 ├── AspireShowcase.BusinessSetup.Tests/  # xUnit tests of Business Setup's domain rules
 ├── AspireShowcase.Notifications.Tests/  # xUnit tests of which emails a booking notice sends
 └── AspireShowcase.Scheduling.Tests/     # xUnit tests of Scheduling's domain rules
