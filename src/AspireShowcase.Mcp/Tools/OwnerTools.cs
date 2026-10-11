@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using Microsoft.AspNetCore.Authorization;
 using ModelContextProtocol.Server;
 
 namespace AspireShowcase.Mcp.Tools;
@@ -10,7 +9,6 @@ namespace AspireShowcase.Mcp.Tools;
 /// business, which only the token exchanged for web carries. web answers 403 to a client.
 /// </summary>
 [McpServerToolType]
-[Authorize]
 sealed class OwnerTools(WebApi web)
 {
     [McpServerTool(Name = "owner_calendar", Title = "My business's calendar", ReadOnly = true, OpenWorld = false)]
