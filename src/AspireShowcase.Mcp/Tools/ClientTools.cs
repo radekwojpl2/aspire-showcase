@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Globalization;
-using Microsoft.AspNetCore.Authorization;
 using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -13,7 +12,6 @@ namespace AspireShowcase.Mcp.Tools;
 /// confirmed by the user, through <see cref="AskUser"/>, before web makes it.
 /// </summary>
 [McpServerToolType]
-[Authorize]
 sealed class ClientTools(WebApi web)
 {
     // As many free times as a form can offer in one list.

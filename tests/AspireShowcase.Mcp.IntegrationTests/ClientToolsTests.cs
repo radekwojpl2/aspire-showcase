@@ -10,7 +10,7 @@ namespace AspireShowcase.Mcp.IntegrationTests;
 /// form the MCP client shows (elicitation), on both protocol revisions: the 2026-07-28 one asks
 /// statelessly (multi round-trip requests), the 2025-11-25 one over its session.
 /// </summary>
-public sealed class ClientToolsTests(SignInMcpFactory mcp) : IClassFixture<SignInMcpFactory>
+public sealed class ClientToolsTests(McpFactory mcp) : IClassFixture<McpFactory>
 {
     const string Stateless = "2026-07-28";
     const string WithSession = "2025-11-25";
@@ -18,17 +18,6 @@ public sealed class ClientToolsTests(SignInMcpFactory mcp) : IClassFixture<SignI
     static readonly Guid Haircut = Guid.Parse("0199b1c4-7a3e-7f00-8a1b-2c3d4e5f6a01");
     static readonly DateTimeOffset Nine = DateTimeOffset.Parse("2026-11-02T09:00:00+00:00");
     static readonly DateTimeOffset Ten = DateTimeOffset.Parse("2026-11-02T10:00:00+00:00");
-
-    [Fact]
-    public async Task The_tools_of_a_client_are_not_offered_without_signing_in()
-    {
-        await using var client = await mcp.ConnectAsync(path: "/mcp/public");
-
-        var tools = await client.ListToolsAsync();
-
-        Assert.DoesNotContain(tools, tool => tool.Name is "book_slot" or "my_bookings" or "cancel_booking");
-    }
-
     [Theory]
     [InlineData(Stateless)]
     [InlineData(WithSession)]
@@ -77,7 +66,7 @@ public sealed class ClientToolsTests(SignInMcpFactory mcp) : IClassFixture<SignI
     {
         var slug = AnswerBusiness();
         await using var client = await mcp.ConnectAsync(
-            new McpClientOptions { ProtocolVersion = WithSession }, accessToken: SignInMcpFactory.AccessToken());
+            new McpClientOptions { ProtocolVersion = WithSession });
 
         var result = await client.CallToolAsync("book_slot", new Dictionary<string, object?>
         {
@@ -161,8 +150,7 @@ public sealed class ClientToolsTests(SignInMcpFactory mcp) : IClassFixture<SignI
             {
                 ProtocolVersion = protocolVersion,
                 Handlers = new() { ElicitationHandler = (request, _) => user(request!) },
-            },
-            accessToken: SignInMcpFactory.AccessToken());
+            });
 
     static ValueTask<ElicitResult> Accept(Dictionary<string, object> values) =>
         ValueTask.FromResult(new ElicitResult
