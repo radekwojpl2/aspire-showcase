@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Adds OpenTelemetry, health checks, service discovery and resilience defaults.
 builder.AddServiceDefaults();
 builder.Services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddProcessor<McpSpanNames>());
+builder.Services.AddSingleton<McpTelemetry>();
 
 // Signing in with Logto, which every request needs, and tokens for web for the user.
 builder.AddMcpAuthentication();
@@ -24,6 +25,7 @@ builder.Services.AddHttpClient<WebApi>(client => client.BaseAddress = new Uri("h
 builder.Services.AddMcpServer()
     .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.StatefulForInitializeClients)
     .AddAuthorizationFilters()
+    .WithRequestFilters(filters => filters.AddCallToolFilter(McpTelemetry.CountToolCalls))
     .WithToolsFromAssembly()
     .WithResourcesFromAssembly();
 
