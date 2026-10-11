@@ -13,6 +13,9 @@ record BusinessResponse(
 
 record PageBody(string? Address, string? Description);
 
+/// <summary>A business as the list of businesses shows it; its booking page is at /book/{Slug}.</summary>
+record BusinessListing(string Name, string Slug, string? Address, string? Description, string? LogoUrl);
+
 /// <summary>A logo to serve, with the version its address names.</summary>
 record LogoImage(byte[] Image, string ContentType, int? Version);
 

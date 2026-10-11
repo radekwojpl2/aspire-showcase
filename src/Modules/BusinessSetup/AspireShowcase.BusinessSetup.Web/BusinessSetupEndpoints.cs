@@ -15,6 +15,11 @@ static class BusinessSetupEndpoints
     /// </summary>
     public static void MapEndpoints(IEndpointRouteBuilder api)
     {
+        // For finding a business to book with, so no sign-in, like the booking pages themselves.
+        api.MapGet("/public/businesses", (string? query, ListBusinesses handler, CancellationToken cancellation) =>
+            handler.HandleAsync(query, cancellation))
+        .WithName("ListBusinesses");
+
         var businesses = api.MapGroup("/businesses").RequireAuthorization();
 
         // The signed-in user's business, or 404 when they haven't started one.
