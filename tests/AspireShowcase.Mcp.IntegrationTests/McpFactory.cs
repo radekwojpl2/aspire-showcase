@@ -15,75 +15,64 @@ using ModelContextProtocol.Client;
 namespace AspireShowcase.Mcp.IntegrationTests;
 
 /// <summary>
-/// The MCP server as the AppHost runs it before Logto is set up: without sign-in. web is a
-/// stub that answers what each test tells it to and records what it was asked.
+/// The MCP server as the AppHost runs it once its Logto applications exist. web and Logto are
+/// stubs: web answers what each test tells it to and records what it was asked; Logto's tokens
+/// are signed with a test key, and its token endpoint exchanges any token for
+/// <see cref="ExchangedToken"/>.
 /// </summary>
 public class McpFactory : WebApplicationFactory<Program>
 {
+    public const string Issuer = "http://logto.test/oidc";
+    public const string ClientId = "mcp-clients";
+    public const string ExchangedToken = "token-for-web";
+
+    static readonly SymmetricSecurityKey SigningKey = new("a-test-key-of-at-least-256-bits-long!!"u8.ToArray());
+
     public StubWeb Web { get; } = new();
 
-    /// <summary>An MCP client connected to <paramref name="path"/>, as Claude Code or the MCP Inspector would be.</summary>
-    /// <param name="accessToken">The access token it signed in with, if it did.</param>
-    public Task<McpClient> ConnectAsync(
-        McpClientOptions? options = null, string path = "/mcp", string? accessToken = null) =>
+    public StubLogto Logto { get; } = new();
+
+    /// <summary>
+    /// An MCP client connected to /mcp, as Claude Code or the MCP Inspector would be, signed
+    /// in with <paramref name="accessToken"/>: by default a token of the MCP clients' app.
+    /// </summary>
+    public Task<McpClient> ConnectAsync(McpClientOptions? options = null, string? accessToken = null) =>
         McpClient.CreateAsync(
             new HttpClientTransport(
                 new HttpClientTransportOptions
                 {
-                    Endpoint = new Uri(Server.BaseAddress, path),
-                    AdditionalHeaders = accessToken is null
-                        ? null
-                        : new Dictionary<string, string> { ["Authorization"] = $"Bearer {accessToken}" },
+                    Endpoint = new Uri(Server.BaseAddress, "/mcp"),
+                    AdditionalHeaders = new Dictionary<string, string> { ["Authorization"] = $"Bearer {accessToken ?? AccessToken()}" },
                 },
                 CreateClient(),
                 ownsHttpClient: true),
             options);
 
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
-    {
-        // What service discovery resolves "web" to; never connected to, the stub answers instead.
-        builder.UseSetting("services:web:http:0", "http://web.test");
-
-        builder.ConfigureTestServices(services =>
-            services.AddHttpClient<WebApi>().ConfigurePrimaryHttpMessageHandler(() => Web));
-    }
-}
-
-/// <summary>
-/// The MCP server once Logto is set up: /mcp needs signing in. Logto is a stub too: tokens
-/// are signed with a test key, and its token endpoint exchanges any token for
-/// <see cref="ExchangedToken"/>.
-/// </summary>
-public sealed class SignInMcpFactory : McpFactory
-{
-    public const string Issuer = "http://logto.test/oidc";
-    public const string ExchangedToken = "token-for-web";
-
-    static readonly SymmetricSecurityKey SigningKey = new("a-test-key-of-at-least-256-bits-long!!"u8.ToArray());
-
-    public StubLogto Logto { get; } = new();
-
-    /// <summary>An access token Logto would issue to an MCP client for <paramref name="audience"/>.</summary>
-    public static string AccessToken(string audience = "http://localhost/mcp", string userId = "user-1") =>
+    /// <summary>An access token Logto would issue to <paramref name="clientId"/> for <paramref name="audience"/>.</summary>
+    public static string AccessToken(
+        string audience = "http://localhost/mcp", string clientId = ClientId, string userId = "user-1") =>
         new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
         {
             Issuer = Issuer,
             Audience = audience,
-            Subject = new ClaimsIdentity([new Claim("sub", userId)]),
+            Subject = new ClaimsIdentity([new Claim("sub", userId), new Claim("client_id", clientId)]),
             Expires = DateTime.UtcNow.AddHours(1),
             SigningCredentials = new SigningCredentials(SigningKey, SecurityAlgorithms.HmacSha256),
         });
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        base.ConfigureWebHost(builder);
+        // What service discovery resolves "web" to; never connected to, the stub answers instead.
+        builder.UseSetting("services:web:http:0", "http://web.test");
         builder.UseSetting("Logto:Endpoint", "http://logto.test");
-        builder.UseSetting("Logto:AppId", "mcp-app");
+        builder.UseSetting("Logto:ClientId", ClientId);
+        builder.UseSetting("Logto:AppId", "mcp-server");
         builder.UseSetting("Logto:AppSecret", "mcp-secret");
         builder.UseSetting("Logto:ApiResource", "https://api.aspire-showcase");
 
         builder.ConfigureTestServices(services =>
         {
+            services.AddHttpClient<WebApi>().ConfigurePrimaryHttpMessageHandler(() => Web);
             services.AddHttpClient<WebTokens>().ConfigurePrimaryHttpMessageHandler(() => Logto);
             // Validates the test tokens, instead of fetching Logto's signing keys.
             services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
@@ -110,7 +99,7 @@ public sealed class StubLogto : HttpMessageHandler
         Exchanges.Enqueue(form);
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = JsonContent.Create(new { access_token = SignInMcpFactory.ExchangedToken, expires_in = 3600, token_type = "Bearer" }),
+            Content = JsonContent.Create(new { access_token = McpFactory.ExchangedToken, expires_in = 3600, token_type = "Bearer" }),
         };
     }
 }

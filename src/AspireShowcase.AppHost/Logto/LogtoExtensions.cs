@@ -90,13 +90,16 @@ static class LogtoExtensions
     /// </summary>
     /// <remarks>
     /// The MCP clients themselves sign in as a "Native app" registered in the Logto console,
-    /// whose ID they're given (claude mcp add --client-id); the server doesn't need it. Until
-    /// the server's application exists, it runs without sign-in, with the public tools only.
+    /// whose ID they're given (claude mcp add --client-id); the server accepts tokens issued to
+    /// that app only. The parameters are optional so the first deploy, which creates Logto in
+    /// Azure, can run before the apps exist; until they're set, the MCP server doesn't start.
     /// </remarks>
     public static IResourceBuilder<ProjectResource> WithLogtoMcp(
         this IResourceBuilder<ProjectResource> mcp, IResourceBuilder<ContainerResource> logto)
     {
         var builder = mcp.ApplicationBuilder;
+        var clientId = builder.AddOptionalParameter(
+            "logto-mcp-client-id", "ID of the Logto Native app MCP clients sign in as; the only one the MCP server accepts tokens from.");
         var appId = builder.AddOptionalParameter(
             "logto-mcp-app-id", "ID of the Logto machine-to-machine application the MCP server exchanges tokens as.");
         var appSecret = builder.AddOptionalParameter(
@@ -105,6 +108,7 @@ static class LogtoExtensions
         return mcp
             .WithEnvironment("Logto__Endpoint", builder.PublicEndpoint(logto))
             .WithEnvironment("Logto__ApiResource", ApiResource)
+            .WithOptionalEnvironment("Logto__ClientId", clientId)
             .WithOptionalEnvironment("Logto__AppId", appId)
             .WithOptionalEnvironment("Logto__AppSecret", appSecret);
     }

@@ -6,22 +6,29 @@ using ModelContextProtocol.Authentication;
 namespace AspireShowcase.Mcp.Auth;
 
 /// <summary>
-/// Logto settings, from the AppHost: the public URL, the application the MCP server exchanges
-/// tokens as, and web's API resource it exchanges them for.
+/// Logto settings, from the AppHost: the public URL, the Native app MCP clients sign in as,
+/// the application the MCP server exchanges tokens as, and web's API resource it exchanges
+/// them for.
 /// </summary>
 sealed class LogtoSettings
 {
     public string? Endpoint { get; init; }
+    public string? ClientId { get; init; }
     public string? AppId { get; init; }
     public string? AppSecret { get; init; }
     public string? ApiResource { get; init; }
 
-    /// <summary>The application only exists once it's been created in the Logto console.</summary>
-    public bool IsConfigured =>
-        !string.IsNullOrEmpty(Endpoint) && !string.IsNullOrEmpty(AppId) &&
-        !string.IsNullOrEmpty(AppSecret) && !string.IsNullOrEmpty(ApiResource);
-
     public string Issuer => $"{Endpoint}/oidc";
+
+    /// <summary>The settings that are missing, by the AppHost parameter that sets each.</summary>
+    public IEnumerable<string> Missing()
+    {
+        if (string.IsNullOrEmpty(Endpoint)) yield return "Logto:Endpoint";
+        if (string.IsNullOrEmpty(ClientId)) yield return "logto-mcp-client-id";
+        if (string.IsNullOrEmpty(AppId)) yield return "logto-mcp-app-id";
+        if (string.IsNullOrEmpty(AppSecret)) yield return "logto-mcp-app-secret";
+        if (string.IsNullOrEmpty(ApiResource)) yield return "Logto:ApiResource";
+    }
 }
 
 static class McpAuthentication
@@ -40,16 +47,29 @@ static class McpAuthentication
     /// OAuth protected resource, Logto its authorization server. A client without a token gets
     /// a 401 pointing at /.well-known/oauth-protected-resource/mcp, which names Logto; it signs
     /// the user in there and comes back with an access token issued for this server's URL.
+    /// Every tool needs it: there's no way in without signing in.
     /// </summary>
     /// <remarks>
+    /// Only as the Native app registered in Logto for MCP clients: a token issued to any other
+    /// application, or to a client Logto let in without registering it (its dynamic CIMD app),
+    /// is refused. So which clients may connect is decided in the Logto console.
+    ///
     /// The resource is the URL the client connects to (http://localhost:5068/mcp locally),
     /// read from the request rather than configured: in Azure the address is only known once
     /// deployed. Aspire has ASP.NET Core trust the Container Apps ingress's X-Forwarded-*
     /// headers there, so the request's scheme and host are the public ones.
     /// </remarks>
+    /// <exception cref="InvalidOperationException">The Logto applications aren't set up yet.</exception>
     public static void AddMcpAuthentication(this WebApplicationBuilder builder)
     {
         var logto = builder.Configuration.GetSection("Logto").Get<LogtoSettings>() ?? new();
+        if (logto.Missing().ToList() is { Count: > 0 } missing)
+        {
+            throw new InvalidOperationException(
+                $"The MCP server needs its Logto applications, and won't run without them. Missing: {string.Join(", ", missing)}. " +
+                "Create them in the Logto console and set the AppHost parameters: see step 7 of .claude/skills/setup/SKILL.md.");
+        }
+
         builder.Services.AddSingleton(logto);
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddMemoryCache();
@@ -58,15 +78,6 @@ static class McpAuthentication
         builder.Services.AddTransient<WebAccessTokenHandler>();
 
         builder.Services.AddAuthorization();
-
-        // Until the Logto application exists, the server runs without sign-in: the public
-        // tools only.
-        if (!logto.IsConfigured)
-        {
-            builder.Services.AddAuthentication();
-            return;
-        }
-
         builder.Services
             .AddAuthentication(options =>
             {
@@ -82,6 +93,19 @@ static class McpAuthentication
                 options.MapInboundClaims = false;
                 // Kept for exchanging it for a token for web; see WebTokens.
                 options.SaveToken = true;
+                // Logto puts the application the token was issued to in client_id, in every
+                // access token it issues.
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        if (context.Principal?.FindFirst("client_id")?.Value != logto.ClientId)
+                        {
+                            context.Fail("The token wasn't issued to the MCP clients' application.");
+                        }
+                        return Task.CompletedTask;
+                    },
+                };
             })
             .AddMcp(options =>
             {
@@ -109,20 +133,6 @@ static class McpAuthentication
     /// <summary>The MCP endpoint's public URL, which the access tokens must be issued for.</summary>
     public static string ResourceOf(HttpRequest request) => $"{request.Scheme}://{request.Host}{request.PathBase}{Path}";
 
-    /// <summary>
-    /// Maps the MCP endpoints: /mcp for everything, which needs signing in once Logto is set
-    /// up, and /mcp/public for the public tools without signing in, for clients that only
-    /// look things up.
-    /// </summary>
-    public static void MapMcpEndpoints(this WebApplication app)
-    {
-        var mcp = app.MapMcp(Path);
-        if (app.Services.GetRequiredService<LogtoSettings>().IsConfigured)
-        {
-            mcp.RequireAuthorization();
-        }
-
-        app.MapMcp($"{Path}/public");
-    }
+    /// <summary>Maps the MCP endpoint, for signed-in users only.</summary>
+    public static void MapMcpEndpoints(this WebApplication app) => app.MapMcp(Path).RequireAuthorization();
 }
-

@@ -5,8 +5,8 @@ using ModelContextProtocol.Protocol;
 namespace AspireShowcase.Mcp.IntegrationTests;
 
 /// <summary>
-/// The tools anyone may use without signing in: a business's booking page and its free times,
-/// read from web's public endpoints.
+/// The tools of a business's public booking page: the business and its free times, read from
+/// web's public endpoints.
 /// </summary>
 public sealed class PublicToolsTests(McpFactory mcp) : IClassFixture<McpFactory>
 {
