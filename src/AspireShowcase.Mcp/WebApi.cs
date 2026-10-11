@@ -93,6 +93,25 @@ sealed class WebApi(HttpClient http)
         return await ReadAsync<BookingConfirmation>(response, cancellation);
     }
 
+    // The owner's time off (V1-1).
+
+    public Task<TimeOffList> GetTimeOffAsync(CancellationToken cancellation) =>
+        GetAsync<TimeOffList>("/api/businesses/mine/time-off", cancellation);
+
+    public async Task<TimeOffResponse> AddTimeOffAsync(
+        Guid? staffMemberId, string from, string to, string? note, CancellationToken cancellation)
+    {
+        using var response = await http.PostAsJsonAsync(
+            "/api/businesses/mine/time-off", new { staffMemberId, from, to, note }, cancellation);
+        return await ReadAsync<TimeOffResponse>(response, cancellation);
+    }
+
+    public async Task RemoveTimeOffAsync(Guid id, CancellationToken cancellation)
+    {
+        using var response = await http.DeleteAsync($"/api/businesses/mine/time-off/{id}", cancellation);
+        await EnsureSuccessAsync(response, cancellation);
+    }
+
     async Task<T> GetAsync<T>(string path, CancellationToken cancellation)
     {
         using var response = await http.GetAsync(path, cancellation);

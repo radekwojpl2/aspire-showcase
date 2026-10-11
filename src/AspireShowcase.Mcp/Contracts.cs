@@ -62,3 +62,17 @@ record CalendarTimeOff(
 record CalendarResponse(
     string View, string Date, string FirstDay, string LastDay, string TimeZone, IReadOnlyList<CalendarStaff> Staff,
     IReadOnlyList<CalendarBooking> Bookings, IReadOnlyList<CalendarTimeOff> TimeOff);
+
+/// <param name="From">The local start, yyyy-MM-ddTHH:mm, in the business's time zone.</param>
+/// <param name="To">The local end, the same way; midnight for a whole last day.</param>
+/// <param name="Bookings">The confirmed bookings inside it, which the owner may want to cancel.</param>
+record TimeOffResponse(
+    Guid Id, Guid? StaffMemberId, string? StaffName, string From, string To, string? Note,
+    IReadOnlyList<TimeOffBooking> Bookings);
+
+/// <param name="Day">The local date, yyyy-MM-dd.</param>
+/// <param name="Start">The local time, HH:mm.</param>
+record TimeOffBooking(
+    Guid Id, string Day, string Start, string End, string StaffName, string ServiceName, string ClientName);
+
+record TimeOffList(string TimeZone, IReadOnlyList<TimeOffResponse> TimeOff);
