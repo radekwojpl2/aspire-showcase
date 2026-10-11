@@ -159,19 +159,21 @@ To tie that trace back to what caused it, the job's span carries a span link to 
 
 `mcp` lets AI agents such as Claude use the booking system through [MCP](https://modelcontextprotocol.io) tools, with the official C# SDK over Streamable HTTP. Like `bff`, it calls `web` and holds no rules of its own: a refusal from `web` reaches the model as the tool's error.
 
-| Tool | Needs | Does |
+| Tool | For | Does |
 |---|---|---|
-| `get_business`, `find_free_slots` | Nothing | A business's page, and its free times |
-| `book_slot`, `my_bookings`, `cancel_booking`, `find_reschedule_slots`, `reschedule_booking` | Signing in | A client's bookings |
-| `owner_calendar` | Signing in as an owner | The business's calendar |
+| `get_business`, `find_free_slots` | Anyone signed in | A business's page, and its free times |
+| `book_slot`, `my_bookings`, `cancel_booking`, `find_reschedule_slots`, `reschedule_booking` | Anyone signed in | Their bookings |
+| `owner_calendar` | An owner | The business's calendar |
 
-`/mcp` has every tool and, once Logto is set up, needs signing in; `/mcp/public` has the public ones without. Locally the dashboard links to `/mcp`, and starts the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) to call the tools by hand. To add it to Claude Code:
+Every tool needs signing in, at `/mcp`, and only through the Native app registered for MCP clients in Logto: a token issued to any other application, including Logto's dynamic (CIMD) app, is refused. The server doesn't start until its Logto applications are set up, and its log says which parameters are missing; the steps are in the setup skill, `.claude/skills/setup/SKILL.md`, step 7. Then, with the Native app's ID:
 
 ```
-claude mcp add --transport http aspire-showcase http://localhost:5068/mcp
+claude mcp add --transport http --client-id <native-app-id> --callback-port 33418 aspire-showcase http://localhost:5068/mcp
 ```
 
-**Signing in** follows the MCP authorization spec, with Logto as the authorization server. A request without a token gets a 401 pointing at `/.well-known/oauth-protected-resource/mcp`, which names Logto. The client signs the user in there for a token issued for the MCP server's own URL. The spec forbids passing that token on, so the server exchanges it at Logto for one for `web`'s API resource (RFC 8693 token exchange), as a machine-to-machine application of its own. Logto only exchanges tokens issued to first-party applications, so MCP clients sign in as a Native app registered in the console rather than through dynamic registration; with that app's ID, `claude mcp add` takes `--client-id <id> --callback-port 33418`. The Logto steps are in the setup skill, `.claude/skills/setup/SKILL.md`, step 7. In Azure, the API resource's identifier is `https://<mcp-fqdn>/mcp` (the Native app's redirect URI stays the same), and the server's application goes in `LOGTO_MCP_APP_ID` and `LOGTO_MCP_APP_SECRET` on the `production` environment.
+and `/mcp` in Claude Code to sign in. Locally the dashboard links to `/mcp`, and starts the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) to call the tools by hand; it signs in with the same app ID, once its redirect URI is added to the Native app.
+
+**Signing in** follows the MCP authorization spec, with Logto as the authorization server. A request without a token gets a 401 pointing at `/.well-known/oauth-protected-resource/mcp`, which names Logto. The client signs the user in there for a token issued for the MCP server's own URL. The spec forbids passing that token on, so the server exchanges it at Logto for one for `web`'s API resource (RFC 8693 token exchange), as a machine-to-machine application of its own. Logto only exchanges tokens issued to first-party applications, which is one more reason clients use the registered Native app. In Azure, the API resource's identifier is `https://<mcp-fqdn>/mcp` (the Native app's redirect URI stays the same), and the apps go in `LOGTO_MCP_CLIENT_ID`, `LOGTO_MCP_APP_ID` and `LOGTO_MCP_APP_SECRET` on the `production` environment.
 
 **Asking the user.** Booking, cancelling and moving don't happen on the model's word: the tool asks the user first, in a form the client shows ([elicitation](https://modelcontextprotocol.io/specification/draft/client/elicitation)), such as Claude Code's dialog in the terminal. `book_slot` asks for the time, the name and the email, and the booking happens only if the user accepts. A client on the 2026-07-28 protocol revision is asked statelessly, with multi round-trip requests; an older one over its session. A client that can't show forms gets the values from the model, and its own approval of the tool call is the confirmation.
 
