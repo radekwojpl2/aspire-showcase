@@ -33,3 +33,23 @@ record BookingConfirmation(Guid Id, string ServiceName, string StaffName, string
 record ClientBooking(
     Guid Id, string BusinessName, string BusinessSlug, string ServiceName, string StaffName, string Date, string Start,
     string End, string TimeZone, DateTimeOffset CanChangeUntil, string? BusinessContactEmail);
+
+/// <param name="Day">The local date, yyyy-MM-dd.</param>
+/// <param name="Start">The local time, HH:mm, in the business's time zone.</param>
+/// <param name="ClientEmail">Null once the client deleted their account.</param>
+record CalendarBooking(
+    Guid Id, string Day, string Start, string End, Guid StaffMemberId, string StaffName, string ServiceName,
+    string ClientName, string? ClientEmail);
+
+record CalendarStaff(Guid Id, string Name);
+
+/// <summary>The part of a time off that falls on one day of the calendar.</summary>
+/// <param name="End">HH:mm, or 24:00 when it lasts to the end of the day.</param>
+/// <param name="StaffMemberId">Null for the whole business.</param>
+record CalendarTimeOff(
+    Guid Id, string Day, string Start, string End, Guid? StaffMemberId, string? StaffName, string? Note);
+
+/// <param name="Date">The date asked for; <paramref name="FirstDay"/> to <paramref name="LastDay"/> is what's shown.</param>
+record CalendarResponse(
+    string View, string Date, string FirstDay, string LastDay, string TimeZone, IReadOnlyList<CalendarStaff> Staff,
+    IReadOnlyList<CalendarBooking> Bookings, IReadOnlyList<CalendarTimeOff> TimeOff);
