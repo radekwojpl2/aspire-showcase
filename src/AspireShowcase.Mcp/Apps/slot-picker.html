@@ -140,11 +140,10 @@
       }
     }
 
+    // The content's own size: the document's is at least the iframe's, which would never shrink.
     function reportSize() {
-      notify("ui/notifications/size-changed", {
-        width: document.documentElement.scrollWidth,
-        height: document.documentElement.scrollHeight,
-      });
+      const size = document.body.getBoundingClientRect();
+      notify("ui/notifications/size-changed", { width: Math.ceil(size.width), height: Math.ceil(size.height) });
     }
 
     request("ui/initialize", {
