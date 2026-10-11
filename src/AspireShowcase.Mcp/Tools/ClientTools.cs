@@ -151,7 +151,7 @@ sealed class ClientTools(WebApi web, TimeProvider time)
         $"{booking.ServiceName} with {booking.StaffName} at {booking.BusinessName} on {booking.Date} at {booking.Start}";
 
     /// <summary>The next free times, as choices: the instant to book, shown as the local day and time.</summary>
-    static IEnumerable<(string Value, string Title)> Choices(PublicSlots slots)
+    internal static IEnumerable<(string Value, string Title)> Choices(PublicSlots slots)
     {
         var choices = slots.Days
             .SelectMany(day => day.Slots.Select(slot => (slot.StartsAt.ToString("O", CultureInfo.InvariantCulture), $"{day.Date} {slot.Start}")))
@@ -161,12 +161,12 @@ sealed class ClientTools(WebApi web, TimeProvider time)
     }
 
     /// <summary>The time the user picked, if they were asked to.</summary>
-    static DateTimeOffset? Picked(Answer? answer) =>
+    internal static DateTimeOffset? Picked(Answer? answer) =>
         DateTimeOffset.TryParse(answer?.Text("startsAt"), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var picked)
             ? picked
             : null;
 
-    static string Local(DateTimeOffset at, string timeZone) =>
+    internal static string Local(DateTimeOffset at, string timeZone) =>
         TimeZoneInfo.ConvertTime(at, TimeZoneInfo.FindSystemTimeZoneById(timeZone)).ToString("yyyy-MM-dd HH:mm");
 }
 

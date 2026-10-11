@@ -164,7 +164,7 @@ To tie that trace back to what caused it, the job's span carries a span link to 
 | `whoami` | Anyone signed in | Who they're signed in as, and the business they own |
 | `list_businesses`, `get_business`, `find_free_slots` | Anyone signed in | The businesses, a business's page, and its free times |
 | `book_slot`, `my_bookings`, `cancel_booking`, `find_reschedule_slots`, `reschedule_booking` | Anyone signed in | Their bookings |
-| `owner_calendar` | An owner | The business's calendar |
+| `owner_calendar`, `owner_cancel_booking`, `owner_find_reschedule_slots`, `owner_reschedule_booking`, `owner_book_for_client` | An owner | The business's calendar, and its clients' bookings |
 
 Every tool needs signing in, at `/mcp`, and only through the Native app registered for MCP clients in Logto: a token issued to any other application, including Logto's dynamic (CIMD) app, is refused. The server doesn't start until its Logto applications are set up, and its log says which parameters are missing; the steps are in the setup skill, `.claude/skills/setup/SKILL.md`, step 7. Then, with the Native app's ID:
 
