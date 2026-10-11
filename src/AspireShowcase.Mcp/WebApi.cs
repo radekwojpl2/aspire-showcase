@@ -19,6 +19,8 @@ sealed class WebApi(HttpClient http)
             (staffMemberId is { } staff ? $"&staffMemberId={staff}" : ""),
             cancellation);
 
+    public Task<Me> GetMeAsync(CancellationToken cancellation) => GetAsync<Me>("/api/me", cancellation);
+
     // A client's own bookings (MVP-4, MVP-7, V1-4); web refuses them without a signed-in user.
 
     public async Task<BookingConfirmation> BookAsync(string slug, BookSlot request, CancellationToken cancellation)
