@@ -1,11 +1,13 @@
 using AspireShowcase.Mcp;
 using AspireShowcase.Mcp.Auth;
 using ModelContextProtocol.AspNetCore;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Adds OpenTelemetry, health checks, service discovery and resilience defaults.
 builder.AddServiceDefaults();
+builder.Services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddProcessor<McpSpanNames>());
 
 // Signing in with Logto, which every request needs, and tokens for web for the user.
 builder.AddMcpAuthentication();

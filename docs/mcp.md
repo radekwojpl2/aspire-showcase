@@ -84,7 +84,7 @@ Two accounts make the whole round: a client, and the owner of a business. Start 
 
 Decline a dialog once to see that nothing changes.
 
-Each tool call is a `POST /mcp` trace in the dashboard (**Traces**), with the calls to `web` under it.
+Each tool call is a trace in the dashboard (**Traces**) named after the tool, such as `POST /mcp tools/call book_slot`, with the MCP SDK's span for the call (its tool name and session as attributes) and the calls to `web` under it.
 
 ## When it doesn't work
 
