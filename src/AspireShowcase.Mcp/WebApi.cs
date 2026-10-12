@@ -66,6 +66,33 @@ sealed class WebApi(HttpClient http)
             (staffMemberId is { } staff ? $"&staffMemberId={staff}" : ""),
             cancellation);
 
+    // The owner's bookings (MVP-14, V1-4, V1-5); web refuses another business's as not found.
+
+    public async Task CancelBookingAsync(Guid id, CancellationToken cancellation)
+    {
+        using var response = await http.PostAsync($"/api/businesses/mine/bookings/{id}/cancel", null, cancellation);
+        await EnsureSuccessAsync(response, cancellation);
+    }
+
+    public Task<PublicSlots> GetBookingSlotsAsync(Guid id, Guid? staffMemberId, CancellationToken cancellation) =>
+        GetAsync<PublicSlots>(
+            $"/api/businesses/mine/bookings/{id}/slots" + (staffMemberId is { } staff ? $"?staffMemberId={staff}" : ""),
+            cancellation);
+
+    public async Task<BookingConfirmation> RescheduleBookingAsync(
+        Guid id, DateTimeOffset startsAt, Guid? staffMemberId, CancellationToken cancellation)
+    {
+        using var response = await http.PostAsJsonAsync(
+            $"/api/businesses/mine/bookings/{id}/reschedule", new { startsAt, staffMemberId }, cancellation);
+        return await ReadAsync<BookingConfirmation>(response, cancellation);
+    }
+
+    public async Task<BookingConfirmation> BookForClientAsync(BookSlot request, CancellationToken cancellation)
+    {
+        using var response = await http.PostAsJsonAsync("/api/businesses/mine/bookings", request, cancellation);
+        return await ReadAsync<BookingConfirmation>(response, cancellation);
+    }
+
     async Task<T> GetAsync<T>(string path, CancellationToken cancellation)
     {
         using var response = await http.GetAsync(path, cancellation);
