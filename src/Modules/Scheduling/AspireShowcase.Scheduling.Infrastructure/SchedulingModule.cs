@@ -55,6 +55,7 @@ public static class SchedulingModule
         builder.Services.AddScoped<MakeBooking>();
         builder.Services.AddScoped<BookForClient>();
         builder.Services.AddScoped<DeleteMyAccount>();
+        builder.Services.AddScoped<GetMe>();
         builder.Services.AddScoped<ListMyBookings>();
         builder.Services.AddScoped<CancelMyBooking>();
         builder.Services.AddScoped<GetCalendar>();

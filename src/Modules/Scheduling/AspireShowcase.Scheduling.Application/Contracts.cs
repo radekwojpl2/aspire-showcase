@@ -43,6 +43,14 @@ record ClientBooking(
 /// <param name="StaffMemberId">Who it should be with, or null for anyone who's free (whoever it's with now first).</param>
 record RescheduleBody(DateTimeOffset? StartsAt, Guid? StaffMemberId);
 
+// Who's signed in, for clients that only have the user's ID, such as the MCP server.
+
+/// <param name="Email">Null when the account has none.</param>
+/// <param name="Business">The business they own; null for a client.</param>
+record Me(string Name, string? Email, OwnedBusiness? Business);
+
+record OwnedBusiness(string Name, string Slug);
+
 // The owner's calendar (MVP-12, V1-1).
 
 /// <param name="Day">The local date, yyyy-MM-dd.</param>

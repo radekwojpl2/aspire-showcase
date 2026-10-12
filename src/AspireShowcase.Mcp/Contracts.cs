@@ -34,6 +34,12 @@ record ClientBooking(
     Guid Id, string BusinessName, string BusinessSlug, string ServiceName, string StaffName, string Date, string Start,
     string End, string TimeZone, DateTimeOffset CanChangeUntil, string? BusinessContactEmail);
 
+/// <param name="Email">Null when the account has none.</param>
+/// <param name="Business">The business they own; null for a client.</param>
+record Me(string Name, string? Email, OwnedBusiness? Business);
+
+record OwnedBusiness(string Name, string Slug);
+
 /// <param name="Day">The local date, yyyy-MM-dd.</param>
 /// <param name="Start">The local time, HH:mm, in the business's time zone.</param>
 /// <param name="ClientEmail">Null once the client deleted their account.</param>
