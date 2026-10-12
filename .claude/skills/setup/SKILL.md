@@ -83,7 +83,7 @@ You can't sign in for the user. Ask them to open `http://localhost:5173`, click 
 The MCP server (resource `mcp`) only runs once its Logto applications exist, and only lets in MCP clients that sign in as the Native app registered for them. Until this step is done, `mcp` doesn't start, and its log says which parameters are missing: that's expected. Give the user these steps in the same admin console, and wait for the three values:
 
 1. **API resources** → **Create API resource**: any name, identifier exactly `http://localhost:5068/mcp` (the MCP endpoint's URL; tokens are issued for it).
-2. **Applications** → **Create application** → **Native app**, for the MCP clients: the only application the server accepts tokens from. Add the **Redirect URI** `http://localhost:33418/callback`, where Claude Code receives the sign-in.
+2. **Applications** → **Create application** → **Native app**, for the MCP clients: the only application the server accepts tokens from. Add the **Redirect URI** `http://localhost:33418/callback`, where Claude Code receives the sign-in, and **Save changes**: without it, Logto answers `invalid_redirect_uri`.
 3. **Applications** → **Create application** → **Machine-to-machine**, for the MCP server itself, with no roles. In its settings, turn on **token exchange**: the server exchanges the user's token for one for `https://api.aspire-showcase`.
 4. Paste here the **App ID** of the Native app, and the **App ID** and **App secret** of the machine-to-machine one.
 
@@ -98,7 +98,9 @@ aspire start
 aspire wait mcp
 ```
 
-`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5068/mcp` returns `401`: nobody signed in. To connect Claude Code, the user runs `claude mcp add --transport http --client-id <native-app-id> --callback-port 33418 aspire-showcase http://localhost:5068/mcp`, then `/mcp` in Claude Code to sign in.
+`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5068/mcp` returns `401`: nobody signed in.
+
+To connect Claude Code, run `claude mcp add --transport http --client-id <native-app-id> --callback-port 33418 aspire-showcase http://localhost:5068/mcp` (reading the ID from the user secrets, without printing the secret ones). Claude Code loads the server on its next start, so ask the user to restart it (`claude --continue`), then run `/mcp`, choose **aspire-showcase** (not **aspire**), and **Authenticate**. Signing in needs the browser: you can't do it for them. `Who am I signed in as?` then checks it. Point them to `docs/mcp.md` for examples of every tool, switching accounts, and what to do when it doesn't work.
 
 ## 8. Wrap up
 
