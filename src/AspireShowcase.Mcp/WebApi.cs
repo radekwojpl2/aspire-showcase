@@ -49,6 +49,16 @@ sealed class WebApi(HttpClient http)
         return await ReadAsync<BookingConfirmation>(response, cancellation);
     }
 
+    // The owner's calendar (MVP-12, V1-1); web refuses it to anyone but a business's owner.
+
+    public Task<CalendarResponse> GetCalendarAsync(
+        string view, string? date, Guid? staffMemberId, CancellationToken cancellation) =>
+        GetAsync<CalendarResponse>(
+            $"/api/businesses/mine/bookings?view={Uri.EscapeDataString(view)}" +
+            (date is null ? "" : $"&date={Uri.EscapeDataString(date)}") +
+            (staffMemberId is { } staff ? $"&staffMemberId={staff}" : ""),
+            cancellation);
+
     async Task<T> GetAsync<T>(string path, CancellationToken cancellation)
     {
         using var response = await http.GetAsync(path, cancellation);
@@ -75,9 +85,13 @@ sealed class WebApi(HttpClient http)
         if ((int)response.StatusCode is >= 400 and < 500 && response.StatusCode is not HttpStatusCode.Unauthorized)
         {
             var problem = await ReadProblemAsync(response, cancellation);
-            throw new McpException(problem?.Message ?? (response.StatusCode == HttpStatusCode.NotFound
-                ? "Not found."
-                : $"The request was refused ({(int)response.StatusCode})."));
+            throw new McpException(problem?.Message ?? (response.StatusCode switch
+            {
+                HttpStatusCode.NotFound => "Not found.",
+                // The owner role is checked by web, on the token exchanged for the user's.
+                HttpStatusCode.Forbidden => "Only the owner of a business can do that, and the user isn't one.",
+                _ => $"The request was refused ({(int)response.StatusCode}).",
+            }));
         }
 
         response.EnsureSuccessStatusCode();
