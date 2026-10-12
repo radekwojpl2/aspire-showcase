@@ -27,7 +27,8 @@ builder.Services.AddMcpServer()
     .AddAuthorizationFilters()
     .WithRequestFilters(filters => filters.AddCallToolFilter(McpTelemetry.CountToolCalls))
     .WithToolsFromAssembly()
-    .WithResourcesFromAssembly();
+    .WithResourcesFromAssembly()
+    .WithPromptsFromAssembly();
 
 builder.Services.AddCors();
 

@@ -167,6 +167,8 @@ To tie that trace back to what caused it, the job's span carries a span link to 
 | `owner_calendar`, `owner_cancel_booking`, `owner_find_reschedule_slots`, `owner_reschedule_booking`, `owner_book_for_client` | An owner | The business's calendar, and its clients' bookings |
 | `list_time_off`, `add_time_off`, `remove_time_off` | An owner | The time off of the business and its staff |
 
+It also has prompts, ready-made requests the user starts, such as slash commands in Claude Code: `book_at` (a business, and optionally a service), `my_upcoming_bookings`, and `owner_week` for an owner. They walk the model through the tools; the tools still ask before anything changes.
+
 Every tool needs signing in, at `/mcp`, and only through the Native app registered for MCP clients in Logto: a token issued to any other application, including Logto's dynamic (CIMD) app, is refused. The server doesn't start until its Logto applications are set up, and its log says which parameters are missing. Then, with the Native app's ID:
 
 ```
