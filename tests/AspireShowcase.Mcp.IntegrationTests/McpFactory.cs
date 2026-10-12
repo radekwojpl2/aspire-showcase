@@ -38,7 +38,7 @@ public class McpFactory : WebApplicationFactory<Program>
     public FakeTimeProvider Time { get; } = new(new DateTimeOffset(2026, 11, 2, 7, 0, 0, TimeSpan.Zero));
 
     /// <summary>
-    /// An MCP client connected to /mcp, as Claude Code or the MCP Inspector would be, signed
+    /// An MCP client connected to /mcp, as Claude Code would be, signed
     /// in with <paramref name="accessToken"/>: by default a token of the MCP clients' app.
     /// </summary>
     public Task<McpClient> ConnectAsync(McpClientOptions? options = null, string? accessToken = null) =>

@@ -7,7 +7,7 @@ static class McpExtensions
     public static IResourceBuilder<ProjectResource> AddMcp(
         this IDistributedApplicationBuilder builder, IResourceBuilder<ProjectResource> web)
     {
-        var mcp = builder.AddProject<Projects.AspireShowcase_Mcp>("mcp")
+        return builder.AddProject<Projects.AspireShowcase_Mcp>("mcp")
             .WithHttpHealthCheck("/health")
             .WithExternalHttpEndpoints()
             .WithoutConnectionProperties()
@@ -18,15 +18,5 @@ static class McpExtensions
             // Clients on the initialize handshake keep a session in memory, which another
             // replica wouldn't know: one replica, as there's no session affinity.
             .PublishAsAzureContainerApp((_, app) => app.Template.Scale.MaxReplicas = 1);
-
-        // Locally, the MCP Inspector in the dashboard, to list the tools and call them by hand.
-        if (builder.ExecutionContext.IsRunMode)
-        {
-            builder.AddMcpInspector("mcp-inspector")
-                .WithMcpServer(mcp, path: "/mcp")
-                .WaitFor(mcp);
-        }
-
-        return mcp;
     }
 }

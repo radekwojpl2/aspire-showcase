@@ -173,7 +173,7 @@ Every tool needs signing in, at `/mcp`, and only through the Native app register
 claude mcp add --transport http --client-id <native-app-id> --callback-port 33418 aspire-showcase http://localhost:5068/mcp
 ```
 
-and `/mcp` in Claude Code to sign in. Locally the dashboard links to `/mcp`, and starts the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) to call the tools by hand; it signs in with the same app ID, once its redirect URI is added to the Native app.
+and `/mcp` in Claude Code to sign in. Locally the dashboard links to `/mcp`.
 
 **Signing in** follows the MCP authorization spec, with Logto as the authorization server. A request without a token gets a 401 pointing at `/.well-known/oauth-protected-resource/mcp`, which names Logto. The client signs the user in there for a token issued for the MCP server's own URL. The spec forbids passing that token on, so the server exchanges it at Logto for one for `web`'s API resource (RFC 8693 token exchange), as a machine-to-machine application of its own. Logto only exchanges tokens issued to first-party applications, which is one more reason clients use the registered Native app. In Azure, the API resource's identifier is `https://<mcp-fqdn>/mcp` (the Native app's redirect URI stays the same), and the apps go in `LOGTO_MCP_CLIENT_ID`, `LOGTO_MCP_APP_ID` and `LOGTO_MCP_APP_SECRET` on the `production` environment.
 
