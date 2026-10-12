@@ -26,6 +26,7 @@ notifications.WithNotificationsDatabase(postgres);
 var logto = builder.AddLogto(postgres.AddLogtoDatabase());
 web.WithLogtoApi(logto);
 bff.WithLogtoSignIn(logto);
+mcp.WithLogtoMcp(logto);
 
 var frontend = builder.AddFrontend(bff);
 notifications.WithEmail(bff, frontend);

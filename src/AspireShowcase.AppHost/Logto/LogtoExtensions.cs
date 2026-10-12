@@ -83,6 +83,36 @@ static class LogtoExtensions
             .WithOptionalEnvironment("Logto__M2mAppSecret", m2mAppSecret);
     }
 
+    /// <summary>
+    /// Lets MCP clients sign in to the MCP server with Logto, and the server act for them on
+    /// web: it exchanges their token for one for the API resource, as the machine-to-machine
+    /// application created for it with token exchange turned on.
+    /// </summary>
+    /// <remarks>
+    /// The MCP clients themselves sign in as a "Native app" registered in the Logto console,
+    /// whose ID they're given (claude mcp add --client-id); the server accepts tokens issued to
+    /// that app only. The parameters are optional so the first deploy, which creates Logto in
+    /// Azure, can run before the apps exist; until they're set, the MCP server doesn't start.
+    /// </remarks>
+    public static IResourceBuilder<ProjectResource> WithLogtoMcp(
+        this IResourceBuilder<ProjectResource> mcp, IResourceBuilder<ContainerResource> logto)
+    {
+        var builder = mcp.ApplicationBuilder;
+        var clientId = builder.AddOptionalParameter(
+            "logto-mcp-client-id", "ID of the Logto Native app MCP clients sign in as; the only one the MCP server accepts tokens from.");
+        var appId = builder.AddOptionalParameter(
+            "logto-mcp-app-id", "ID of the Logto machine-to-machine application the MCP server exchanges tokens as.");
+        var appSecret = builder.AddOptionalParameter(
+            "logto-mcp-app-secret", "Secret of the Logto application the MCP server exchanges tokens as.", secret: true);
+
+        return mcp
+            .WithEnvironment("Logto__Endpoint", builder.PublicEndpoint(logto))
+            .WithEnvironment("Logto__ApiResource", ApiResource)
+            .WithOptionalEnvironment("Logto__ClientId", clientId)
+            .WithOptionalEnvironment("Logto__AppId", appId)
+            .WithOptionalEnvironment("Logto__AppSecret", appSecret);
+    }
+
     static IResourceBuilder<ContainerResource> AddLogtoContainer(
         this IDistributedApplicationBuilder builder, string name, int port, LogtoDatabase db) =>
         builder.AddContainer(name, "svhd/logto", "1.44")

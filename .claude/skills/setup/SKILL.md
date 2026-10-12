@@ -78,11 +78,33 @@ aspire wait frontend
 
 You can't sign in for the user. Ask them to open `http://localhost:5173`, click **Start your business**, create an account, and start a business. The header should then show **Owner**. If Logto shows a redirect URI error, step 4.4 is wrong; if starting the business answers that it couldn't be set up, check `aspire logs web` for the Management API call (step 3 or 5).
 
-## 7. Wrap up
+## 7. MCP sign-in
+
+The MCP server (resource `mcp`) only runs once its Logto applications exist, and only lets in MCP clients that sign in as the Native app registered for them. Until this step is done, `mcp` doesn't start, and its log says which parameters are missing: that's expected. Give the user these steps in the same admin console, and wait for the three values:
+
+1. **API resources** → **Create API resource**: any name, identifier exactly `http://localhost:5068/mcp` (the MCP endpoint's URL; tokens are issued for it).
+2. **Applications** → **Create application** → **Native app**, for the MCP clients: the only application the server accepts tokens from. Add the **Redirect URI** `http://localhost:33418/callback`, where Claude Code receives the sign-in.
+3. **Applications** → **Create application** → **Machine-to-machine**, for the MCP server itself, with no roles. In its settings, turn on **token exchange**: the server exchanges the user's token for one for `https://api.aspire-showcase`.
+4. Paste here the **App ID** of the Native app, and the **App ID** and **App secret** of the machine-to-machine one.
+
+Then:
+
+```
+dotnet user-secrets set Parameters:logto-mcp-client-id <native-app-id> --project src/AspireShowcase.AppHost
+dotnet user-secrets set Parameters:logto-mcp-app-id <m2m-app-id> --project src/AspireShowcase.AppHost
+dotnet user-secrets set Parameters:logto-mcp-app-secret <m2m-app-secret> --project src/AspireShowcase.AppHost
+aspire stop
+aspire start
+aspire wait mcp
+```
+
+`curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:5068/mcp` returns `401`: nobody signed in. To connect Claude Code, the user runs `claude mcp add --transport http --client-id <native-app-id> --callback-port 33418 aspire-showcase http://localhost:5068/mcp`, then `/mcp` in Claude Code to sign in.
+
+## 8. Wrap up
 
 Point the user to the dashboard: Traces shows the business they started as one trace through bff, web and Logto. Ask whether to leave the app running; if not, run `aspire stop`.
 
-## 8. Azure (only if the user asks)
+## 9. Azure (only if the user asks)
 
 This creates billable Azure resources. Before running anything:
 

@@ -4,8 +4,9 @@ using ModelContextProtocol.Server;
 namespace AspireShowcase.Mcp.Tools;
 
 /// <summary>
-/// What anyone may see without signing in, as on a business's public booking page (user
-/// stories MVP-1 and MVP-2): the business with its services and staff, and its free times.
+/// What a business's public booking page shows (user stories MVP-1 and MVP-2): the business
+/// with its services and staff, and its free times. web needs no user for these, but the MCP
+/// server only lets in signed-in users.
 /// </summary>
 [McpServerToolType]
 sealed class PublicTools(WebApi web)
