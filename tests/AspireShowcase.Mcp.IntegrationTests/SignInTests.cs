@@ -33,6 +33,34 @@ public sealed class SignInTests(McpFactory mcp) : IClassFixture<McpFactory>
     }
 
     [Fact]
+    public async Task A_client_in_a_browser_can_read_the_resource_metadata_from_its_own_origin()
+    {
+        var preflight = new HttpRequestMessage(HttpMethod.Options, "/.well-known/oauth-protected-resource/mcp");
+        preflight.Headers.Add("Origin", "http://localhost:6274");
+        preflight.Headers.Add("Access-Control-Request-Method", "GET");
+        preflight.Headers.Add("Access-Control-Request-Headers", "mcp-protocol-version");
+        var read = new HttpRequestMessage(HttpMethod.Get, "/.well-known/oauth-protected-resource/mcp");
+        read.Headers.Add("Origin", "http://localhost:6274");
+
+        var preflightResponse = await mcp.CreateClient().SendAsync(preflight);
+        var readResponse = await mcp.CreateClient().SendAsync(read);
+
+        Assert.Equal(HttpStatusCode.NoContent, preflightResponse.StatusCode);
+        Assert.Equal("*", Assert.Single(readResponse.Headers.GetValues("Access-Control-Allow-Origin")));
+    }
+
+    [Fact]
+    public async Task The_mcp_endpoint_itself_is_not_open_to_other_origins()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/mcp") { Content = InitializeRequest() };
+        request.Headers.Add("Origin", "http://localhost:6274");
+
+        var response = await mcp.CreateClient().SendAsync(request);
+
+        Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
+    }
+
+    [Fact]
     public async Task A_token_issued_for_another_resource_is_refused()
     {
         var response = await SendAsync(McpFactory.AccessToken(audience: "https://api.aspire-showcase"));

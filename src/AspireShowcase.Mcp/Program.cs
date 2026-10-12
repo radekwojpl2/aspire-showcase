@@ -25,7 +25,15 @@ builder.Services.AddMcpServer()
     .WithToolsFromAssembly()
     .WithResourcesFromAssembly();
 
+builder.Services.AddCors();
+
 var app = builder.Build();
+
+// The sign-in metadata is public, and browser-based clients such as the MCP Inspector read it
+// from their own origin. Only there: /mcp itself stays same-origin. Before authentication, which
+// serves the metadata.
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/.well-known"), wellKnown =>
+    wellKnown.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().WithMethods("GET")));
 
 app.UseAuthentication();
 app.UseAuthorization();
