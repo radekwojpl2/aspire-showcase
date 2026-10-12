@@ -84,7 +84,7 @@ Two accounts make the whole round: a client, and the owner of a business. Start 
 
 Decline a dialog once to see that nothing changes.
 
-Each tool call is a `POST /mcp` trace in the dashboard (**Traces**), with the calls to `web` under it.
+Each tool call is a trace in the dashboard (**Traces**) named after the tool, such as `POST /mcp tools/call book_slot`, with the MCP SDK's span for the call (its tool name and session as attributes) and the calls to `web` under it. That span says how the call ended (`mcp.tool.outcome`), and has an event when the user was asked and when they answered. **Metrics** → `mcp` counts the same: `mcp.tool.calls` by tool and outcome (`done`, `error` for a refusal the model reads, `asked` while waiting for the user, `failed`), `mcp.confirmations` by tool and answer (`accept`, `decline`, `cancel`, `unsupported`), and `mcp.token.exchanges` by result (`exchanged` at Logto, `cached`, `refused`).
 
 ## When it doesn't work
 

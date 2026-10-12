@@ -38,17 +38,23 @@ static class AskUser
             },
         };
 
+        var telemetry = context.Services!.GetRequiredService<McpTelemetry>();
+        var tool = context.Params?.Name ?? "unknown";
+
         // The second run of a stateless call, with the answer.
         if (context.Params?.InputResponses?.TryGetValue(Key, out var response) == true)
         {
-            return Answer.From(response.Deserialize(InputResponse.ElicitResultJsonTypeInfo));
+            return Answered(response.Deserialize(InputResponse.ElicitResultJsonTypeInfo));
         }
 
         var server = context.Server;
         if (CapabilitiesOf(context)?.Elicitation is null)
         {
+            telemetry.Answered(tool, "unsupported");
             return null;
         }
+
+        McpTelemetry.Asked(fields.Keys);
 
         // The SDK also runs this over the session of a client on the initialize handshake.
         if (server.IsMrtrSupported)
@@ -57,7 +63,13 @@ static class AskUser
                 new Dictionary<string, InputRequest> { [Key] = InputRequest.ForElicitation(request) }, null);
         }
 
-        return Answer.From(await server.ElicitAsync(request, cancellation));
+        return Answered(await server.ElicitAsync(request, cancellation));
+
+        Answer Answered(ElicitResult? result)
+        {
+            telemetry.Answered(tool, result?.Action ?? "cancel");
+            return Answer.From(result);
+        }
     }
 
     /// <summary>

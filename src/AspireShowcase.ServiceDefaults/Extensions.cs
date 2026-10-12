@@ -60,6 +60,8 @@ public static class Extensions
                 metrics.AddMeter(builder.Environment.ApplicationName)
                     // MassTransit's, where a service uses the bus.
                     .AddMeter("MassTransit")
+                    // The MCP SDK's, where a service is an MCP server: how long each operation and session takes.
+                    .AddMeter("Experimental.ModelContextProtocol")
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation();
@@ -68,6 +70,8 @@ public static class Extensions
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
                     .AddSource("MassTransit")
+                    // A span per MCP operation, such as "tools/call book_slot", under its POST /mcp.
+                    .AddSource("Experimental.ModelContextProtocol")
                     .AddProcessor<BackgroundQueryFilter>()
                     .AddAspNetCoreInstrumentation(tracing =>
                         // Exclude health check requests from tracing

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -18,7 +19,8 @@ namespace AspireShowcase.Mcp.Auth;
 /// Logto only exchanges tokens issued to first-party applications, so MCP clients sign in as
 /// the "Native app" created for them, not as Logto's dynamic (CIMD) app.
 /// </remarks>
-sealed class WebTokens(HttpClient http, LogtoSettings logto, IMemoryCache cache, TimeProvider time, ILogger<WebTokens> logger)
+sealed class WebTokens(
+    HttpClient http, LogtoSettings logto, IMemoryCache cache, TimeProvider time, McpTelemetry telemetry, ILogger<WebTokens> logger)
 {
     static readonly TimeSpan ExpireBefore = TimeSpan.FromMinutes(1);
 
@@ -35,10 +37,12 @@ sealed class WebTokens(HttpClient http, LogtoSettings logto, IMemoryCache cache,
         var key = $"web-token:{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(subjectToken)))}";
         if (cache.TryGetValue<string>(key, out var cached))
         {
+            telemetry.TokenExchanged(null, "cached");
             return cached;
         }
 
-        var exchanged = await ExchangeAsync(subjectToken, cancellation);
+        using var activity = telemetry.StartTokenExchange();
+        var exchanged = await ExchangeAsync(subjectToken, activity, cancellation);
         var lifetime = TimeSpan.FromSeconds(exchanged.ExpiresIn) - ExpireBefore;
         if (lifetime > TimeSpan.Zero)
         {
@@ -47,7 +51,7 @@ sealed class WebTokens(HttpClient http, LogtoSettings logto, IMemoryCache cache,
         return exchanged.AccessToken;
     }
 
-    async Task<TokenResponse> ExchangeAsync(string subjectToken, CancellationToken cancellation)
+    async Task<TokenResponse> ExchangeAsync(string subjectToken, Activity? activity, CancellationToken cancellation)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{logto.Issuer}/token")
         {
@@ -70,12 +74,14 @@ sealed class WebTokens(HttpClient http, LogtoSettings logto, IMemoryCache cache,
             // Typically the application doesn't have token exchange turned on in Logto.
             logger.LogWarning("Exchanging the access token for web failed with {StatusCode}: {Body}",
                 (int)response.StatusCode, await response.Content.ReadAsStringAsync(cancellation));
+            telemetry.TokenExchanged(activity, "refused");
             throw new ModelContextProtocol.McpException(
                 "The MCP server couldn't act for you: Logto refused the token exchange. Sign in again, " +
                 "or ask whoever runs the server to check its Logto application.");
         }
         response.EnsureSuccessStatusCode();
 
+        telemetry.TokenExchanged(activity, "exchanged");
         return (await response.Content.ReadFromJsonAsync<TokenResponse>(cancellation))!;
     }
 
