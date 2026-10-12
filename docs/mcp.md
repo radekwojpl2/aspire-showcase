@@ -84,6 +84,16 @@ Two accounts make the whole round: a client, and the owner of a business. Start 
 
 Decline a dialog once to see that nothing changes.
 
+### Prompts
+
+The server's prompts are slash commands in Claude Code, with their arguments after a space. Type `/mcp__aspire-showcase__` to list them.
+
+| Command | Does |
+|---|---|
+| `/mcp__aspire-showcase__book_at radekowner haircut` | Shows the business's services and free times, asks which time, and books it. Leave out the service to choose one. |
+| `/mcp__aspire-showcase__my_upcoming_bookings` | Lists your bookings and offers to move or cancel one. |
+| `/mcp__aspire-showcase__owner_week 2026-11-09` | For an owner: the week's bookings and time off, day by day, with the empty days. Leave out the date for this week. |
+
 Each tool call is a trace in the dashboard (**Traces**) named after the tool, such as `POST /mcp tools/call book_slot`, with the MCP SDK's span for the call (its tool name and session as attributes) and the calls to `web` under it. That span says how the call ended (`mcp.tool.outcome`), and has an event when the user was asked and when they answered. **Metrics** → `mcp` counts the same: `mcp.tool.calls` by tool and outcome (`done`, `error` for a refusal the model reads, `asked` while waiting for the user, `failed`), `mcp.confirmations` by tool and answer (`accept`, `decline`, `cancel`, `unsupported`), and `mcp.token.exchanges` by result (`exchanged` at Logto, `cached`, `refused`).
 
 ## When it doesn't work
@@ -93,7 +103,7 @@ Each tool call is a trace in the dashboard (**Traces**) named after the tool, su
 | `mcp` doesn't start | Its Logto applications aren't set up: step 1. `aspire logs mcp` names the missing parameters. |
 | Logto: `invalid_redirect_uri` | The Native app has no redirect URI `http://localhost:33418/callback`: step 1.2. |
 | `/mcp` has no **Authenticate** | You chose **aspire**, Aspire's own server; choose **aspire-showcase**. |
-| A new tool is missing | Claude Code keeps the old list: `/mcp` → **aspire-showcase** → **Reconnect**. |
+| A new tool or prompt is missing | Claude Code keeps the old list: `/mcp` → **aspire-showcase** → **Reconnect**. |
 | `Not found.` for a business | The booking link is wrong; ask `Which businesses can I book at?` |
 | Signing in again picks the same account | Logto remembers you: sign out at `http://localhost:3001/oidc/session/end` first. |
 | Chats in the Claude desktop app or claude.ai can't reach it | They connect from Anthropic's servers, which can't reach `localhost`. Only Claude Code (and its desktop Code tab) works locally. |
