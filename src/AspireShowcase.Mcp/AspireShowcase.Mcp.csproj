@@ -16,6 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The slot picker's page, served as an MCP App resource. -->
+    <EmbeddedResource Include="Apps\slot-picker.html" LogicalName="AspireShowcase.Mcp.Apps.slot-picker.html" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The tests replace the HTTP client of WebApi with a stub of web. -->
     <InternalsVisibleTo Include="AspireShowcase.Mcp.IntegrationTests" />
   </ItemGroup>

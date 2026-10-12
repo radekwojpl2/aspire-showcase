@@ -22,7 +22,8 @@ builder.Services.AddHttpClient<WebApi>(client => client.BaseAddress = new Uri("h
 builder.Services.AddMcpServer()
     .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.StatefulForInitializeClients)
     .AddAuthorizationFilters()
-    .WithToolsFromAssembly();
+    .WithToolsFromAssembly()
+    .WithResourcesFromAssembly();
 
 var app = builder.Build();
 

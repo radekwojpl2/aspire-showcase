@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using AspireShowcase.Mcp.Apps;
 using ModelContextProtocol.Server;
 
 namespace AspireShowcase.Mcp.Tools;
@@ -24,7 +25,11 @@ sealed class PublicTools(WebApi web)
         CancellationToken cancellation) =>
         web.GetBusinessAsync(slug, cancellation);
 
-    [McpServerTool(Name = "find_free_slots", Title = "Find free times", ReadOnly = true, OpenWorld = false)]
+    // Hosts that support MCP Apps show the result as the slot picker; see SlotPicker.
+    [McpServerTool(Name = "find_free_slots", Title = "Find free times", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
+    [McpMeta("ui", JsonValue = $$"""{"resourceUri":"{{SlotPicker.Uri}}"}""")]
+    // The key hosts read before the extension settled on "ui"; deprecated, still read by some.
+    [McpMeta("ui/resourceUri", SlotPicker.Uri)]
     [Description("The times a service can still be booked at a business, day by day, in the business's " +
         "time zone. Each slot's startsAt is the instant to book it with.")]
     public async Task<PublicSlots> FindFreeSlots(

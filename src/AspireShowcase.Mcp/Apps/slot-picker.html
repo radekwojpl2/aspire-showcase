@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<!--
+  The slot picker: an MCP App (the MCP Apps extension, ui:// resources) that hosts such as
+  Claude Desktop and claude.ai show in place of find_free_slots's result. The free times are
+  buttons; clicking one asks the model, as a chat message from the user, to book it, so the
+  booking goes through book_slot and its confirmation like any other.
+
+  It talks to the host over postMessage, in JSON-RPC: ui/initialize, then the host sends the
+  tool's arguments (ui/notifications/tool-input) and its result (ui/notifications/tool-result).
+  Plain script, no bundler or CDN: the host's sandbox allows no other origin.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Free times</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: var(--font-sans, system-ui, sans-serif);
+      --accent: #2563eb;
+      --border: color-mix(in srgb, currentColor 18%, transparent);
+    }
+    body { margin: 0; padding: 12px; }
+    h1 { font-size: 15px; margin: 0 0 2px; }
+    p { margin: 0 0 10px; opacity: 0.7; font-size: 13px; }
+    .day { margin-bottom: 10px; }
+    .day h2 { font-size: 13px; font-weight: 600; margin: 0 0 6px; }
+    .slots { display: flex; flex-wrap: wrap; gap: 6px; }
+    button {
+      font: inherit; font-size: 13px; padding: 5px 10px; border-radius: 6px; cursor: pointer;
+      border: 1px solid var(--border); background: transparent; color: inherit;
+    }
+    button:hover, button:focus-visible { border-color: var(--accent); color: var(--accent); }
+    button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: white; }
+    .empty { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1 id="title">Free times</h1>
+  <p id="subtitle">Loading…</p>
+  <div id="days"></div>
+
+  <script>
+    "use strict";
+
+    let nextId = 1;
+    const pending = new Map();
+    let args = {};
+
+    // JSON-RPC to the host, which is the iframe's parent.
+    function request(method, params) {
+      const id = nextId++;
+      window.parent.postMessage({ jsonrpc: "2.0", id, method, params }, "*");
+      return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+    }
+
+    function notify(method, params) {
+      window.parent.postMessage({ jsonrpc: "2.0", method, params: params ?? {} }, "*");
+    }
+
+    window.addEventListener("message", event => {
+      if (event.source !== window.parent) return;
+      const message = event.data;
+      if (!message || message.jsonrpc !== "2.0") return;
+
+      if (message.id !== undefined && pending.has(message.id)) {
+        const { resolve, reject } = pending.get(message.id);
+        pending.delete(message.id);
+        message.error ? reject(message.error) : resolve(message.result);
+        return;
+      }
+
+      if (message.method === "ui/notifications/tool-input") {
+        args = message.params?.arguments ?? {};
+      } else if (message.method === "ui/notifications/tool-result") {
+        render(slotsOf(message.params));
+      } else if (message.method === "ui/notifications/host-context-changed") {
+        applyTheme(message.params);
+      }
+    });
+
+    // The free times, as the tool returns them: structured, or as JSON text.
+    function slotsOf(result) {
+      if (result?.structuredContent) return result.structuredContent;
+      const text = result?.content?.find(block => block.type === "text")?.text;
+      try { return JSON.parse(text); } catch { return null; }
+    }
+
+    function render(slots) {
+      const days = document.getElementById("days");
+      days.replaceChildren();
+      document.getElementById("subtitle").textContent = slots
+        ? `Times in ${slots.timeZone}. Pick one to book it.`
+        : "The free times couldn't be read.";
+
+      const withSlots = (slots?.days ?? []).filter(day => day.slots.length > 0);
+      if (slots && withSlots.length === 0) {
+        days.innerHTML = '<div class="empty">No free times in these days.</div>';
+      }
+
+      for (const day of withSlots) {
+        const section = document.createElement("div");
+        section.className = "day";
+        const heading = document.createElement("h2");
+        heading.textContent = new Date(`${day.date}T00:00:00`).toLocaleDateString(undefined,
+          { weekday: "long", day: "numeric", month: "long" });
+        const buttons = document.createElement("div");
+        buttons.className = "slots";
+        for (const slot of day.slots) {
+          const button = document.createElement("button");
+          button.textContent = slot.start;
+          button.addEventListener("click", () => pick(button, day, slot));
+          buttons.append(button);
+        }
+        section.append(heading, buttons);
+        days.append(section);
+      }
+      reportSize();
+    }
+
+    // Booking is the model's job, through book_slot, so the user confirms it there.
+    async function pick(button, day, slot) {
+      document.querySelectorAll("button[aria-pressed]").forEach(other => other.removeAttribute("aria-pressed"));
+      button.setAttribute("aria-pressed", "true");
+      const staff = args.staffMemberId ? ` with staff member ${args.staffMemberId}` : "";
+      await request("ui/message", {
+        role: "user",
+        content: {
+          type: "text",
+          text: `Book service ${args.serviceId} at ${args.slug} on ${day.date} at ${slot.start}${staff} (startsAt ${slot.startsAt}).`,
+        },
+      }).catch(() => {});
+    }
+
+    function applyTheme(context) {
+      if (context?.theme) document.documentElement.style.colorScheme = context.theme;
+      for (const [name, value] of Object.entries(context?.styles?.variables ?? {})) {
+        document.documentElement.style.setProperty(name, value);
+      }
+    }
+
+    // The content's own size: the document's is at least the iframe's, which would never shrink.
+    function reportSize() {
+      const size = document.body.getBoundingClientRect();
+      notify("ui/notifications/size-changed", { width: Math.ceil(size.width), height: Math.ceil(size.height) });
+    }
+
+    request("ui/initialize", {
+      protocolVersion: "2026-01-26",
+      appCapabilities: {},
+      clientInfo: { name: "aspire-showcase-slot-picker", version: "1.0.0" },
+    }).then(result => {
+      applyTheme(result?.hostContext);
+      notify("ui/notifications/initialized");
+    });
+  </script>
+</body>
+</html>
