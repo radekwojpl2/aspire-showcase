@@ -1,5 +1,7 @@
 using System.ComponentModel;
+using System.Globalization;
 using AspireShowcase.Mcp.Apps;
+using ModelContextProtocol;
 using ModelContextProtocol.Server;
 
 namespace AspireShowcase.Mcp.Tools;
@@ -10,7 +12,7 @@ namespace AspireShowcase.Mcp.Tools;
 /// server only lets in signed-in users.
 /// </summary>
 [McpServerToolType]
-sealed class PublicTools(WebApi web)
+sealed class PublicTools(WebApi web, TimeProvider time)
 {
     // The API answers four weeks at once; a week is plenty to choose from and keeps the
     // answer small enough for the model's context.
@@ -41,14 +43,31 @@ sealed class PublicTools(WebApi web)
         CancellationToken cancellation = default)
     {
         var slots = await web.GetFreeSlotsAsync(slug, serviceId, staffMemberId, cancellation);
-        return slots with { Days = Window(slots.Days, from, days) };
+        return slots with { Days = Window(slots, from, days, time) };
     }
 
-    /// <summary>The days from <paramref name="from"/> on, at most <paramref name="days"/> of them.</summary>
-    internal static IReadOnlyList<PublicDay> Window(IReadOnlyList<PublicDay> all, string? from, int days) =>
-        all
-            // yyyy-MM-dd compares as dates do.
-            .Where(day => from is null || string.CompareOrdinal(day.Date, from) >= 0)
-            .Take(Math.Clamp(days, 1, 28))
+    /// <summary>
+    /// The days of the calendar from <paramref name="from"/>, or today in the business's time zone,
+    /// up to <paramref name="days"/> of them. Days without a free time aren't in web's answer, so
+    /// they're counted by date, not by the days listed.
+    /// </summary>
+    internal static IReadOnlyList<PublicDay> Window(PublicSlots slots, string? from, int days, TimeProvider time)
+    {
+        DateOnly first;
+        if (from is null)
+        {
+            var timeZone = TimeZoneInfo.FindSystemTimeZoneById(slots.TimeZone);
+            first = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), timeZone).DateTime);
+        }
+        else if (!DateOnly.TryParseExact(from, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out first))
+        {
+            throw new McpException("from must be a date, yyyy-MM-dd.");
+        }
+
+        var end = first.AddDays(Math.Clamp(days, 1, 28));
+        return slots.Days
+            .Where(day => DateOnly.ParseExact(day.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture) is var date
+                && date >= first && date < end)
             .ToList();
+    }
 }

@@ -82,6 +82,55 @@ public sealed class PublicToolsTests(McpFactory mcp) : IClassFixture<McpFactory>
         Assert.Equal("2026-11-16", dates[^1]);
     }
 
+    [Fact]
+    public async Task A_week_of_free_times_ends_after_seven_days_even_when_the_business_is_closed_on_some()
+    {
+        var slug = AnswerMondaysAndTuesdays();
+        await using var client = await mcp.ConnectAsync();
+
+        var result = await client.CallToolAsync("find_free_slots", new Dictionary<string, object?>
+        {
+            ["slug"] = slug,
+            ["serviceId"] = Haircut,
+        });
+
+        Assert.Equal(["2026-11-02", "2026-11-03"], Dates(result));
+    }
+
+    [Fact]
+    public async Task Free_times_from_a_day_the_business_is_closed_start_at_its_next_open_day()
+    {
+        var slug = AnswerMondaysAndTuesdays();
+        await using var client = await mcp.ConnectAsync();
+
+        var result = await client.CallToolAsync("find_free_slots", new Dictionary<string, object?>
+        {
+            ["slug"] = slug,
+            ["serviceId"] = Haircut,
+            ["from"] = "2026-11-04",
+            ["days"] = 14,
+        });
+
+        Assert.Equal(["2026-11-09", "2026-11-10", "2026-11-16", "2026-11-17"], Dates(result));
+    }
+
+    /// <summary>A business open on Mondays and Tuesdays: web lists only the days with free times.</summary>
+    string AnswerMondaysAndTuesdays()
+    {
+        var slug = $"open-{Guid.NewGuid():N}";
+        var days = Enumerable.Range(0, 28)
+            .Select(offset => new DateOnly(2026, 11, 2).AddDays(offset))
+            .Where(date => date.DayOfWeek is DayOfWeek.Monday or DayOfWeek.Tuesday)
+            .Select(date => new { date = $"{date:yyyy-MM-dd}", slots = new[] { new { start = "10:00", startsAt = $"{date:yyyy-MM-dd}T09:00:00+00:00" } } })
+            .ToArray();
+        mcp.Web.Answer(HttpMethod.Get, $"/api/public/businesses/{slug}/slots?serviceId={Haircut}",
+            new { timeZone = "Europe/Warsaw", days });
+        return slug;
+    }
+
+    static List<string?> Dates(CallToolResult result) =>
+        Structured(result).GetProperty("days").EnumerateArray().Select(day => day.GetProperty("date").GetString()).ToList();
+
     static JsonElement Structured(CallToolResult result) =>
         result.StructuredContent is { } structured
             ? structured
