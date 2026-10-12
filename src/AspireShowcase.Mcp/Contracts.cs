@@ -3,6 +3,9 @@ namespace AspireShowcase.Mcp;
 // The API's JSON, as the tools read it and give it to the model; the same shapes as
 // AspireShowcase.Scheduling.Application/Contracts.cs, which the MCP server doesn't reference.
 
+/// <param name="Slug">The booking link, which the other tools take.</param>
+record BusinessListing(string Name, string Slug, string? Address, string? Description, string? LogoUrl);
+
 record PublicStaff(Guid Id, string Name);
 
 record PublicService(

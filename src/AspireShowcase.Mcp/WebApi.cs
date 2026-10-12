@@ -9,6 +9,11 @@ namespace AspireShowcase.Mcp;
 /// </summary>
 sealed class WebApi(HttpClient http)
 {
+    public Task<IReadOnlyList<BusinessListing>> ListBusinessesAsync(string? query, CancellationToken cancellation) =>
+        GetAsync<IReadOnlyList<BusinessListing>>(
+            "/api/public/businesses" + (string.IsNullOrWhiteSpace(query) ? "" : $"?query={Uri.EscapeDataString(query)}"),
+            cancellation);
+
     public Task<PublicBusiness> GetBusinessAsync(string slug, CancellationToken cancellation) =>
         GetAsync<PublicBusiness>($"/api/public/businesses/{Uri.EscapeDataString(slug)}", cancellation);
 

@@ -162,7 +162,7 @@ To tie that trace back to what caused it, the job's span carries a span link to 
 | Tool | For | Does |
 |---|---|---|
 | `whoami` | Anyone signed in | Who they're signed in as, and the business they own |
-| `get_business`, `find_free_slots` | Anyone signed in | A business's page, and its free times |
+| `list_businesses`, `get_business`, `find_free_slots` | Anyone signed in | The businesses, a business's page, and its free times |
 | `book_slot`, `my_bookings`, `cancel_booking`, `find_reschedule_slots`, `reschedule_booking` | Anyone signed in | Their bookings |
 | `owner_calendar` | An owner | The business's calendar |
 

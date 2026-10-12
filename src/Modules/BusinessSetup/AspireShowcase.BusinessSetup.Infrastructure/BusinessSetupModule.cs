@@ -35,6 +35,7 @@ public static class BusinessSetupModule
         // The use cases, one handler each.
         builder.Services.AddScoped<GetMyBusiness>();
         builder.Services.AddScoped<CheckSlug>();
+        builder.Services.AddScoped<ListBusinesses>();
         builder.Services.AddScoped<StartBusinessHandler>();
         builder.Services.AddScoped<SetContact>();
         builder.Services.AddScoped<SetPage>();

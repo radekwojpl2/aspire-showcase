@@ -71,6 +71,8 @@ public sealed record IdResponse(Guid Id);
 
 public sealed record BusinessResponse(Guid Id, string Name, string Slug, string TimeZone);
 
+public sealed record BusinessListing(string Name, string Slug, string? Address, string? Description, string? LogoUrl);
+
 public sealed record PublicBusiness(string Name, string Slug, string TimeZone, List<PublicService> Services);
 
 public sealed record PublicService(Guid Id, string Name, int DurationMinutes, List<PublicStaff> Staff);
