@@ -18,6 +18,8 @@
   <ItemGroup>
     <!-- The slot picker's page, served as an MCP App resource. -->
     <EmbeddedResource Include="Apps\slot-picker.html" LogicalName="AspireShowcase.Mcp.Apps.slot-picker.html" />
+    <!-- How booking works, served as a resource. -->
+    <EmbeddedResource Include="Resources\booking-rules.md" LogicalName="AspireShowcase.Mcp.Resources.booking-rules.md" />
   </ItemGroup>
 
   <ItemGroup>
