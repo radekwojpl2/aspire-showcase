@@ -94,6 +94,14 @@ The server's prompts are slash commands in Claude Code, with their arguments aft
 | `/mcp__aspire-showcase__my_upcoming_bookings` | Lists your bookings and offers to move or cancel one. |
 | `/mcp__aspire-showcase__owner_week 2026-11-09` | For an owner: the week's bookings and time off, day by day, with the empty days. Leave out the date for this week. |
 
+### Resources
+
+Resources are documents you attach to the conversation yourself, with `@`: type `@aspire-showcase:` to list them.
+
+| Attach | Then ask | Expect |
+|---|---|---|
+| `@aspire-showcase:guide://booking-rules` | `Why can't I cancel my booking tomorrow morning?` | The cancellation notice explained, and the business's contact email from `my_bookings` |
+
 Each tool call is a trace in the dashboard (**Traces**) named after the tool, such as `POST /mcp tools/call book_slot`, with the MCP SDK's span for the call (its tool name and session as attributes) and the calls to `web` under it. That span says how the call ended (`mcp.tool.outcome`), and has an event when the user was asked and when they answered. **Metrics** → `mcp` counts the same: `mcp.tool.calls` by tool and outcome (`done`, `error` for a refusal the model reads, `asked` while waiting for the user, `failed`), `mcp.confirmations` by tool and answer (`accept`, `decline`, `cancel`, `unsupported`), and `mcp.token.exchanges` by result (`exchanged` at Logto, `cached`, `refused`).
 
 ## When it doesn't work

@@ -169,6 +169,8 @@ To tie that trace back to what caused it, the job's span carries a span link to 
 
 It also has prompts, ready-made requests the user starts, such as slash commands in Claude Code: `book_at` (a business, and optionally a service), `my_upcoming_bookings`, and `owner_week` for an owner. They walk the model through the tools; the tools still ask before anything changes.
 
+And a resource, data the user attaches rather than the model looks up: `guide://booking-rules`, how booking works (the cancellation notice, time zones, what an owner may do), for the model to explain an answer or a refusal. In Claude Code, `@aspire-showcase:guide://booking-rules`.
+
 Every tool needs signing in, at `/mcp`, and only through the Native app registered for MCP clients in Logto: a token issued to any other application, including Logto's dynamic (CIMD) app, is refused. The server doesn't start until its Logto applications are set up, and its log says which parameters are missing. Then, with the Native app's ID:
 
 ```
