@@ -10,13 +10,13 @@ namespace AspireShowcase.Mcp.Resources;
 /// @aspire-showcase:guide://booking-rules), not data the model looks up.
 /// </summary>
 [McpServerResourceType]
-sealed class BookingRules
+sealed class BookingRulesResource
 {
     public const string Uri = "guide://booking-rules";
 
     static readonly Lazy<string> Text = new(() =>
     {
-        using var stream = typeof(BookingRules).Assembly.GetManifestResourceStream("AspireShowcase.Mcp.Resources.booking-rules.md")!;
+        using var stream = typeof(BookingRulesResource).Assembly.GetManifestResourceStream("AspireShowcase.Mcp.Resources.booking-rules.md")!;
         return new StreamReader(stream).ReadToEnd();
     });
 

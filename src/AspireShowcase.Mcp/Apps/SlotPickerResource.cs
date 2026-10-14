@@ -9,7 +9,7 @@ namespace AspireShowcase.Mcp.Apps;
 /// such as Claude Code in a terminal, show the result as text.
 /// </summary>
 [McpServerResourceType]
-sealed class SlotPicker
+sealed class SlotPickerResource
 {
     public const string Uri = "ui://aspire-showcase/slot-picker";
 
@@ -18,7 +18,7 @@ sealed class SlotPicker
 
     static readonly Lazy<string> Html = new(() =>
     {
-        using var stream = typeof(SlotPicker).Assembly.GetManifestResourceStream("AspireShowcase.Mcp.Apps.slot-picker.html")!;
+        using var stream = typeof(SlotPickerResource).Assembly.GetManifestResourceStream("AspireShowcase.Mcp.Apps.slot-picker.html")!;
         return new StreamReader(stream).ReadToEnd();
     });
 
